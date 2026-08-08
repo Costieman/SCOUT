@@ -106,7 +106,9 @@ def normalize_provider_daily_bars(
             provider_bar.adjusted_low,
             provider_bar.adjusted_close,
         )
-        if any(value is None for value in adjusted) and any(value is not None for value in adjusted):
+        if any(value is None for value in adjusted) and any(
+            value is not None for value in adjusted
+        ):
             normalization_issues.append(
                 _normalization_issue(
                     provider_bar,

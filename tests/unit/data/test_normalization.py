@@ -8,7 +8,9 @@ from trade_scout.data.provider import ProviderDailyBar, ProviderInstrument
 VERSION = DatasetVersion("equities_daily_v0.1.0")
 
 
-def _instrument(*, provider_instrument_id: str = "asset-1", symbol: str = "AAA") -> ProviderInstrument:
+def _instrument(
+    *, provider_instrument_id: str = "asset-1", symbol: str = "AAA"
+) -> ProviderInstrument:
     return ProviderInstrument(
         provider_id="primary",
         provider_instrument_id=provider_instrument_id,
