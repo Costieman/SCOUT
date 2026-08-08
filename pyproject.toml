@@ -8,7 +8,9 @@ version = "0.1.0.dev0"
 description = "Trade Scout quantitative research and market-screening platform"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-dependencies = []
+dependencies = [
+  "duckdb==1.5.5",
+]
 
 [dependency-groups]
 dev = [
