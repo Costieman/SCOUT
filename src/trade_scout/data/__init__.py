@@ -1,8 +1,8 @@
 """Trade Scout canonical data contracts, provider boundary, identity, and quality controls.
 
 The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
-validation, reconciliation, immutable canonical storage, and contextual quality checks. It does not
-calculate research features, detect patterns, or repair suspicious upstream observations silently.
+normalization, validation, reconciliation, canonical storage, and contextual quality checks. It does
+not calculate research features, detect patterns, or repair suspicious upstream observations.
 """
 
 from trade_scout.data.canonical_storage import (
@@ -54,6 +54,12 @@ from trade_scout.data.instrument_master import (
     resolve_provider_identity,
     symbol_as_of,
 )
+from trade_scout.data.normalization import (
+    DailyBarNormalizationResult,
+    NormalizationIssue,
+    NormalizationRule,
+    normalize_provider_daily_bars,
+)
 from trade_scout.data.provider import ProviderAdapter
 from trade_scout.data.quality import QualityIssue, QualityReport, QualityRule, validate_daily_bars
 from trade_scout.data.raw_store import (
@@ -88,6 +94,7 @@ __all__ = [
     "CrossSectionExpectation",
     "CrossSectionReport",
     "DailyBar",
+    "DailyBarNormalizationResult",
     "DatasetPromotionQualityError",
     "DatasetPromotionRequest",
     "DatasetQualitySummary",
@@ -100,6 +107,8 @@ __all__ = [
     "InstrumentRecord",
     "InvalidReconciliationDecisionError",
     "MissingObservation",
+    "NormalizationIssue",
+    "NormalizationRule",
     "PriceJumpAnomaly",
     "PriceJumpPolicy",
     "PriceRepresentation",
@@ -125,6 +134,7 @@ __all__ = [
     "derive_instrument_id",
     "instrument_from_primary_provider",
     "link_provider_identity",
+    "normalize_provider_daily_bars",
     "normalize_symbol_history",
     "record_reconciliation_decision",
     "resolve_provider_identity",
