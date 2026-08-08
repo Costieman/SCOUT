@@ -178,7 +178,10 @@ class SecEdgarAdapter:
             ),
             known_limitations=(
                 "CIK identifies an SEC filer/entity, not a permanent listed security.",
-                "The current ticker/exchange association file is not a point-in-time universe history.",
+                (
+                    "The current ticker/exchange association file is not a point-in-time "
+                    "universe history."
+                ),
                 "SEC does not guarantee complete accuracy or scope of ticker associations.",
                 "EDGAR supplies filings/reference data, not daily OHLCV.",
                 (
