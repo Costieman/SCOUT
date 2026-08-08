@@ -2,7 +2,7 @@
 
 The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
 normalization, validation, reconciliation, canonical storage, deterministic revisions, and research
-serving. It does not calculate features, detect patterns, or repair suspicious upstream observations.
+serving. It does not calculate features, detect patterns, or repair suspicious upstream data.
 """
 
 from trade_scout.data.canonical_storage import (
