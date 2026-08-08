@@ -35,6 +35,16 @@ jobs:
               '                f"batch {batch.batch_id} returned provider {bar.provider_id}; "\n'
               '                f"expected {provider_id}"\n',
           )
+          text = text.replace(
+              'def _optional_float(value: object) -> float | None:\n'
+              '    return None if value is None else float(value)\n',
+              'def _optional_float(value: object) -> float | None:\n'
+              '    if value is None:\n'
+              '        return None\n'
+              '    if not isinstance(value, int | float) or isinstance(value, bool):\n'
+              '        raise BackfillRuntimeConflictError("staged numeric field is invalid")\n'
+              '    return float(value)\n',
+          )
           path.write_text(text)
           PY
           uv sync --locked --dev
