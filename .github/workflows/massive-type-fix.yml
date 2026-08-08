@@ -1,0 +1,28 @@
+name: Massive Type Fix
+
+on:
+  push:
+    branches: [phase-1/massive-candidate-adapter]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Fix typed byte return
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/trade_scout/data/providers/massive.py')
+          text = path.read_text()
+          text = text.replace('                return response.read()\n', '                return bytes(response.read())\n')
+          path.write_text(text)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trade_scout/data/providers/massive.py
+          git commit -m "fix(data): type Massive HTTP byte response"
+          git push
