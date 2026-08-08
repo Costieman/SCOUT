@@ -74,7 +74,7 @@ class RetryingUrllibBytesTransport:
         if parsed is not None:
             return float(min(max(parsed, 0.0), self._max_backoff_seconds))
         exponential = self._base_backoff_seconds * (2**attempt)
-        return min(exponential, self._max_backoff_seconds)
+        return float(min(exponential, self._max_backoff_seconds))
 
 
 def _parse_retry_after(value: str | None, *, wall_time: float) -> float | None:
