@@ -82,7 +82,7 @@ class UrllibBytesTransport:
     def get(self, url: str, *, timeout: float) -> bytes:
         request = Request(url, headers={"Accept": "application/json"})
         try:
-            with urlopen(request, timeout=timeout) as response:  # noqa: S310 - fixed HTTPS host
+            with urlopen(request, timeout=timeout) as response:
                 return response.read()
         except HTTPError as exc:
             raise MassiveApiError(f"Massive HTTP error {exc.code}") from exc
@@ -192,7 +192,7 @@ class MassiveAdapter:
         raw_root: Path | None = None,
         timeout: float = 30.0,
     ) -> MassiveAdapter:
-        """Create the candidate adapter without placing credentials in configuration or manifests."""
+        """Create the candidate adapter without persisting credentials in project state."""
 
         raw_capture: RawResponseCapture | None = None
         if raw_root is not None:
@@ -228,7 +228,7 @@ class MassiveAdapter:
                 "ticker-events symbol history is documented by Massive as experimental",
                 "instrument admission requires composite FIGI or share-class FIGI",
                 "first_trade_date is not supplied by All Tickers and remains unset in this adapter",
-                "corporate actions are resolved to identity by point-in-time ticker reference lookup",
+                "corporate actions use point-in-time ticker reference lookup for identity",
             ),
         )
 
@@ -265,7 +265,9 @@ class MassiveAdapter:
                     continue
                 records[(instrument.provider_instrument_id, instrument.symbol)] = instrument
         return tuple(
-            sorted(records.values(), key=lambda record: (record.symbol, record.provider_instrument_id))
+            sorted(
+                records.values(), key=lambda record: (record.symbol, record.provider_instrument_id)
+            )
         )
 
     def get_symbol_history(
@@ -309,9 +311,7 @@ class MassiveAdapter:
                         f"{identity.provider_instrument_id}, expected {provider_instrument_id}"
                     )
                 effective_to = (
-                    ordered[index + 1][0] - timedelta(days=1)
-                    if index + 1 < len(ordered)
-                    else None
+                    ordered[index + 1][0] - timedelta(days=1) if index + 1 < len(ordered) else None
                 )
                 result.append(
                     ProviderSymbolHistory(
@@ -482,7 +482,9 @@ class MassiveAdapter:
         for row in rows:
             timestamp = _require_integral_number(row, "t")
             if timestamp in result:
-                raise MassiveResponseError(f"duplicate aggregate timestamp {timestamp} for {symbol}")
+                raise MassiveResponseError(
+                    f"duplicate aggregate timestamp {timestamp} for {symbol}"
+                )
             result[timestamp] = row
         return result
 
@@ -536,7 +538,8 @@ class MassiveAdapter:
                 )
         if len(matches) != 1:
             raise MassiveIdentityError(
-                f"expected one stable Massive identity for {symbol} on {as_of}; found {len(matches)}"
+                f"expected one stable Massive identity for {symbol} on {as_of}; "
+                f"found {len(matches)}"
             )
         return next(iter(matches.values()))
 
