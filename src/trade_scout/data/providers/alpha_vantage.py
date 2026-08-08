@@ -360,7 +360,9 @@ def _raise_for_api_message(payload: bytes) -> None:
     try:
         parsed = json.loads(payload)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AlphaVantageResponseError("Alpha Vantage returned invalid JSON instead of CSV") from exc
+        raise AlphaVantageResponseError(
+            "Alpha Vantage returned invalid JSON instead of CSV"
+        ) from exc
     if not isinstance(parsed, dict):
         raise AlphaVantageResponseError("Alpha Vantage returned unexpected JSON instead of CSV")
     for key in ("Error Message", "Information", "Note"):
@@ -417,27 +419,4 @@ def _parse_optional_date(value: str | None) -> date | None:
     if value is None:
         return None
     stripped = value.strip()
-    if not stripped or stripped.lower() in {"null", "none", "n/a"}:
-        return None
-    try:
-        return date.fromisoformat(stripped)
-    except ValueError as exc:
-        raise AlphaVantageResponseError(f"Invalid Alpha Vantage date: {stripped}") from exc
-
-
-def _parse_required_date(value: str | None, *, field: str) -> date:
-    parsed = _parse_optional_date(value)
-    if parsed is None:
-        raise AlphaVantageResponseError(f"Alpha Vantage response is missing required date {field}")
-    return parsed
-
-
-def _parse_required_float(value: str | None, *, field: str) -> float:
-    if value is None or not value.strip():
-        raise AlphaVantageResponseError(f"Alpha Vantage response is missing required numeric field {field}")
-    try:
-        return float(value)
-    except ValueError as exc:
-        raise AlphaVantageResponseError(
-            f"Invalid Alpha Vantage numeric value for {field}: {value}"
-        ) from exc
+    if not stripped or stripped.lower() in {"null", "none",
