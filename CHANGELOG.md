@@ -13,3 +13,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Provider-neutral adapter protocol, request models, capability declaration, and normalized staging records.
 - Initial deterministic daily-bar quality rules with explicit PASS/WARN/QUARANTINE/REJECT behavior.
 - Unit and contract tests for the first data-foundation slice.
+- Phase 1 provider-evaluation baseline, acceptance matrix, and sample-design gate.
