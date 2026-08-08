@@ -18,7 +18,7 @@ jobs:
         with:
           version: "0.11.28"
           python-version: "3.13"
-      - name: Format, persist, and validate instrument storage
+      - name: Store timezone-aware registry timestamps as ISO text
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -26,31 +26,37 @@ jobs:
           path = Path('src/trade_scout/data/instrument_storage.py')
           text = path.read_text()
           text = text.replace(
-              '        instrument_count=int(row[6]),\n'
-              '        symbol_history_count=int(row[7]),\n',
-              '        instrument_count=_required_int(row[6], "instrument_count"),\n'
-              '        symbol_history_count=_required_int(row[7], "symbol_history_count"),\n',
+              '                    manifest.created_at,\n',
+              '                    manifest.created_at.isoformat(),\n',
           )
-          if 'def _required_int(value: object, field: str) -> int:' not in text:
-              marker = '\ndef _required_date(value: object) -> date:\n'
-              helper = (
-                  '\ndef _required_int(value: object, field: str) -> int:\n'
-                  '    if not isinstance(value, int) or isinstance(value, bool):\n'
-                  '        raise InstrumentMasterIntegrityError(f"registered {field} is invalid")\n'
-                  '    return value\n'
-              )
-              text = text.replace(marker, helper + marker)
+          text = text.replace(
+              '                    datetime.now(manifest.created_at.tzinfo),\n',
+              '                    datetime.now(manifest.created_at.tzinfo).isoformat(),\n',
+          )
+          text = text.replace('created_at TIMESTAMPTZ NOT NULL,', 'created_at VARCHAR NOT NULL,')
+          text = text.replace('registered_at TIMESTAMPTZ NOT NULL', 'registered_at VARCHAR NOT NULL')
+          text = text.replace(
+              '    created_at = row[2]\n'
+              '    if not isinstance(created_at, datetime):\n'
+              '        raise InstrumentMasterIntegrityError("registered created_at is invalid")\n',
+              '    try:\n'
+              '        created_at = datetime.fromisoformat(str(row[2]))\n'
+              '    except ValueError as exc:\n'
+              '        raise InstrumentMasterIntegrityError("registered created_at is invalid") from exc\n'
+              '    if created_at.tzinfo is None or created_at.utcoffset() is None:\n'
+              '        raise InstrumentMasterIntegrityError("registered created_at is not timezone-aware")\n',
+          )
           path.write_text(text)
           PY
           uv sync --locked --dev
           uv run --frozen ruff format src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
           uv run --frozen ruff check --fix src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
+          uv run --frozen mypy src/trade_scout
+          uv run --frozen pytest
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
-            git commit -m "fix(data): type instrument-master registry values"
+            git commit -m "fix(data): store registry timestamps as ISO text"
             git push
           fi
-          uv run --frozen mypy src/trade_scout
-          uv run --frozen pytest
