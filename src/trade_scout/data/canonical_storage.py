@@ -132,13 +132,15 @@ class CanonicalDailyBarStore:
         if existing is not None:
             if not target_directory.exists():
                 raise CanonicalDatasetIntegrityError(
-                    f"registered dataset {request.dataset_version} is missing its canonical directory"
+                    f"registered dataset {request.dataset_version} is missing "
+                    "its canonical directory"
                 )
             self._verify_parquet_file(existing)
             if _same_promotion(existing, request, content_checksum):
                 return existing
             raise DatasetVersionConflictError(
-                f"dataset version {request.dataset_version} already exists with different content or provenance"
+                f"dataset version {request.dataset_version} already exists with different "
+                "content or provenance"
             )
         if target_directory.exists():
             raise DatasetVersionConflictError(
