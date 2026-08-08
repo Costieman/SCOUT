@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import date
 from enum import StrEnum
 from math import isclose
 
 from trade_scout.data.contracts import DailyBar, InstrumentId
+from trade_scout.data.provider import ProviderDailyBar
 
 
 class ReconciliationState(StrEnum):
@@ -59,8 +61,52 @@ class ReconciliationResult:
     decision_note: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class RawValidationBar:
+    """Canonical-identity view of a secondary provider's raw OHLCV evidence."""
+
+    instrument_id: InstrumentId
+    provider_id: str
+    provider_instrument_id: str
+    trade_date: date
+    open_raw: float
+    high_raw: float
+    low_raw: float
+    close_raw: float
+    volume_raw: float
+
+
 class InvalidReconciliationDecisionError(ValueError):
     """Raised when review attempts to assign an invalid reconciliation state."""
+
+
+class ValidationIdentityError(ValueError):
+    """Raised when a raw validation record is linked with an invalid canonical identity."""
+
+
+def raw_validation_bar(
+    provider_bar: ProviderDailyBar,
+    *,
+    instrument_id: InstrumentId,
+    expected_provider_instrument_id: str,
+) -> RawValidationBar:
+    """Link raw secondary evidence to canonical identity without normalizing adjustment fields."""
+
+    if provider_bar.provider_instrument_id != expected_provider_instrument_id:
+        raise ValidationIdentityError(
+            "provider bar identity does not match the explicitly linked provider instrument ID"
+        )
+    return RawValidationBar(
+        instrument_id=instrument_id,
+        provider_id=provider_bar.provider_id,
+        provider_instrument_id=provider_bar.provider_instrument_id,
+        trade_date=provider_bar.trade_date,
+        open_raw=provider_bar.open,
+        high_raw=provider_bar.high,
+        low_raw=provider_bar.low,
+        close_raw=provider_bar.close,
+        volume_raw=provider_bar.volume,
+    )
 
 
 def compare_daily_bars(
@@ -69,51 +115,45 @@ def compare_daily_bars(
     *,
     tolerance: ReconciliationTolerance,
 ) -> ReconciliationResult:
-    """Compare provider values and report disagreement; never average or replace either source."""
+    """Compare canonical provider values; never average or replace either source."""
 
     if secondary is None:
-        return ReconciliationResult(
-            instrument_id=primary.instrument_id,
-            trade_date=primary.trade_date.isoformat(),
-            primary_provider_id=primary.provider_id,
-            secondary_provider_id=None,
-            state=ReconciliationState.NOT_COMPARABLE,
-            differences=(),
-        )
-
-    if (
-        primary.instrument_id != secondary.instrument_id
-        or primary.trade_date != secondary.trade_date
-    ):
-        return ReconciliationResult(
-            instrument_id=primary.instrument_id,
-            trade_date=primary.trade_date.isoformat(),
-            primary_provider_id=primary.provider_id,
-            secondary_provider_id=secondary.provider_id,
-            state=ReconciliationState.NOT_COMPARABLE,
-            differences=(),
-            decision_note="instrument/date identity differs between comparison records",
-        )
-
-    differences = tuple(
-        difference
-        for difference in (
-            _price_difference("open_raw", primary.open_raw, secondary.open_raw, tolerance),
-            _price_difference("high_raw", primary.high_raw, secondary.high_raw, tolerance),
-            _price_difference("low_raw", primary.low_raw, secondary.low_raw, tolerance),
-            _price_difference("close_raw", primary.close_raw, secondary.close_raw, tolerance),
-            _volume_difference(primary.volume_raw, secondary.volume_raw, tolerance),
-        )
-        if difference is not None
-    )
-    state = ReconciliationState.AGREE if not differences else ReconciliationState.UNRESOLVED
-    return ReconciliationResult(
-        instrument_id=primary.instrument_id,
-        trade_date=primary.trade_date.isoformat(),
-        primary_provider_id=primary.provider_id,
+        return _missing_secondary(primary)
+    return _compare_raw_values(
+        primary,
+        secondary_instrument_id=secondary.instrument_id,
+        secondary_trade_date=secondary.trade_date,
         secondary_provider_id=secondary.provider_id,
-        state=state,
-        differences=differences,
+        secondary_open=secondary.open_raw,
+        secondary_high=secondary.high_raw,
+        secondary_low=secondary.low_raw,
+        secondary_close=secondary.close_raw,
+        secondary_volume=secondary.volume_raw,
+        tolerance=tolerance,
+    )
+
+
+def compare_primary_to_raw_validation(
+    primary: DailyBar,
+    secondary: RawValidationBar | None,
+    *,
+    tolerance: ReconciliationTolerance,
+) -> ReconciliationResult:
+    """Compare canonical primary raw OHLCV with explicitly linked secondary raw evidence."""
+
+    if secondary is None:
+        return _missing_secondary(primary)
+    return _compare_raw_values(
+        primary,
+        secondary_instrument_id=secondary.instrument_id,
+        secondary_trade_date=secondary.trade_date,
+        secondary_provider_id=secondary.provider_id,
+        secondary_open=secondary.open_raw,
+        secondary_high=secondary.high_raw,
+        secondary_low=secondary.low_raw,
+        secondary_close=secondary.close_raw,
+        secondary_volume=secondary.volume_raw,
+        tolerance=tolerance,
     )
 
 
@@ -137,6 +177,66 @@ def record_reconciliation_decision(
     if not decision_note.strip():
         raise ValueError("a reconciliation decision requires an audit note")
     return replace(result, state=state, decision_note=decision_note.strip())
+
+
+def _missing_secondary(primary: DailyBar) -> ReconciliationResult:
+    return ReconciliationResult(
+        instrument_id=primary.instrument_id,
+        trade_date=primary.trade_date.isoformat(),
+        primary_provider_id=primary.provider_id,
+        secondary_provider_id=None,
+        state=ReconciliationState.NOT_COMPARABLE,
+        differences=(),
+    )
+
+
+def _compare_raw_values(
+    primary: DailyBar,
+    *,
+    secondary_instrument_id: InstrumentId,
+    secondary_trade_date: date,
+    secondary_provider_id: str,
+    secondary_open: float,
+    secondary_high: float,
+    secondary_low: float,
+    secondary_close: float,
+    secondary_volume: float,
+    tolerance: ReconciliationTolerance,
+) -> ReconciliationResult:
+    if (
+        primary.instrument_id != secondary_instrument_id
+        or primary.trade_date != secondary_trade_date
+    ):
+        return ReconciliationResult(
+            instrument_id=primary.instrument_id,
+            trade_date=primary.trade_date.isoformat(),
+            primary_provider_id=primary.provider_id,
+            secondary_provider_id=secondary_provider_id,
+            state=ReconciliationState.NOT_COMPARABLE,
+            differences=(),
+            decision_note="instrument/date identity differs between comparison records",
+        )
+
+    differences = tuple(
+        difference
+        for difference in (
+            _price_difference("open_raw", primary.open_raw, secondary_open, tolerance),
+            _price_difference("high_raw", primary.high_raw, secondary_high, tolerance),
+            _price_difference("low_raw", primary.low_raw, secondary_low, tolerance),
+            _price_difference("close_raw", primary.close_raw, secondary_close, tolerance),
+            _volume_difference(primary.volume_raw, secondary_volume, tolerance),
+        )
+        if difference is not None
+    )
+    state = ReconciliationState.AGREE if not differences else ReconciliationState.UNRESOLVED
+    return ReconciliationResult(
+        instrument_id=primary.instrument_id,
+        trade_date=primary.trade_date.isoformat(),
+        primary_provider_id=primary.provider_id,
+        secondary_provider_id=secondary_provider_id,
+        state=state,
+        differences=differences,
+    )
 
 
 def _price_difference(
