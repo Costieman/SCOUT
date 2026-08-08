@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from itertools import pairwise
@@ -145,7 +145,8 @@ class InstrumentMasterStore:
             )
             if _registered_identity(existing) != expected:
                 raise InstrumentMasterConflictError(
-                    f"snapshot {request.snapshot_version} already exists with different content/provenance"
+                    f"snapshot {request.snapshot_version} already exists with different "
+                    "content/provenance"
                 )
             self._verify_manifest_files(existing)
             return existing
@@ -237,7 +238,9 @@ class InstrumentMasterStore:
         with duckdb.connect(str(self.metadata_path)) as connection:
             connection.execute(
                 """
-                INSERT INTO instrument_master_versions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO instrument_master_versions VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                )
                 """,
                 (
                     manifest.snapshot_version,
@@ -325,26 +328,34 @@ def _validate_snapshot(
     provider_identity_owner: dict[tuple[str, str], InstrumentId] = {}
     for instrument in instruments:
         if instrument.instrument_id in by_id:
-            raise InstrumentMasterIntegrityError(f"duplicate instrument_id {instrument.instrument_id}")
+            raise InstrumentMasterIntegrityError(
+                f"duplicate instrument_id {instrument.instrument_id}"
+            )
         by_id[instrument.instrument_id] = instrument
         primary_identity = instrument.provider_ids.get(primary_provider_id)
         if primary_identity is None or not primary_identity.strip():
             raise InstrumentMasterIntegrityError(
                 f"instrument {instrument.instrument_id} lacks primary-provider identity"
             )
-        if instrument.first_trade_date and instrument.delisting_date:
-            if instrument.delisting_date < instrument.first_trade_date:
-                raise InstrumentMasterIntegrityError(
-                    f"instrument {instrument.instrument_id} delists before first trade"
-                )
+        if (
+            instrument.first_trade_date
+            and instrument.delisting_date
+            and instrument.delisting_date < instrument.first_trade_date
+        ):
+            raise InstrumentMasterIntegrityError(
+                f"instrument {instrument.instrument_id} delists before first trade"
+            )
         for provider_id, provider_instrument_id in instrument.provider_ids.items():
             if not provider_id.strip() or not provider_instrument_id.strip():
-                raise InstrumentMasterIntegrityError("provider identity keys/values must be non-empty")
+                raise InstrumentMasterIntegrityError(
+                    "provider identity keys/values must be non-empty"
+                )
             key = (provider_id, provider_instrument_id)
             existing = provider_identity_owner.get(key)
             if existing is not None and existing != instrument.instrument_id:
                 raise InstrumentMasterIntegrityError(
-                    f"provider identity {provider_id}:{provider_instrument_id} maps to multiple instruments"
+                    f"provider identity {provider_id}:{provider_instrument_id} maps to "
+                    "multiple instruments"
                 )
             provider_identity_owner[key] = instrument.instrument_id
 
@@ -355,11 +366,15 @@ def _validate_snapshot(
                 f"symbol history references unknown instrument {record.instrument_id}"
             )
         if record.effective_to is not None and record.effective_to < record.effective_from:
-            raise InstrumentMasterIntegrityError("symbol-history effective_to precedes effective_from")
+            raise InstrumentMasterIntegrityError(
+                "symbol-history effective_to precedes effective_from"
+            )
         by_instrument.setdefault(record.instrument_id, []).append(record)
 
     for instrument_id, records in by_instrument.items():
-        ordered = sorted(records, key=lambda item: (item.effective_from, item.effective_to or date.max))
+        ordered = sorted(
+            records, key=lambda item: (item.effective_from, item.effective_to or date.max)
+        )
         for previous, current in pairwise(ordered):
             if previous == current:
                 raise InstrumentMasterIntegrityError(
@@ -443,8 +458,7 @@ def _read_instruments(path: Path) -> tuple[InstrumentRecord, ...]:
     for row in rows:
         provider_ids = json.loads(str(row[8]))
         if not isinstance(provider_ids, dict) or not all(
-            isinstance(key, str) and isinstance(value, str)
-            for key, value in provider_ids.items()
+            isinstance(key, str) and isinstance(value, str) for key, value in provider_ids.items()
         ):
             raise InstrumentMasterIntegrityError("provider_ids_json is invalid")
         result.append(
