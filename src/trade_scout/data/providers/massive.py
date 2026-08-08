@@ -226,6 +226,7 @@ class MassiveAdapter:
             timestamp_convention="daily aggregate session date from Massive millisecond timestamp",
             known_limitations=(
                 "ticker-events symbol history is documented by Massive as experimental",
+                "ticker-event exchange uses the first matching reference record within 7 days",
                 "instrument admission requires composite FIGI or share-class FIGI",
                 "first_trade_date is not supplied by All Tickers and remains unset in this adapter",
                 "corporate actions use point-in-time ticker reference lookup for identity",
@@ -304,7 +305,9 @@ class MassiveAdapter:
 
             ordered = sorted(set(dated))
             for index, (effective_date, symbol) in enumerate(ordered):
-                identity = self._resolve_symbol_identity(symbol, effective_date)
+                identity = self._resolve_symbol_history_identity(
+                    symbol, effective_date, provider_instrument_id
+                )
                 if identity.provider_instrument_id != provider_instrument_id:
                     raise MassiveIdentityError(
                         f"symbol-history event {symbol} on {effective_date} resolves to "
@@ -510,7 +513,38 @@ class MassiveAdapter:
             result[event_date] = result.get(event_date, 0.0) + float(amount)
         return result
 
+    def _resolve_symbol_history_identity(
+        self,
+        symbol: str,
+        effective_date: date,
+        expected_provider_instrument_id: str,
+    ) -> _ReferenceIdentity:
+        """Resolve ticker-event identity within a bounded reference-data window."""
+
+        for day_offset in range(8):
+            lookup_date = effective_date + timedelta(days=day_offset)
+            identity = self._try_resolve_symbol_identity(symbol, lookup_date)
+            if identity is None:
+                continue
+            if identity.provider_instrument_id != expected_provider_instrument_id:
+                raise MassiveIdentityError(
+                    f"symbol-history event {symbol} on {effective_date} resolves to "
+                    f"{identity.provider_instrument_id}, expected {expected_provider_instrument_id}"
+                )
+            return identity
+        raise MassiveIdentityError(
+            f"could not resolve {symbol} from ticker event {effective_date} within 7 days"
+        )
+
     def _resolve_symbol_identity(self, symbol: str, as_of: date) -> _ReferenceIdentity:
+        identity = self._try_resolve_symbol_identity(symbol, as_of)
+        if identity is None:
+            raise MassiveIdentityError(
+                f"expected one stable Massive identity for {symbol} on {as_of}; found 0"
+            )
+        return identity
+
+    def _try_resolve_symbol_identity(self, symbol: str, as_of: date) -> _ReferenceIdentity | None:
         matches: dict[str, _ReferenceIdentity] = {}
         for active in (True, False):
             response = self._client.get_json(
@@ -536,12 +570,12 @@ class MassiveAdapter:
                     symbol=symbol,
                     exchange=exchange,
                 )
-        if len(matches) != 1:
+        if len(matches) > 1:
             raise MassiveIdentityError(
                 f"expected one stable Massive identity for {symbol} on {as_of}; "
                 f"found {len(matches)}"
             )
-        return next(iter(matches.values()))
+        return next(iter(matches.values())) if matches else None
 
     def _iter_results(
         self,

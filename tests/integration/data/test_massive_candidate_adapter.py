@@ -240,6 +240,38 @@ def test_symbol_history_queries_by_stable_identifier_and_builds_dated_intervals(
     assert client.calls[0][0] == "/vX/reference/tickers/BBG000EXAMPL/events"
 
 
+def test_symbol_history_allows_bounded_reference_lag_without_changing_identity() -> None:
+    class DelayedReferenceClient(FakeMassiveClient):
+        def get_json(
+            self,
+            endpoint: str,
+            parameters: Mapping[str, Primitive] | None = None,
+        ) -> Mapping[str, object]:
+            params = dict(parameters or {})
+            if (
+                endpoint == "/v3/reference/tickers"
+                and params.get("ticker") == "OLD"
+                and params.get("date") in {"2010-01-04", "2010-01-05"}
+            ):
+                self.calls.append((endpoint, params))
+                return {"results": []}
+            return super().get_json(endpoint, parameters)
+
+    client = DelayedReferenceClient()
+    adapter = MassiveAdapter(client)
+
+    history = adapter.get_symbol_history(provider_instrument_ids=("BBG000EXAMPL",))
+
+    assert history[0].symbol == "OLD"
+    assert history[0].effective_from == date(2010, 1, 4)
+    assert any(
+        endpoint == "/v3/reference/tickers"
+        and params.get("ticker") == "OLD"
+        and params.get("date") == "2010-01-06"
+        for endpoint, params in client.calls
+    )
+
+
 def test_symbol_identity_ambiguity_fails_instead_of_using_ticker_as_identity() -> None:
     class AmbiguousClient(FakeMassiveClient):
         def get_json(
