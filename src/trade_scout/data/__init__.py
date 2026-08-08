@@ -93,6 +93,7 @@ from trade_scout.data.serving import (
     ResearchDatasetVersionError,
     serve_research_bars,
 )
+from trade_scout.data.storage_benchmark import StorageBenchmarkResult, benchmark_canonical_storage
 
 __all__ = [
     "CanonicalDailyBarStore",
@@ -149,9 +150,11 @@ __all__ = [
     "RevisedObservation",
     "RevisionConflictError",
     "SecretParameterError",
+    "StorageBenchmarkResult",
     "SymbolHistoryConflictError",
     "SymbolHistoryRecord",
     "UnexpectedObservation",
+    "benchmark_canonical_storage",
     "build_canonical_revision",
     "compare_daily_bars",
     "derive_instrument_id",
