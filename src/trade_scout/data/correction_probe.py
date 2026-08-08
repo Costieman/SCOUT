@@ -99,11 +99,7 @@ def compare_daily_bar_correction_snapshots(
         and baseline.record_count == current.record_count
     )
     return CorrectionComparison(
-        state=(
-            CorrectionComparisonState.IDENTICAL
-            if identical
-            else CorrectionComparisonState.REVISED
-        ),
+        state=CorrectionComparisonState.IDENTICAL if identical else CorrectionComparisonState.REVISED,
         baseline_sha256=baseline.logical_sha256,
         current_sha256=current.logical_sha256,
         detail=(
