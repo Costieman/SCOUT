@@ -4,7 +4,9 @@ Trade Scout is a modular quantitative research and market-screening platform. It
 
 ## Current milestone
 
-This repository is at **Phase 0B — Repository Bootstrap**. The baseline intentionally contains no market-data integration, feature calculations, pattern detection, backtesting, scanner logic, ranking logic, dashboard logic, or alerts. The next substantive milestone is the historical data foundation.
+The repository has completed **Phase 0B — Repository Bootstrap** and is now in **Phase 1 — Data Foundation**. The active implementation is limited to provider isolation, canonical market-data contracts, immutable/provenance-aware ingestion, data quality, storage, and point-in-time universe construction.
+
+No feature calculations, pattern detection, backtesting, scanner logic, ranking logic, dashboard logic, or alerts belong in this milestone.
 
 ## Toolchain
 
@@ -30,10 +32,12 @@ uv run pytest
 - `src/trade_scout/` — package and domain boundaries
 - `configs/` — future defaults, schemas, strategies, and examples
 - `docs/` — master design, specifications, ADRs, research, and operations
-- `tests/` — unit, integration, synthetic, regression, contract, leakage, and performance scaffolding
+- `tests/` — unit, integration, synthetic, regression, contract, leakage, and performance tests
 - `experiments/` — future schemas/manifests; generated artifacts are excluded from Git
 - `scripts/` — narrow operational entry points only
 - `notebooks/` — exploratory work only; reusable logic belongs in the package
+
+The active data-module contract and implementation notes are documented in [`src/trade_scout/data/README.md`](src/trade_scout/data/README.md).
 
 ## Documentation authority
 
@@ -49,4 +53,4 @@ See [`docs/README.md`](docs/README.md) for the complete documentation index and 
 
 ## Scope-control rule
 
-A useful idea that is not required by the active milestone belongs in the backlog. Phase 0B is complete when the package installs, imports, and passes automated quality gates with a clean repository structure.
+A useful idea that is not required by the active milestone belongs in the backlog. Phase 1 is complete only when the historical data foundation satisfies its accepted reproducibility, point-in-time, quality, storage, and serving criteria.
