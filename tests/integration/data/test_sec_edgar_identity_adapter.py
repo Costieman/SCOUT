@@ -36,10 +36,12 @@ def _ticker_payload() -> bytes:
     ).encode()
 
 
-def test_current_ticker_associations_map_to_provider_records_without_claiming_identity() -> None:
+def test_current_ticker_associations_map_without_claiming_identity() -> None:
     url = "https://www.sec.gov/files/company_tickers_exchange.json"
     transport = FakeTransport({url: _ticker_payload()})
-    adapter = SecEdgarAdapter(SecEdgarClient("Trade Scout research@example.com", transport=transport))
+    adapter = SecEdgarAdapter(
+        SecEdgarClient("Trade Scout research@example.com", transport=transport)
+    )
 
     instruments = adapter.get_instruments()
 
@@ -51,7 +53,12 @@ def test_current_ticker_associations_map_to_provider_records_without_claiming_id
 
 
 def test_capability_declaration_is_reference_only() -> None:
-    adapter = SecEdgarAdapter(SecEdgarClient("Trade Scout research@example.com", transport=FakeTransport({})))
+    adapter = SecEdgarAdapter(
+        SecEdgarClient(
+            "Trade Scout research@example.com",
+            transport=FakeTransport({}),
+        )
+    )
 
     capabilities = adapter.describe_capabilities()
 
@@ -62,8 +69,13 @@ def test_capability_declaration_is_reference_only() -> None:
     assert any("CIK identifies" in item for item in capabilities.known_limitations)
 
 
-def test_historical_as_of_request_fails_instead_of_back-projecting_current_associations() -> None:
-    adapter = SecEdgarAdapter(SecEdgarClient("Trade Scout research@example.com", transport=FakeTransport({})))
+def test_historical_as_of_request_fails_instead_of_back_projection() -> None:
+    adapter = SecEdgarAdapter(
+        SecEdgarClient(
+            "Trade Scout research@example.com",
+            transport=FakeTransport({}),
+        )
+    )
 
     with pytest.raises(SecEdgarCapabilityError, match="historical point-in-time"):
         adapter.get_instruments(as_of=date(2020, 1, 2))
@@ -84,7 +96,9 @@ def test_submissions_endpoint_uses_zero_padded_cik_and_returns_metadata() -> Non
             ).encode()
         }
     )
-    adapter = SecEdgarAdapter(SecEdgarClient("Trade Scout research@example.com", transport=transport))
+    adapter = SecEdgarAdapter(
+        SecEdgarClient("Trade Scout research@example.com", transport=transport)
+    )
 
     metadata = adapter.get_issuer_metadata(320193)
 
@@ -95,7 +109,9 @@ def test_submissions_endpoint_uses_zero_padded_cik_and_returns_metadata() -> Non
 
 def test_malformed_ticker_payload_fails_visibly() -> None:
     url = "https://www.sec.gov/files/company_tickers_exchange.json"
-    malformed = json.dumps({"fields": ["cik", "ticker"], "data": [[320193, "AAPL"]]}).encode()
+    malformed = json.dumps(
+        {"fields": ["cik", "ticker"], "data": [[320193, "AAPL"]]}
+    ).encode()
     adapter = SecEdgarAdapter(
         SecEdgarClient(
             "Trade Scout research@example.com",
