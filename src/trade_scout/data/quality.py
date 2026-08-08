@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 from math import isfinite
-from typing import Iterable
 
 from trade_scout.data.contracts import DailyBar, QualityStatus
 
