@@ -15,7 +15,7 @@ from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from trade_scout.data.contracts import PriceRepresentation, SecurityType
+from trade_scout.data.contracts import SecurityType
 from trade_scout.data.provider import (
     CorporateActionRequest,
     DailyBarRequest,
@@ -173,13 +173,18 @@ class SecEdgarAdapter:
             earliest_daily_bar_date=None,
             supports_delisted=False,
             supports_symbol_history=False,
-            timestamp_convention="Current SEC issuer/ticker association snapshot; no market timestamps",
+            timestamp_convention=(
+                "Current SEC issuer/ticker association snapshot; no market timestamps"
+            ),
             known_limitations=(
                 "CIK identifies an SEC filer/entity, not a permanent listed security.",
                 "The current ticker/exchange association file is not a point-in-time universe history.",
-                "SEC explicitly does not guarantee complete accuracy or scope of ticker associations.",
+                "SEC does not guarantee complete accuracy or scope of ticker associations.",
                 "EDGAR supplies filings/reference data, not daily OHLCV.",
-                "Former company names in submissions metadata are issuer history, not security-symbol history.",
+                (
+                    "Former company names in submissions metadata are issuer history, "
+                    "not security-symbol history."
+                ),
             ),
         )
 
@@ -203,9 +208,13 @@ class SecEdgarAdapter:
     def get_instruments(self, *, as_of: date | None = None) -> Sequence[ProviderInstrument]:
         if as_of is not None:
             raise SecEdgarCapabilityError(
-                "SEC current ticker associations cannot be treated as a historical point-in-time snapshot"
+                "SEC current ticker associations cannot be treated as a historical "
+                "point-in-time snapshot"
             )
-        return tuple(self._to_provider_instrument(item) for item in self._client.get_ticker_associations())
+        return tuple(
+            self._to_provider_instrument(item)
+            for item in self._client.get_ticker_associations()
+        )
 
     def get_symbol_history(
         self,
@@ -231,7 +240,7 @@ class SecEdgarAdapter:
         )
 
     def get_issuer_metadata(self, cik: int) -> Mapping[str, Any]:
-        """Return raw-normalized issuer submissions metadata for identity reconciliation work."""
+        """Return issuer submissions metadata for identity reconciliation work."""
 
         return self._client.get_submissions(cik)
 
@@ -251,7 +260,8 @@ class SecEdgarAdapter:
             source_fields={
                 "cik": item.cik,
                 "identity_warning": (
-                    "CIK is issuer-level; ticker association is current and not canonical security identity"
+                    "CIK is issuer-level; ticker association is current and not canonical "
+                    "security identity"
                 ),
             },
         )
