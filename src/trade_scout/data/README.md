@@ -22,6 +22,7 @@ The data foundation now establishes:
 - rejection of credential-like request parameters before a raw manifest can be written;
 - timezone-aware retrieval provenance and provider revision metadata;
 - canonical raw and split-adjusted daily-bar representation;
+- provider-reported volume preserved as a numeric value without integer coercion;
 - explicit `PASS`, `WARN`, `QUARANTINE`, and `REJECT` quality states;
 - a vendor-neutral `ProviderAdapter` protocol and capability declaration;
 - provider-neutral staging records for instruments, symbols, bars, and corporate actions;
@@ -39,7 +40,8 @@ The data foundation now establishes:
 - cross-sectional active-instrument count checks against explicit historical count ranges;
 - unexplained raw price-jump screening against supplied corporate-action history;
 - explicit thresholds and severities for contextual checks rather than hidden quality defaults;
-- a stable `ResearchBar` serving contract that never silently changes price representation.
+- a stable `ResearchBar` serving contract that never silently changes price representation;
+- a reusable real-provider evaluation workflow that consumes a repository secret without exposing it in reports.
 
 ## Identity rule
 
@@ -69,6 +71,12 @@ Corporate-action consistency screening compares successive raw closes and flags 
 
 Thresholds and issue severity are explicit policy inputs. This keeps data-quality sensitivity auditable and prevents a convenient default inside a validator from silently changing which batches are considered usable.
 
+## Volume rule
+
+Provider-reported volume is preserved as a floating-point numeric value through staging, canonical storage, research serving, and cross-provider reconciliation. Trade Scout does not round a fractional provider volume to satisfy an integer schema. Exact raw response bytes remain the audit source for the vendor representation.
+
+This policy was tightened after the first real Massive execution returned a non-integral aggregate volume. The correction was made at the data contract rather than by coercing the observation.
+
 ## Reconciliation rule
 
 Secondary-provider values are validation evidence, not replacement truth. Trade Scout compares matching instrument/date records using explicit price and volume tolerances. Material differences remain `UNRESOLVED` until a reviewed decision is recorded. The reconciliation layer does not average feeds, silently replace the canonical primary value, or compare records whose identity/date does not match.
@@ -77,14 +85,17 @@ Secondary-provider values are validation evidence, not replacement truth. Trade 
 
 The Phase 1 public-documentation screen is recorded in [`docs/research/data-provider-evaluation-v0.1.md`](../../../docs/research/data-provider-evaluation-v0.1.md). Massive is the first primary-provider evaluation candidate, Tiingo is the first secondary-validation candidate, and EODHD is retained as a fallback/tertiary candidate.
 
-This ordering is not provider acceptance. The primary source must still pass a small reproducible historical evaluation covering inactive/delisted securities, identifiers/symbol history, corporate actions, raw/adjusted semantics, corrections, licensing, and deterministic ingestion.
+The first live Massive execution is recorded in [`docs/research/massive-live-evaluation-2026-08-08.md`](../../../docs/research/massive-live-evaluation-2026-08-08.md). The current-data MSFT sample passes the provider-neutral retrieval, repeatability, identity, normalization, and initial quality checks. The required 2020/2022 historical samples return HTTP 403 under the current entitlement, so Massive is **not** accepted as the canonical provider.
+
+Provider acceptance still requires sufficient historical entitlement, licensing/storage confirmation, historical split/dividend/delisted/symbol-change/IPO cases, correction-revision characterization, independent secondary reconciliation, and a representative storage benchmark.
 
 ## Next implementation slices
 
-1. Build and run the small provider-evaluation harness/dataset once provider credentials are available.
-2. Implement deterministic historical backfill orchestration and incremental correction-lookback updates.
-3. Add provider-wide distribution-shift and broader corporate-action consistency diagnostics only where the required reference inputs are defined.
-4. Benchmark Parquet/DuckDB on a representative multi-year US-equity sample.
-5. Prove a downstream test module can consume the full research data contract without provider-native imports.
+1. Re-run the agreed Massive historical sample only after sufficient historical entitlement is available.
+2. Confirm the intended Massive licensing/storage model before persistent vendor data are retained as research assets.
+3. Characterize corrections by comparing immutable raw checksums across separated retrieval times.
+4. Resolve first-trade/IPO boundary evidence for the point-in-time instrument master.
+5. Run the secondary-provider reconciliation sample.
+6. Benchmark Parquet/DuckDB on a representative multi-year US-equity dataset.
 
 No downstream feature or pattern work should begin until the complete data-foundation acceptance criteria pass.
