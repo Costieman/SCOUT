@@ -574,8 +574,8 @@ def _manifest_from_row(row: tuple[object, ...]) -> InstrumentMasterManifest:
         source_batch_ids=tuple(source_ids),
         identity_definition_version=str(row[4]),
         symbol_history_definition_version=str(row[5]),
-        instrument_count=int(row[6]),
-        symbol_history_count=int(row[7]),
+        instrument_count=_required_int(row[6], "instrument_count"),
+        symbol_history_count=_required_int(row[7], "symbol_history_count"),
         instrument_logical_sha256=str(row[8]),
         symbol_history_logical_sha256=str(row[9]),
         instrument_parquet_sha256=str(row[10]),
@@ -600,6 +600,12 @@ def _file_sha256(path: Path) -> str:
 
 def _sql_literal(path: Path) -> str:
     return "'" + str(path).replace("'", "''") + "'"
+
+
+def _required_int(value: object, field: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise InstrumentMasterIntegrityError(f"registered {field} is invalid")
+    return value
 
 
 def _required_date(value: object) -> date:
