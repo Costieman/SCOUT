@@ -1,8 +1,8 @@
 """Trade Scout canonical data contracts, provider boundary, identity, and quality controls.
 
-The data layer owns provider isolation, canonical meaning, provenance, identity, and validation. It
-does not calculate research features, detect patterns, or repair suspicious upstream observations
-silently.
+The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
+and validation. It does not calculate research features, detect patterns, or repair suspicious
+upstream observations silently.
 """
 
 from trade_scout.data.contracts import (
@@ -31,6 +31,14 @@ from trade_scout.data.instrument_master import (
 )
 from trade_scout.data.provider import ProviderAdapter
 from trade_scout.data.quality import QualityIssue, QualityReport, QualityRule, validate_daily_bars
+from trade_scout.data.raw_store import (
+    RawBatchConflictError,
+    RawBatchIntegrityError,
+    RawBatchManifest,
+    RawBatchRecord,
+    RawBatchStore,
+    SecretParameterError,
+)
 
 __all__ = [
     "CorporateActionRecord",
@@ -47,7 +55,13 @@ __all__ = [
     "QualityReport",
     "QualityRule",
     "QualityStatus",
+    "RawBatchConflictError",
+    "RawBatchIntegrityError",
+    "RawBatchManifest",
+    "RawBatchRecord",
+    "RawBatchStore",
     "ResearchBar",
+    "SecretParameterError",
     "SymbolHistoryConflictError",
     "SymbolHistoryRecord",
     "derive_instrument_id",
