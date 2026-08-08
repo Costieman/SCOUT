@@ -18,3 +18,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Immutable raw-batch persistence with SHA-256 integrity, provenance manifests, secret-parameter rejection, and idempotency checks.
 - Point-in-time universe eligibility with explicit temporal, delisting, security-type, quality, price, liquidity, and trading-history gates.
 - Cross-provider daily-bar reconciliation with explicit tolerances, audit states, and no feed blending.
+- Versioned canonical daily-bar Parquet storage with DuckDB dataset metadata, provenance, quality summaries, integrity checks, and immutable promotion behavior.
