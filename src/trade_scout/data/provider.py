@@ -123,6 +123,7 @@ class ProviderDailyBar:
     low: float
     close: float
     volume: float
+    # Cumulative split-only price multiplier, not the event-date split ratio.
     split_factor: float | None = None
     dividend_cash: float | None = None
     adjusted_open: float | None = None

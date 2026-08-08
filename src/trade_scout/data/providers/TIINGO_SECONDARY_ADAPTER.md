@@ -34,7 +34,7 @@ The current adapter deliberately does not automate the search/beta symbology ste
 
 Only raw Tiingo OHLCV is exposed through the Trade Scout daily-bar contract. Tiingo's `adj*` fields are **not** copied into Trade Scout's split-adjusted fields because Tiingo documents them as including dividend adjustments. Relabeling those values as split-adjusted executable prices would violate the Data Foundation adjustment policy.
 
-The EOD `splitFactor` and `divCash` fields are preserved as provider evidence. Non-unit `splitFactor` and non-zero `divCash` observations also create provider-neutral validation corporate-action records. The current EOD factor cannot distinguish every detailed split/stock-distribution subtype, which remains an explicit limitation rather than being guessed.
+The EOD `splitFactor` and `divCash` fields are preserved as provider evidence. Non-unit `splitFactor` and non-zero `divCash` observations also create provider-neutral validation corporate-action records. The Tiingo event-date `splitFactor` is deliberately **not** copied into Trade Scout `ProviderDailyBar.split_factor`, because the Trade Scout field is the cumulative split-only price multiplier for that observation. The current EOD factor cannot distinguish every detailed split/stock-distribution subtype, which remains an explicit limitation rather than being guessed.
 
 ## Deliberate non-capabilities
 

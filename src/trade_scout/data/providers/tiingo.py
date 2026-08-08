@@ -258,6 +258,7 @@ class TiingoAdapter:
                 "historical symbol continuity is not implemented",
                 "delisted support is limited by Tiingo symbology and recycled-ticker coverage",
                 "Tiingo adjOHLC includes dividend adjustments and is not exposed as split-adjusted",
+                "EOD splitFactor is event evidence, not a cumulative split-price multiplier",
                 "EOD splitFactor cannot distinguish all detailed corporate-action subtypes",
             ),
         )
@@ -316,7 +317,7 @@ class TiingoAdapter:
                         low=_require_number(row, "low"),
                         close=_require_number(row, "close"),
                         volume=_require_number(row, "volume"),
-                        split_factor=_require_number(row, "splitFactor"),
+                        split_factor=None,
                         dividend_cash=_require_number(row, "divCash"),
                         adjusted_open=None,
                         adjusted_high=None,
