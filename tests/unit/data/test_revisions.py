@@ -43,9 +43,7 @@ def test_incremental_revision_appends_new_session_without_mutating_parent() -> N
         _bar("tsi-1", date(2026, 8, 6)),
         _bar("tsi-1", date(2026, 8, 7)),
     )
-    incoming = (
-        _bar("tsi-1", date(2026, 8, 8), close=101.0, dataset_version=V2),
-    )
+    incoming = (_bar("tsi-1", date(2026, 8, 8), close=101.0, dataset_version=V2),)
 
     result = build_canonical_revision(
         base,
@@ -71,9 +69,7 @@ def test_correction_inside_lookback_replaces_exact_key() -> None:
         _bar("tsi-1", date(2026, 8, 6), close=100.0),
         _bar("tsi-1", date(2026, 8, 7), close=101.0),
     )
-    incoming = (
-        _bar("tsi-1", date(2026, 8, 7), close=101.5, dataset_version=V2),
-    )
+    incoming = (_bar("tsi-1", date(2026, 8, 7), close=101.5, dataset_version=V2),)
 
     result = build_canonical_revision(
         base,
@@ -93,9 +89,7 @@ def test_correction_inside_lookback_replaces_exact_key() -> None:
 
 def test_identical_lookback_observation_does_not_require_new_version() -> None:
     base = (_bar("tsi-1", date(2026, 8, 7), close=101.0),)
-    incoming = (
-        _bar("tsi-1", date(2026, 8, 7), close=101.0, dataset_version=V2),
-    )
+    incoming = (_bar("tsi-1", date(2026, 8, 7), close=101.0, dataset_version=V2),)
 
     result = build_canonical_revision(
         base,
@@ -111,9 +105,7 @@ def test_identical_lookback_observation_does_not_require_new_version() -> None:
 
 def test_correction_before_explicit_lookback_window_fails() -> None:
     base = (_bar("tsi-1", date(2026, 8, 1), close=100.0),)
-    incoming = (
-        _bar("tsi-1", date(2026, 8, 1), close=99.0, dataset_version=V2),
-    )
+    incoming = (_bar("tsi-1", date(2026, 8, 1), close=99.0, dataset_version=V2),)
 
     with pytest.raises(RevisionConflictError, match="precedes correction window"):
         build_canonical_revision(
@@ -129,9 +121,7 @@ def test_incremental_input_never_deletes_absent_parent_history() -> None:
         _bar("tsi-1", date(2026, 8, 6)),
         _bar("tsi-2", date(2026, 8, 6)),
     )
-    incoming = (
-        _bar("tsi-1", date(2026, 8, 7), dataset_version=V2),
-    )
+    incoming = (_bar("tsi-1", date(2026, 8, 7), dataset_version=V2),)
 
     result = build_canonical_revision(
         base,
@@ -149,9 +139,7 @@ def test_incoming_provider_and_target_version_must_match_parent_policy() -> None
 
     with pytest.raises(RevisionConflictError, match="differs from canonical provider"):
         build_canonical_revision(
-            (
-                _bar("tsi-1", date(2026, 8, 6)),
-            ),
+            (_bar("tsi-1", date(2026, 8, 6)),),
             (
                 _bar(
                     "tsi-1",

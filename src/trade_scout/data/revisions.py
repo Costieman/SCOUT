@@ -10,7 +10,7 @@ from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId
 
 
 class RevisionConflictError(ValueError):
-    """Raised when an incremental revision request is ambiguous or violates the correction window."""
+    """Raised when an incremental revision request is ambiguous or outside policy."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +47,7 @@ def build_canonical_revision(
     target_dataset_version: DatasetVersion,
     correction_window_start: date,
 ) -> CanonicalRevisionResult:
-    """Append new observations and replace only explicit incoming keys inside the correction window."""
+    """Append new observations and replace explicit keys inside the correction window."""
 
     base = tuple(base_bars)
     incoming = tuple(incoming_bars)
@@ -56,7 +56,9 @@ def build_canonical_revision(
 
     parent_version = _single_dataset_version(base, label="base")
     if target_dataset_version == parent_version:
-        raise RevisionConflictError("target dataset version must differ from parent dataset version")
+        raise RevisionConflictError(
+            "target dataset version must differ from parent dataset version"
+        )
 
     canonical_provider = _single_provider(base, label="base")
     _validate_unique_keys(base, label="base")
@@ -66,7 +68,8 @@ def build_canonical_revision(
         incoming_version = _single_dataset_version(incoming, label="incoming")
         if incoming_version != target_dataset_version:
             raise RevisionConflictError(
-                f"incoming bars use {incoming_version}; expected target version {target_dataset_version}"
+                f"incoming bars use {incoming_version}; expected target version "
+                f"{target_dataset_version}"
             )
         incoming_provider = _single_provider(incoming, label="incoming")
         if incoming_provider != canonical_provider:
@@ -103,7 +106,8 @@ def build_canonical_revision(
             revised.append(observation)
 
     result_by_key = {
-        key: replace(bar, dataset_version=target_dataset_version) for key, bar in base_by_key.items()
+        key: replace(bar, dataset_version=target_dataset_version)
+        for key, bar in base_by_key.items()
     }
     result_by_key.update(incoming_by_key)
 
