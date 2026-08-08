@@ -2,14 +2,10 @@ name: Massive Live Evaluation
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/massive-live-evaluation.yml"
-      - "scripts/run_massive_live_evaluation.py"
-      - "src/trade_scout/data/provider_evaluation.py"
-      - "src/trade_scout/data/providers/massive.py"
-      - "src/trade_scout/data/providers/massive_evaluation.py"
+
+concurrency:
+  group: massive-live-evaluation
+  cancel-in-progress: false
 
 permissions:
   contents: read
