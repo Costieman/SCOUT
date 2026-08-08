@@ -83,7 +83,7 @@ class UrllibBytesTransport:
         request = Request(url, headers={"Accept": "application/json"})
         try:
             with urlopen(request, timeout=timeout) as response:
-                return response.read()
+                return bytes(response.read())
         except HTTPError as exc:
             raise MassiveApiError(f"Massive HTTP error {exc.code}") from exc
         except URLError as exc:
