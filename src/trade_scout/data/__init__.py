@@ -1,8 +1,8 @@
 """Trade Scout canonical data contracts, provider boundary, identity, and quality controls.
 
 The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
-normalization, validation, reconciliation, immutable canonical storage, and contextual quality checks.
-It does not calculate research features, detect patterns, or repair suspicious upstream observations.
+normalization, validation, reconciliation, canonical storage, and contextual quality checks. It does
+not calculate research features, detect patterns, or repair suspicious upstream observations.
 """
 
 from trade_scout.data.canonical_storage import (
