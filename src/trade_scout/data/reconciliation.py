@@ -81,7 +81,10 @@ def compare_daily_bars(
             differences=(),
         )
 
-    if primary.instrument_id != secondary.instrument_id or primary.trade_date != secondary.trade_date:
+    if (
+        primary.instrument_id != secondary.instrument_id
+        or primary.trade_date != secondary.trade_date
+    ):
         return ReconciliationResult(
             instrument_id=primary.instrument_id,
             trade_date=primary.trade_date.isoformat(),
