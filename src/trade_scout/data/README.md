@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The data module owns provider isolation, canonical market-data contracts, permanent instrument identity, immutable raw preservation, provenance, validation, cross-provider reconciliation, immutable canonical storage, and the serving boundary consumed by later research modules.
+The data module owns provider isolation, canonical market-data contracts, permanent instrument identity, immutable raw preservation, provenance, validation, cross-provider reconciliation, immutable canonical storage, contextual quality checks, and the serving boundary consumed by later research modules.
 
 ## Explicit non-responsibilities
 
@@ -35,6 +35,10 @@ The data foundation now establishes:
 - logical-content and physical-Parquet SHA-256 integrity checks;
 - idempotent re-promotion only when both content and provenance are identical;
 - explicit rejection of dataset-version reuse, primary-provider mismatch, and quarantined/rejected records;
+- completeness checks against caller-supplied point-in-time instrument/session expectations;
+- cross-sectional active-instrument count checks against explicit historical count ranges;
+- unexplained raw price-jump screening against supplied corporate-action history;
+- explicit thresholds and severities for contextual checks rather than hidden quality defaults;
 - a stable `ResearchBar` serving contract that never silently changes price representation.
 
 ## Identity rule
@@ -57,6 +61,14 @@ A dataset version cannot be silently rewritten. Repeating the exact same promoti
 
 DuckDB is deliberately the only new storage dependency for this slice because it can both write/read Parquet and maintain the local metadata registry. This preserves the accepted Parquet/DuckDB architecture without introducing a broader dataframe or database stack.
 
+## Contextual quality rule
+
+Coverage and cross-sectional checks do not infer today's universe backward. The caller supplies the historical instrument/session expectations or active-count ranges to be tested. Missing expected observations remain missing and are reported explicitly; the quality layer does not manufacture bars or shorten history windows.
+
+Corporate-action consistency screening compares successive raw closes and flags large moves only when the configured threshold is crossed and no supplied action exists between the two observations. The check is deliberately diagnostic: it does not claim that a recorded action mathematically explains the move, and it never adjusts prices or rewrites source data.
+
+Thresholds and issue severity are explicit policy inputs. This keeps data-quality sensitivity auditable and prevents a convenient default inside a validator from silently changing which batches are considered usable.
+
 ## Reconciliation rule
 
 Secondary-provider values are validation evidence, not replacement truth. Trade Scout compares matching instrument/date records using explicit price and volume tolerances. Material differences remain `UNRESOLVED` until a reviewed decision is recorded. The reconciliation layer does not average feeds, silently replace the canonical primary value, or compare records whose identity/date does not match.
@@ -70,8 +82,8 @@ This ordering is not provider acceptance. The primary source must still pass a s
 ## Next implementation slices
 
 1. Build and run the small provider-evaluation harness/dataset once provider credentials are available.
-2. Add completeness, cross-sectional, and corporate-action quality checks.
-3. Implement deterministic historical backfill orchestration and incremental correction-lookback updates.
+2. Implement deterministic historical backfill orchestration and incremental correction-lookback updates.
+3. Add provider-wide distribution-shift and broader corporate-action consistency diagnostics only where the required reference inputs are defined.
 4. Benchmark Parquet/DuckDB on a representative multi-year US-equity sample.
 5. Prove a downstream test module can consume the full research data contract without provider-native imports.
 
