@@ -18,6 +18,17 @@ jobs:
           python-version: "3.13"
       - name: Format provider evaluation slice
         run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/trade_scout/data/provider_evaluation.py')
+          text = path.read_text()
+          text = text.replace(
+              '            "run the sample on real historical active, inactive, corporate-action, and symbol-change cases",\n',
+              '            "run the agreed real historical sample across active, inactive, corporate-action, "\n            "and symbol-change cases",\n',
+          )
+          path.write_text(text)
+          PY
           uv sync --locked --dev
           uv run --frozen ruff format src/trade_scout/data/provider_evaluation.py tests/integration/data/test_provider_evaluation.py
           uv run --frozen ruff check --fix src/trade_scout/data/provider_evaluation.py tests/integration/data/test_provider_evaluation.py
