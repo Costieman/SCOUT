@@ -1,5 +1,12 @@
 """Concrete market-data provider adapters isolated behind Trade Scout contracts."""
 
+from trade_scout.data.providers.alpha_vantage import (
+    AlphaVantageAdapter,
+    AlphaVantageApiError,
+    AlphaVantageCapabilityError,
+    AlphaVantageHttpClient,
+    AlphaVantageResponseError,
+)
 from trade_scout.data.providers.massive import (
     MassiveAdapter,
     MassiveApiError,
@@ -19,6 +26,11 @@ from trade_scout.data.providers.tiingo import (
 )
 
 __all__ = [
+    "AlphaVantageAdapter",
+    "AlphaVantageApiError",
+    "AlphaVantageCapabilityError",
+    "AlphaVantageHttpClient",
+    "AlphaVantageResponseError",
     "MassiveAdapter",
     "MassiveApiError",
     "MassiveHttpClient",
