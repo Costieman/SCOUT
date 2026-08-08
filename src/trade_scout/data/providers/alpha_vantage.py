@@ -216,13 +216,14 @@ class AlphaVantageAdapter:
             timestamp_convention="US equity trading-session date from Alpha Vantage CSV output",
             known_limitations=(
                 "LISTING_STATUS history begins after 2010-01-01.",
-                "LISTING_STATUS provides symbols rather than a documented permanent security identifier; "
-                "ticker must not become the canonical Trade Scout identity.",
-                "TIME_SERIES_DAILY compact output is limited to the latest approximately 100 observations; "
-                "full output is plan-dependent and must be enabled explicitly after entitlement is verified.",
+                "LISTING_STATUS provides symbols rather than a documented permanent security "
+                "identifier; ticker must not become the canonical Trade Scout identity.",
+                "TIME_SERIES_DAILY compact output is limited to the latest approximately 100 "
+                "observations; full output is plan-dependent and must be enabled explicitly after "
+                "entitlement is verified.",
                 "This evaluation adapter does not claim complete symbol-history reconstruction.",
-                "Corporate-action retrieval is not accepted through this adapter yet; adjustment and "
-                "event coverage require a separate validation gate.",
+                "Corporate-action retrieval is not accepted through this adapter yet; adjustment "
+                "and event coverage require a separate validation gate.",
             ),
         )
 
@@ -258,7 +259,8 @@ class AlphaVantageAdapter:
     ) -> Sequence[ProviderSymbolHistory]:
         del provider_instrument_ids
         raise AlphaVantageCapabilityError(
-            "Alpha Vantage LISTING_STATUS does not by itself provide accepted permanent symbol history"
+            "Alpha Vantage LISTING_STATUS does not by itself provide accepted permanent "
+            "symbol history"
         )
 
     def get_daily_bars(self, request: DailyBarRequest) -> Sequence[ProviderDailyBar]:
@@ -270,8 +272,8 @@ class AlphaVantageAdapter:
             raise ValueError("Alpha Vantage daily-bar requests require explicit provider symbols")
         if not self._allow_full_history and request.start < request.end - timedelta(days=180):
             raise AlphaVantageCapabilityError(
-                "Requested range exceeds the compact-output evaluation window; verify paid full-output "
-                "entitlement before enabling long-history retrieval"
+                "Requested range exceeds the compact-output evaluation window; verify paid "
+                "full-output entitlement before enabling long-history retrieval"
             )
 
         outputsize = "full" if self._allow_full_history else "compact"
@@ -300,7 +302,8 @@ class AlphaVantageAdapter:
     ) -> Sequence[ProviderCorporateAction]:
         del request
         raise AlphaVantageCapabilityError(
-            "Corporate-action coverage must pass a separate Alpha Vantage validation gate before use"
+            "Corporate-action coverage must pass a separate Alpha Vantage validation gate "
+            "before use"
         )
 
     def _listing_rows(self, *, as_of: date | None, state: str) -> tuple[_ListingRow, ...]:
@@ -335,7 +338,9 @@ class AlphaVantageAdapter:
             source_fields={
                 "asset_type": row.asset_type,
                 "status": row.status,
-                "identity_warning": "symbol-derived provider ID is not permanent canonical identity",
+                "identity_warning": (
+                    "symbol-derived provider ID is not permanent canonical identity"
+                ),
             },
         )
 
