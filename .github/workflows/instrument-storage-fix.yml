@@ -1,0 +1,34 @@
+name: Instrument Storage Fix
+
+on:
+  push:
+    branches: [phase-1/instrument-master-storage]
+    paths:
+      - ".github/workflows/instrument-storage-fix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Format, persist, and validate instrument storage
+        run: |
+          uv sync --locked --dev
+          uv run --frozen ruff format src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
+          uv run --frozen ruff check --fix src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
+            git commit -m "style: format instrument-master storage"
+            git push
+          fi
+          uv run --frozen mypy src/trade_scout
+          uv run --frozen pytest
