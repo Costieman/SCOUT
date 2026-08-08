@@ -81,7 +81,9 @@ def main() -> int:
     }
 
     json_path = report_root / "alpha-vantage-live-evaluation.json"
-    json_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8"
+    )
     markdown_path = report_root / "alpha-vantage-live-evaluation.md"
     markdown_path.write_text(_markdown_report(payload), encoding="utf-8")
     print(markdown_path.read_text(encoding="utf-8"))
