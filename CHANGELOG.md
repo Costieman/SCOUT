@@ -29,6 +29,7 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Deterministic historical daily-bar backfill planning with bounded date/symbol batches, immutable staged provider-neutral batches, atomic checkpoints, and resume-after-failure semantics.
 - Immutable versioned instrument-master and symbol-history Parquet snapshots registered in the shared DuckDB metadata catalog with logical/physical checksums and identity/history integrity validation.
 - Tiingo EOD secondary-validation candidate adapter with explicit stable identity links, raw OHLCV, split/dividend evidence, header-only token authentication, and deliberate rejection of Tiingo total-return adjusted OHLC as Trade Scout split-adjusted prices.
+- Provider-neutral corporate-action normalization with permanent identity resolution plus immutable versioned corporate-action Parquet/DuckDB storage and integrity/provenance checks.
 
 ### Changed
 - Provider, canonical, Parquet, research-serving, and reconciliation volume contracts now preserve provider-reported fractional volume instead of requiring integer coercion.
