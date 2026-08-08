@@ -75,8 +75,8 @@ def main() -> int:
         "provider_accepted": False,
         "acceptance_note": (
             "This run tests point-in-time listing coverage and recent raw bars only. It does not "
-            "establish permanent identity, long-history OHLCV entitlement, corporate-action quality, "
-            "licensing/storage rights, or canonical-provider acceptance."
+            "establish permanent identity, long-history OHLCV entitlement, corporate-action "
+            "quality, licensing/storage rights, or canonical-provider acceptance."
         ),
     }
 
@@ -128,7 +128,8 @@ def _identity_probe(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
         "interpretation": (
             "FB/META and TWTR are deliberately inspected as identity/lifecycle stress cases. "
             "Presence or absence does not prove continuity; Alpha Vantage LISTING_STATUS supplies "
-            "dated symbols but the adapter does not infer that different symbols are the same security."
+            "dated symbols, but the adapter does not infer that different symbols identify the "
+            "same security."
         ),
     }
 
@@ -151,17 +152,10 @@ def _markdown_report(payload: dict[str, Any]) -> str:
             f"{snapshot['delisted_count']} | {probes['AAPL']} | {probes['FB']} | "
             f"{probes['META']} | {probes['TWTR']} |"
         )
-    lines.extend(
-        [
-            "",
-            "## Recent daily-bar samples",
-            "",
-        ]
-    )
+    lines.extend(["", "## Recent daily-bar samples", ""])
     for symbol, sample in payload["recent_daily_bar_samples"].items():
-        lines.append(
-            f"- **{symbol}:** {sample['count']} bars, {sample['first_date']} to {sample['last_date']}"
-        )
+        date_range = f"{sample['first_date']} to {sample['last_date']}"
+        lines.append(f"- **{symbol}:** {sample['count']} bars, {date_range}")
     lines.extend(
         [
             "",
@@ -170,8 +164,8 @@ def _markdown_report(payload: dict[str, Any]) -> str:
             "**NOT ACCEPTED.** " + str(payload["acceptance_note"]),
             "",
             "The strongest question tested by this run is whether `LISTING_STATUS` can support a "
-            "2010-present point-in-time universe layer. Permanent security identity, corporate actions, "
-            "full historical OHLCV, and licensing remain separate gates.",
+            "2010-present point-in-time universe layer. Permanent security identity, corporate "
+            "actions, full historical OHLCV, and licensing remain separate gates.",
             "",
         ]
     )
