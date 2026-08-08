@@ -160,7 +160,7 @@ def _run_case(
             report=_evaluation_report_dict(report),
             error=None,
         )
-    except Exception as exc:  # noqa: BLE001 - live evidence must retain other case results
+    except Exception as exc:
         return CaseRun(
             case_id=spec.case_id,
             symbol=spec.symbol,
@@ -312,7 +312,8 @@ def _markdown_report(payload: dict[str, Any]) -> str:
             "",
             "- Confirm Massive licensing/storage rights for the intended Trade Scout use.",
             "- Characterize corrections by repeating the same logical retrieval at a later time.",
-            "- Run the representative multi-year Parquet/DuckDB benchmark after provider acceptance.",
+            "- Run the representative multi-year Parquet/DuckDB benchmark after provider "
+            "acceptance.",
             "",
         ]
     )
