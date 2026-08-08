@@ -88,7 +88,7 @@ def _parse_retry_after(value: str | None, *, wall_time: float) -> float | None:
     except ValueError:
         pass
     try:
-        retry_at = parsedate_to_datetime(stripped).timestamp()
+        retry_at = float(parsedate_to_datetime(stripped).timestamp())
     except (TypeError, ValueError, OverflowError):
         return None
     return retry_at - wall_time
