@@ -10,9 +10,11 @@ from urllib.request import Request, urlopen
 
 from trade_scout.data.providers.massive import MassiveApiError
 
+_RETRYABLE_HTTP_STATUS = frozenset({429, 500, 502, 503, 504})
+
 
 class RetryingUrllibBytesTransport:
-    """Standard-library byte transport with explicit pacing and 429 retry handling."""
+    """Standard-library byte transport with explicit pacing and bounded HTTP retries."""
 
     def __init__(
         self,
@@ -41,7 +43,7 @@ class RetryingUrllibBytesTransport:
         self._last_request_started: float | None = None
 
     def get(self, url: str, *, timeout: float) -> bytes:
-        """Return bytes while pacing requests and retrying explicit rate-limit responses."""
+        """Return bytes while pacing requests and retrying explicit transient HTTP failures."""
 
         for attempt in range(self._max_attempts):
             self._pace()
@@ -50,7 +52,8 @@ class RetryingUrllibBytesTransport:
                 with urlopen(request, timeout=timeout) as response:
                     return bytes(response.read())
             except HTTPError as exc:
-                if exc.code == 429 and attempt + 1 < self._max_attempts:
+                retryable = exc.code in _RETRYABLE_HTTP_STATUS
+                if retryable and attempt + 1 < self._max_attempts:
                     self._sleep(self._retry_delay(exc, attempt))
                     continue
                 raise MassiveApiError(f"Massive HTTP error {exc.code}") from exc
