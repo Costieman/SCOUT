@@ -237,7 +237,9 @@ def _evaluation_report_dict(report: ProviderEvaluationReport) -> dict[str, Any]:
                 "daily_bar_count": case.daily_bar_count,
                 "corporate_action_count": case.corporate_action_count,
                 "normalization_status": (
-                    str(case.normalization_status) if case.normalization_status is not None else None
+                    str(case.normalization_status)
+                    if case.normalization_status is not None
+                    else None
                 ),
                 "automated_gate_passed": case.automated_gate_passed,
                 "checks": [
@@ -294,9 +296,7 @@ def _markdown_report(payload: dict[str, Any]) -> str:
             lines.append(f"- Corporate actions: {evaluated['corporate_action_count']}")
             lines.append(f"- Normalization: `{evaluated['normalization_status']}`")
             for check in evaluated["checks"]:
-                lines.append(
-                    f"  - `{check['state']}` {check['check_id']}: {check['detail']}"
-                )
+                lines.append(f"  - `{check['state']}` {check['check_id']}: {check['detail']}")
         lines.append("")
 
     raw = payload["raw_capture"]
