@@ -5,7 +5,7 @@ on:
     branches: [phase-1/canonical-storage]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lock:
@@ -16,9 +16,14 @@ jobs:
         with:
           version: "0.11.28"
           python-version: "3.13"
-      - name: Resolve lockfile
+      - name: Resolve and commit lockfile
         run: |
           uv lock
-          echo '---UV_LOCK_BEGIN---'
-          cat uv.lock
-          echo '---UV_LOCK_END---'
+          if git diff --quiet -- uv.lock; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          git commit -m "build: refresh dependency lock"
+          git push
