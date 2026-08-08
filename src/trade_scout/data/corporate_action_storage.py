@@ -174,7 +174,10 @@ class CorporateActionStore:
         self._verify_file(manifest)
         records = _read_parquet(self.root / manifest.parquet_relative_path)
         _validate_records(records, primary_provider_id=manifest.primary_provider_id)
-        if _logical_checksum([_record_payload(item) for item in records]) != manifest.logical_sha256:
+        if (
+            _logical_checksum([_record_payload(item) for item in records])
+            != manifest.logical_sha256
+        ):
             raise CorporateActionDatasetIntegrityError("corporate-action logical checksum mismatch")
         return records
 
@@ -336,8 +339,7 @@ def _read_parquet(path: Path) -> tuple[CorporateActionRecord, ...]:
 def _record_from_row(row: tuple[object, ...]) -> CorporateActionRecord:
     source_fields = json.loads(str(row[6]))
     if not isinstance(source_fields, dict) or not all(
-        isinstance(key, str)
-        and (value is None or isinstance(value, str | int | float | bool))
+        isinstance(key, str) and (value is None or isinstance(value, str | int | float | bool))
         for key, value in source_fields.items()
     ):
         raise CorporateActionDatasetIntegrityError("corporate-action source_fields_json is invalid")

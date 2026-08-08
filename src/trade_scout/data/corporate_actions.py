@@ -145,7 +145,9 @@ def _validate_provider_action(record: ProviderCorporateAction) -> None:
         raise CorporateActionConflictError("source_event_id must be non-empty when supplied")
     for key, value in record.source_fields.items():
         if not key.strip():
-            raise CorporateActionConflictError("corporate-action source field keys must be non-empty")
+            raise CorporateActionConflictError(
+                "corporate-action source field keys must be non-empty"
+            )
         if value is not None and not isinstance(value, str | int | float | bool):
             raise CorporateActionConflictError(
                 f"corporate-action source field {key} has unsupported value type"

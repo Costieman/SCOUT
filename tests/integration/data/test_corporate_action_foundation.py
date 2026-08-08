@@ -150,9 +150,9 @@ def test_empty_corporate_action_snapshot_is_supported(tmp_path) -> None:
 
 
 def test_identical_repromotion_is_idempotent(tmp_path) -> None:
-    record = normalize_provider_corporate_actions(
-        (_provider_action(),), (_instrument(),)
-    ).records[0]
+    record = normalize_provider_corporate_actions((_provider_action(),), (_instrument(),)).records[
+        0
+    ]
     store = CorporateActionStore(tmp_path)
     first = store.promote((record,), _request())
 
@@ -162,9 +162,9 @@ def test_identical_repromotion_is_idempotent(tmp_path) -> None:
 
 
 def test_version_reuse_with_changed_actions_is_rejected(tmp_path) -> None:
-    record = normalize_provider_corporate_actions(
-        (_provider_action(),), (_instrument(),)
-    ).records[0]
+    record = normalize_provider_corporate_actions((_provider_action(),), (_instrument(),)).records[
+        0
+    ]
     store = CorporateActionStore(tmp_path)
     store.promote((record,), _request())
     changed = CorporateActionRecord(
@@ -197,9 +197,9 @@ def test_promotion_rejects_non_primary_provider(tmp_path) -> None:
 
 
 def test_tampered_parquet_is_detected(tmp_path) -> None:
-    record = normalize_provider_corporate_actions(
-        (_provider_action(),), (_instrument(),)
-    ).records[0]
+    record = normalize_provider_corporate_actions((_provider_action(),), (_instrument(),)).records[
+        0
+    ]
     store = CorporateActionStore(tmp_path)
     manifest = store.promote((record,), _request())
     path = tmp_path / manifest.parquet_relative_path
