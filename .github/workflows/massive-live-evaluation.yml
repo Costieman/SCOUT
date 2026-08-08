@@ -1,0 +1,61 @@
+name: Massive Live Evaluation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/massive-live-evaluation.yml"
+      - "scripts/run_massive_live_evaluation.py"
+      - "src/trade_scout/data/provider_evaluation.py"
+      - "src/trade_scout/data/providers/massive.py"
+      - "src/trade_scout/data/providers/massive_evaluation.py"
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    env:
+      MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+      TRADE_SCOUT_EVALUATION_ROOT: runtime/massive-evaluation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+
+      - name: Sync locked environment
+        run: uv sync --locked --dev
+
+      - name: Confirm evaluation secret is configured
+        run: |
+          if [[ -z "$MASSIVE_API_KEY" ]]; then
+            echo "MASSIVE_API_KEY repository secret is not configured" >&2
+            exit 1
+          fi
+
+      - name: Run real Massive provider evaluation
+        run: uv run --frozen python scripts/run_massive_live_evaluation.py
+
+      - name: Publish evaluation summary
+        if: always()
+        run: |
+          report="runtime/massive-evaluation/report/massive-live-evaluation.md"
+          if [[ -f "$report" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload evaluation report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: massive-live-evaluation-report
+          path: runtime/massive-evaluation/report/
+          if-no-files-found: error
+          retention-days: 30
