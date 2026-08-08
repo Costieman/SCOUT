@@ -122,7 +122,7 @@ class ProviderDailyBar:
     high: float
     low: float
     close: float
-    volume: int
+    volume: float
     split_factor: float | None = None
     dividend_cash: float | None = None
     adjusted_open: float | None = None
