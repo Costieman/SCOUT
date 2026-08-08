@@ -45,7 +45,9 @@ def test_internal_id_depends_on_provider_identity_not_ticker() -> None:
 
 def test_ticker_reuse_does_not_merge_distinct_provider_ids() -> None:
     first = instrument_from_primary_provider(_provider_instrument(provider_instrument_id="asset-1"))
-    second = instrument_from_primary_provider(_provider_instrument(provider_instrument_id="asset-2"))
+    second = instrument_from_primary_provider(
+        _provider_instrument(provider_instrument_id="asset-2")
+    )
 
     assert first.primary_symbol == second.primary_symbol
     assert first.instrument_id != second.instrument_id
@@ -110,8 +112,12 @@ def test_symbol_history_resolves_point_in_time() -> None:
         [instrument],
     )
 
-    before = symbol_as_of(result.records, instrument_id=instrument.instrument_id, as_of=date(2020, 6, 1))
-    after = symbol_as_of(result.records, instrument_id=instrument.instrument_id, as_of=date(2020, 7, 1))
+    before = symbol_as_of(
+        result.records, instrument_id=instrument.instrument_id, as_of=date(2020, 6, 1)
+    )
+    after = symbol_as_of(
+        result.records, instrument_id=instrument.instrument_id, as_of=date(2020, 7, 1)
+    )
 
     assert before is not None and before.symbol == "OLD"
     assert after is not None and after.symbol == "NEW"
