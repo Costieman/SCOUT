@@ -61,6 +61,14 @@ from trade_scout.data.normalization import (
     normalize_provider_daily_bars,
 )
 from trade_scout.data.provider import ProviderAdapter
+from trade_scout.data.provider_evaluation import (
+    EvaluationCheck,
+    EvaluationState,
+    ProviderCaseEvaluation,
+    ProviderEvaluationCase,
+    ProviderEvaluationReport,
+    evaluate_provider_adapter,
+)
 from trade_scout.data.quality import QualityIssue, QualityReport, QualityRule, validate_daily_bars
 from trade_scout.data.raw_store import (
     RawBatchConflictError,
@@ -117,6 +125,8 @@ __all__ = [
     "DatasetVersion",
     "DatasetVersionConflictError",
     "DuplicateResearchBarError",
+    "EvaluationCheck",
+    "EvaluationState",
     "FieldDifference",
     "IngestionJobState",
     "InstrumentId",
@@ -131,6 +141,9 @@ __all__ = [
     "PriceJumpPolicy",
     "PriceRepresentation",
     "ProviderAdapter",
+    "ProviderCaseEvaluation",
+    "ProviderEvaluationCase",
+    "ProviderEvaluationReport",
     "QualityIssue",
     "QualityReport",
     "QualityRule",
@@ -158,6 +171,7 @@ __all__ = [
     "build_canonical_revision",
     "compare_daily_bars",
     "derive_instrument_id",
+    "evaluate_provider_adapter",
     "instrument_from_primary_provider",
     "link_provider_identity",
     "normalize_provider_daily_bars",
