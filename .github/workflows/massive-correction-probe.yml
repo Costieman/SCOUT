@@ -1,0 +1,57 @@
+name: Massive Correction Probe
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: massive-live-evaluation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    env:
+      MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+      TRADE_SCOUT_CORRECTION_ROOT: runtime/correction-probe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+
+      - name: Sync locked environment
+        run: uv sync --locked --dev
+
+      - name: Confirm Massive credential is configured
+        run: |
+          if [[ -z "$MASSIVE_API_KEY" ]]; then
+            echo "MASSIVE_API_KEY repository secret is not configured" >&2
+            exit 1
+          fi
+
+      - name: Capture correction snapshot
+        run: uv run --frozen python scripts/run_massive_correction_probe.py
+
+      - name: Publish summary
+        if: always()
+        run: |
+          report="runtime/correction-probe/report/massive-correction-probe.md"
+          if [[ -f "$report" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload correction report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: massive-correction-probe-report
+          path: runtime/correction-probe/report/
+          if-no-files-found: error
+          retention-days: 90
