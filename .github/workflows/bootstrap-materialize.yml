@@ -1,0 +1,38 @@
+name: Materialize Phase 0B scaffold
+
+on:
+  push:
+    branches: [phase-0b/repository-bootstrap]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+
+      - name: Materialize scaffold
+        run: |
+          base64 --decode .bootstrap/scaffold.b64 > /tmp/trade-scout-scaffold.tar.gz
+          tar -xzf /tmp/trade-scout-scaffold.tar.gz -C .
+          rm -rf .bootstrap
+          rm -f .github/workflows/bootstrap-materialize.yml
+          uv lock
+
+      - name: Commit scaffold and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: build Phase 0B repository scaffold"
+          git push
