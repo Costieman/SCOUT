@@ -14,7 +14,6 @@ from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
 
-
 type Primitive = str | int | float | bool | None
 
 _SAFE_COMPONENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
