@@ -1,0 +1,46 @@
+name: Massive Live Evaluation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [phase-1/real-massive-evaluation]
+    paths:
+      - ".github/workflows/massive-live-evaluation.yml"
+      - "src/trade_scout/data/provider_evaluation.py"
+      - "src/trade_scout/data/providers/massive.py"
+      - "src/trade_scout/data/providers/massive_live_evaluation.py"
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    env:
+      MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked --dev
+      - name: Run real Massive provider evaluation
+        run: |
+          if [[ -z "$MASSIVE_API_KEY" ]]; then
+            echo "MASSIVE_API_KEY repository secret is not available to this workflow."
+            exit 2
+          fi
+          mkdir -p runtime/massive-evaluation
+          uv run --frozen python -m trade_scout.data.providers.massive_live_evaluation \
+            --report runtime/massive-evaluation/report.json \
+            --raw-root runtime/massive-evaluation/raw
+      - name: Upload sanitized evaluation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: massive-live-evaluation-report
+          path: runtime/massive-evaluation/report.json
+          if-no-files-found: warn
+          retention-days: 14
