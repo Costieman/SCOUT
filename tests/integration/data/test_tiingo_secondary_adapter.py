@@ -107,9 +107,10 @@ def test_daily_bars_keep_raw_ohlcv_and_do_not_mislabel_total_return_adjustment()
     assert first.close == 101.0
     assert first.dividend_cash == 0.25
     assert first.adjusted_close is None
-    assert second.split_factor == 2.0
+    assert second.split_factor is None
     assert second.volume == 2_000_000.0
     assert second.adjusted_open is None
+    assert any("cumulative" in item for item in adapter.describe_capabilities().known_limitations)
 
 
 def test_eod_split_and_dividend_fields_become_validation_actions() -> None:

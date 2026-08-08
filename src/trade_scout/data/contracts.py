@@ -117,6 +117,7 @@ class DailyBar:
     close_raw: float
     volume_raw: float
     split_factor: float
+    # Cumulative split-only price multiplier: split-adjusted OHLC = raw OHLC * factor.
     dividend_cash: float
     open_split_adjusted: float | None
     high_split_adjusted: float | None
