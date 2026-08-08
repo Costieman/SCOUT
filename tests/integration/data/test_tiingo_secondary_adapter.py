@@ -196,10 +196,13 @@ def test_http_client_keeps_token_in_authorization_header_not_url() -> None:
     transport = FakeBytesTransport(json.dumps([]).encode())
     client = TiingoHttpClient("secret-token", transport=transport)
 
-    assert client.get_json(
-        "/tiingo/daily/AAA/prices",
-        {"startDate": "2026-06-15", "endDate": "2026-06-16"},
-    ) == []
+    assert (
+        client.get_json(
+            "/tiingo/daily/AAA/prices",
+            {"startDate": "2026-06-15", "endDate": "2026-06-16"},
+        )
+        == []
+    )
 
     parsed = urlsplit(transport.urls[0])
     assert "token" not in {key.lower() for key in parse_qs(parsed.query)}
