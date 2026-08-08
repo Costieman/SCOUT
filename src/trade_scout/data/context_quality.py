@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
+from itertools import pairwise
 
 from trade_scout.data.contracts import (
     CorporateActionRecord,
@@ -223,7 +224,7 @@ def validate_corporate_action_price_jumps(
     corporate_actions: Iterable[CorporateActionRecord],
     policy: PriceJumpPolicy,
 ) -> CorporateActionQualityReport:
-    """Flag large raw price jumps unless an action is supplied on the current or intervening date."""
+    """Flag large raw price jumps that lack a supplied corporate-action explanation."""
 
     actions_by_instrument: dict[InstrumentId, set[date]] = {}
     for action in corporate_actions:
@@ -237,7 +238,7 @@ def validate_corporate_action_price_jumps(
     for instrument_id, instrument_bars in bars_by_instrument.items():
         ordered = sorted(instrument_bars, key=lambda bar: bar.trade_date)
         action_dates = actions_by_instrument.get(instrument_id, set())
-        for previous, current in zip(ordered, ordered[1:], strict=False):
+        for previous, current in pairwise(ordered):
             if previous.close_raw <= 0:
                 continue
             raw_return = current.close_raw / previous.close_raw - 1.0
