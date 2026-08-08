@@ -14,3 +14,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Initial deterministic daily-bar quality rules with explicit PASS/WARN/QUARANTINE/REJECT behavior.
 - Unit and contract tests for the first data-foundation slice.
 - Phase 1 provider-evaluation baseline, acceptance matrix, and sample-design gate.
+- Permanent instrument-ID derivation, explicit cross-provider identity linking, and point-in-time symbol-history resolution.
