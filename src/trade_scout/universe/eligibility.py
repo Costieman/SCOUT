@@ -176,7 +176,9 @@ def build_universe_snapshot(
 
     versions = {observation.dataset_version for observation in materialized}
     if len(versions) != 1:
-        raise MixedDatasetVersionError("one universe snapshot cannot mix canonical dataset versions")
+        raise MixedDatasetVersionError(
+            "one universe snapshot cannot mix canonical dataset versions"
+        )
     dataset_version = next(iter(versions))
 
     membership = tuple(
