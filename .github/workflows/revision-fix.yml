@@ -18,6 +18,25 @@ jobs:
           python-version: "3.13"
       - name: Format revision slice
         run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/trade_scout/data/revisions.py')
+          text = path.read_text()
+          text = text.replace(
+              '    """Raised when an incremental revision request is ambiguous or violates the correction window."""\n',
+              '    """Raised when an incremental revision request is ambiguous or outside policy."""\n',
+          )
+          text = text.replace(
+              '    """Append new observations and replace only explicit incoming keys inside the correction window."""\n',
+              '    """Append new observations and replace explicit keys inside the correction window."""\n',
+          )
+          text = text.replace(
+              '                f"incoming bars use {incoming_version}; expected target version {target_dataset_version}"\n',
+              '                f"incoming bars use {incoming_version}; expected target version "\n                f"{target_dataset_version}"\n',
+          )
+          path.write_text(text)
+          PY
           uv sync --locked --dev
           uv run --frozen ruff format src/trade_scout/data/revisions.py tests/unit/data/test_revisions.py
           uv run --frozen ruff check --fix src/trade_scout/data/revisions.py tests/unit/data/test_revisions.py
