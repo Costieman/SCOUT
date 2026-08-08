@@ -18,6 +18,25 @@ jobs:
           python-version: "3.13"
       - name: Format candidate adapter
         run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/trade_scout/data/providers/massive.py')
+          text = path.read_text()
+          text = text.replace(
+              '        """Create the candidate adapter without placing credentials in configuration or manifests."""\n',
+              '        """Create the candidate adapter without persisting credentials in project state."""\n',
+          )
+          text = text.replace(
+              '                "corporate actions are resolved to identity by point-in-time ticker reference lookup",\n',
+              '                "corporate actions use point-in-time ticker reference lookup for identity",\n',
+          )
+          text = text.replace(
+              '                f"expected one stable Massive identity for {symbol} on {as_of}; found {len(matches)}"\n',
+              '                f"expected one stable Massive identity for {symbol} on {as_of}; "\n                f"found {len(matches)}"\n',
+          )
+          path.write_text(text)
+          PY
           uv sync --locked --dev
           uv run --frozen ruff format src/trade_scout/data/providers/massive.py tests/integration/data/test_massive_candidate_adapter.py
           uv run --frozen ruff check --fix src/trade_scout/data/providers/massive.py tests/integration/data/test_massive_candidate_adapter.py
