@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Environments and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Runtime data, licensed market data, caches, and generated artifacts
+runtime/
+data/
+cache/
+logs/
+artifacts/
+outputs/
+*.duckdb
+*.duckdb.wal
+*.parquet
+
+# Experiment outputs; manifests/schemas remain version controlled
+experiments/artifacts/
+experiments/runtime/
+
+# Build artifacts
+build/
+dist/
