@@ -1,9 +1,8 @@
 """Alpha Vantage candidate adapter for Phase 1 provider evaluation.
 
-The adapter deliberately exposes only capabilities that can be characterized from the public API.
-In particular, LISTING_STATUS is useful for point-in-time active/delisted universe reconstruction,
-while long-history daily OHLCV requires Alpha Vantage full-output access and is therefore treated as
-plan-dependent rather than assumed available on a free key.
+The adapter deliberately exposes only capabilities that are sufficiently characterized for the
+current evaluation. In particular, LISTING_STATUS is used for point-in-time active/delisted universe
+reconstruction while permanent identity, corporate actions, and long-history OHLCV remain gated.
 """
 
 from __future__ import annotations
@@ -48,17 +47,17 @@ class AlphaVantageResponseError(AlphaVantageApiError):
 
 
 class AlphaVantageCapabilityError(AlphaVantageApiError):
-    """Raised when a requested capability is not supported by this evaluation adapter."""
+    """Raised when a requested capability is outside the accepted evaluation boundary."""
 
 
 class BytesTransport(Protocol):
-    """Raw byte transport replaceable by deterministic fixtures in tests."""
+    """Raw-byte HTTP boundary replaceable by deterministic fixtures."""
 
     def get(self, url: str, *, timeout: float) -> bytes: ...
 
 
 class RawResponseCapture(Protocol):
-    """Optional sink for immutable raw response preservation."""
+    """Optional immutable raw-response sink."""
 
     def capture(
         self,
@@ -70,8 +69,14 @@ class RawResponseCapture(Protocol):
     ) -> None: ...
 
 
+class AlphaVantageCsvClient(Protocol):
+    """Minimal CSV client boundary consumed by the adapter."""
+
+    def get_csv(self, parameters: Mapping[str, Primitive]) -> bytes: ...
+
+
 class UrllibBytesTransport:
-    """Small standard-library HTTP transport for Alpha Vantage evaluation calls."""
+    """Small standard-library transport for evaluation calls."""
 
     def get(self, url: str, *, timeout: float) -> bytes:
         request = Request(url, headers={"Accept": "text/csv,application/json"})
@@ -85,7 +90,7 @@ class UrllibBytesTransport:
 
 
 class RawStoreCapture:
-    """Persist exact Alpha Vantage responses through the immutable raw-zone store."""
+    """Persist exact provider responses through the immutable raw-zone store."""
 
     def __init__(self, store: RawBatchStore) -> None:
         self._store = store
@@ -109,14 +114,8 @@ class RawStoreCapture:
         )
 
 
-class AlphaVantageCsvClient(Protocol):
-    """Minimal CSV boundary consumed by the adapter."""
-
-    def get_csv(self, parameters: Mapping[str, Primitive]) -> bytes: ...
-
-
 class AlphaVantageHttpClient:
-    """Authenticated Alpha Vantage client with optional exact-byte raw capture."""
+    """Authenticated client with optional exact-byte raw capture."""
 
     def __init__(
         self,
@@ -139,8 +138,10 @@ class AlphaVantageHttpClient:
         safe_parameters = dict(parameters)
         query = dict(safe_parameters)
         query["apikey"] = self._api_key
-        url = f"{_ALPHA_VANTAGE_URL}?{urlencode(query)}"
-        payload = self._transport.get(url, timeout=self._timeout)
+        payload = self._transport.get(
+            f"{_ALPHA_VANTAGE_URL}?{urlencode(query)}",
+            timeout=self._timeout,
+        )
         _raise_for_api_message(payload)
         if self._raw_capture is not None:
             self._raw_capture.capture(
@@ -164,7 +165,7 @@ class _ListingRow:
 
 
 class AlphaVantageAdapter:
-    """Evaluation adapter focused on LISTING_STATUS and daily raw OHLCV."""
+    """Evaluation adapter focused on listing status and raw daily OHLCV."""
 
     provider_id = "alpha_vantage"
 
@@ -186,31 +187,19 @@ class AlphaVantageAdapter:
         timeout: float = 30.0,
         allow_full_history: bool = False,
     ) -> AlphaVantageAdapter:
-        """Build the evaluation adapter without persisting credentials in project state."""
+        """Construct the adapter without persisting credentials in project state."""
 
         raw_capture: RawResponseCapture | None = None
         if raw_root is not None:
             raw_capture = RawStoreCapture(RawBatchStore(raw_root))
-        return cls(
-            AlphaVantageHttpClient(
-                api_key,
-                raw_capture=raw_capture,
-                timeout=timeout,
-            ),
-            allow_full_history=allow_full_history,
+        client = AlphaVantageHttpClient(
+            api_key,
+            raw_capture=raw_capture,
+            timeout=timeout,
         )
+        return cls(client, allow_full_history=allow_full_history)
 
     def describe_capabilities(self) -> ProviderCapabilities:
-        limitations = [
-            "LISTING_STATUS history begins after 2010-01-01.",
-            "LISTING_STATUS provides symbols rather than a documented permanent security identifier; "
-            "ticker must not become the canonical Trade Scout identity.",
-            "TIME_SERIES_DAILY compact output is limited to the latest approximately 100 observations; "
-            "full output is plan-dependent and must be enabled explicitly after entitlement is verified.",
-            "This evaluation adapter does not claim complete symbol-history reconstruction.",
-            "Corporate-action retrieval is not accepted through this adapter yet; adjustment and event "
-            "coverage require a separate validation gate.",
-        ]
         return ProviderCapabilities(
             provider_id=self.provider_id,
             data_families=frozenset(
@@ -225,7 +214,16 @@ class AlphaVantageAdapter:
             supports_delisted=True,
             supports_symbol_history=False,
             timestamp_convention="US equity trading-session date from Alpha Vantage CSV output",
-            known_limitations=tuple(limitations),
+            known_limitations=(
+                "LISTING_STATUS history begins after 2010-01-01.",
+                "LISTING_STATUS provides symbols rather than a documented permanent security identifier; "
+                "ticker must not become the canonical Trade Scout identity.",
+                "TIME_SERIES_DAILY compact output is limited to the latest approximately 100 observations; "
+                "full output is plan-dependent and must be enabled explicitly after entitlement is verified.",
+                "This evaluation adapter does not claim complete symbol-history reconstruction.",
+                "Corporate-action retrieval is not accepted through this adapter yet; adjustment and "
+                "event coverage require a separate validation gate.",
+            ),
         )
 
     def health_check(self) -> ProviderHealth:
@@ -248,13 +246,15 @@ class AlphaVantageAdapter:
     def get_instruments(self, *, as_of: date | None = None) -> Sequence[ProviderInstrument]:
         active_rows = self._listing_rows(as_of=as_of, state="active")
         delisted_rows = self._listing_rows(as_of=as_of, state="delisted")
-        combined: dict[tuple[str, str], _ListingRow] = {}
+        rows: dict[tuple[str, str], _ListingRow] = {}
         for row in (*active_rows, *delisted_rows):
-            combined[(row.symbol, row.status.lower())] = row
-        return tuple(self._to_provider_instrument(row) for row in combined.values())
+            rows[(row.symbol, row.status.lower())] = row
+        return tuple(self._to_provider_instrument(row) for row in rows.values())
 
     def get_symbol_history(
-        self, *, provider_instrument_ids: Sequence[str] | None = None
+        self,
+        *,
+        provider_instrument_ids: Sequence[str] | None = None,
     ) -> Sequence[ProviderSymbolHistory]:
         del provider_instrument_ids
         raise AlphaVantageCapabilityError(
@@ -290,25 +290,13 @@ class AlphaVantageAdapter:
                 raise AlphaVantageResponseError("TIME_SERIES_DAILY CSV is missing timestamp column")
             for row in rows:
                 trade_date = _parse_required_date(row.get("timestamp"), field="timestamp")
-                if not request.start <= trade_date <= request.end:
-                    continue
-                result.append(
-                    ProviderDailyBar(
-                        provider_id=self.provider_id,
-                        provider_instrument_id=_symbol_identity(symbol),
-                        symbol=symbol,
-                        trade_date=trade_date,
-                        open=_parse_required_float(row.get("open"), field="open"),
-                        high=_parse_required_float(row.get("high"), field="high"),
-                        low=_parse_required_float(row.get("low"), field="low"),
-                        close=_parse_required_float(row.get("close"), field="close"),
-                        volume=_parse_required_float(row.get("volume"), field="volume"),
-                    )
-                )
+                if request.start <= trade_date <= request.end:
+                    result.append(_to_provider_bar(symbol, row, trade_date))
         return tuple(sorted(result, key=lambda bar: (bar.symbol, bar.trade_date)))
 
     def get_corporate_actions(
-        self, request: CorporateActionRequest
+        self,
+        request: CorporateActionRequest,
     ) -> Sequence[ProviderCorporateAction]:
         del request
         raise AlphaVantageCapabilityError(
@@ -328,21 +316,18 @@ class AlphaVantageAdapter:
         }
         if as_of is not None:
             parameters["date"] = as_of.isoformat()
-        rows = _read_csv_rows(self._client.get_csv(parameters))
-        return tuple(_parse_listing_row(row) for row in rows)
+        return tuple(_parse_listing_row(row) for row in _read_csv_rows(self._client.get_csv(parameters)))
 
     def _to_provider_instrument(self, row: _ListingRow) -> ProviderInstrument:
-        security_type = _security_type(row.asset_type)
-        is_active = row.status.strip().lower() == "active"
         return ProviderInstrument(
             provider_id=self.provider_id,
             provider_instrument_id=_symbol_identity(row.symbol),
             symbol=row.symbol,
             name=row.name,
             exchange=row.exchange,
-            security_type=security_type,
+            security_type=_security_type(row.asset_type),
             currency="USD",
-            active=is_active,
+            active=row.status.strip().lower() == "active",
             first_trade_date=row.ipo_date,
             end_date=row.delisting_date,
             source_fields={
@@ -353,9 +338,26 @@ class AlphaVantageAdapter:
         )
 
 
+def _to_provider_bar(
+    symbol: str,
+    row: Mapping[str, str],
+    trade_date: date,
+) -> ProviderDailyBar:
+    return ProviderDailyBar(
+        provider_id="alpha_vantage",
+        provider_instrument_id=_symbol_identity(symbol),
+        symbol=symbol,
+        trade_date=trade_date,
+        open=_parse_required_float(row.get("open"), field="open"),
+        high=_parse_required_float(row.get("high"), field="high"),
+        low=_parse_required_float(row.get("low"), field="low"),
+        close=_parse_required_float(row.get("close"), field="close"),
+        volume=_parse_required_float(row.get("volume"), field="volume"),
+    )
+
+
 def _raise_for_api_message(payload: bytes) -> None:
-    stripped = payload.lstrip()
-    if not stripped.startswith(b"{"):
+    if not payload.lstrip().startswith(b"{"):
         return
     try:
         parsed = json.loads(payload)
@@ -384,9 +386,8 @@ def _read_csv_rows(payload: bytes) -> list[dict[str, str]]:
 
 
 def _parse_listing_row(row: Mapping[str, str]) -> _ListingRow:
-    symbol = _required_text(row.get("symbol"), field="symbol")
     return _ListingRow(
-        symbol=symbol,
+        symbol=_required_text(row.get("symbol"), field="symbol"),
         name=_required_text(row.get("name"), field="name"),
         exchange=_required_text(row.get("exchange"), field="exchange"),
         asset_type=_required_text(row.get("assetType"), field="assetType"),
@@ -419,4 +420,29 @@ def _parse_optional_date(value: str | None) -> date | None:
     if value is None:
         return None
     stripped = value.strip()
-    if not stripped or stripped.lower() in {"null", "none",
+    if not stripped or stripped.lower() in {"null", "none", "n/a"}:
+        return None
+    try:
+        return date.fromisoformat(stripped)
+    except ValueError as exc:
+        raise AlphaVantageResponseError(f"Invalid Alpha Vantage date: {stripped}") from exc
+
+
+def _parse_required_date(value: str | None, *, field: str) -> date:
+    parsed = _parse_optional_date(value)
+    if parsed is None:
+        raise AlphaVantageResponseError(f"Alpha Vantage response is missing required date {field}")
+    return parsed
+
+
+def _parse_required_float(value: str | None, *, field: str) -> float:
+    if value is None or not value.strip():
+        raise AlphaVantageResponseError(
+            f"Alpha Vantage response is missing required numeric field {field}"
+        )
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise AlphaVantageResponseError(
+            f"Invalid Alpha Vantage numeric value for {field}: {value}"
+        ) from exc
