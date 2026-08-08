@@ -23,13 +23,18 @@ jobs:
 
           path = Path('src/trade_scout/data/context_quality.py')
           text = path.read_text()
-          text = text.replace(
-              'from datetime import date\n',
-              'from datetime import date\nfrom itertools import pairwise\n',
-          )
+          if 'from itertools import pairwise' not in text:
+              text = text.replace(
+                  'from datetime import date\n',
+                  'from datetime import date\nfrom itertools import pairwise\n',
+              )
           text = text.replace(
               'for previous, current in zip(ordered, ordered[1:], strict=False):',
               'for previous, current in pairwise(ordered):',
+          )
+          text = text.replace(
+              '    """Flag large raw price jumps unless an action is supplied on the current or intervening date."""\n',
+              '    """Flag large raw price jumps that lack a supplied corporate-action explanation."""\n',
           )
           path.write_text(text)
           PY
