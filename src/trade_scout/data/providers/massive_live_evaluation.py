@@ -5,13 +5,20 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from collections.abc import Sequence
+import time
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
-from trade_scout.data.contracts import CorporateActionType, DatasetVersion
+from trade_scout.data.contracts import (
+    CorporateActionType,
+    DatasetVersion,
+    SecurityType,
+)
 from trade_scout.data.provider import (
     CorporateActionRequest,
     DailyBarRequest,
@@ -28,9 +35,15 @@ from trade_scout.data.provider_evaluation import (
     ProviderEvaluationReport,
     evaluate_provider_adapter,
 )
-from trade_scout.data.providers.massive import MassiveAdapter
+from trade_scout.data.providers.massive import (
+    MassiveAdapter,
+    MassiveApiError,
+    MassiveHttpClient,
+    RawStoreCapture,
+)
+from trade_scout.data.raw_store import Primitive, RawBatchStore
 
-_EVALUATION_VERSION = DatasetVersion("massive-live-evaluation-2026-08-08-v1")
+_EVALUATION_VERSION = DatasetVersion("massive-live-evaluation-2026-08-08-v2")
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,23 +100,88 @@ _SAMPLE_SPECS = (
 )
 
 
+class _RateLimitedTransport:
+    """Respect provider throttling while keeping request URLs and credentials out of logs."""
+
+    def __init__(self, *, max_attempts: int = 8, fallback_retry_seconds: float = 13.0) -> None:
+        self.max_attempts = max_attempts
+        self.fallback_retry_seconds = fallback_retry_seconds
+
+    def get(self, url: str, *, timeout: float) -> bytes:
+        request = Request(url, headers={"Accept": "application/json"})
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                with urlopen(request, timeout=timeout) as response:
+                    return bytes(response.read())
+            except HTTPError as exc:
+                if exc.code == 429 and attempt < self.max_attempts:
+                    time.sleep(self._retry_delay(exc, attempt))
+                    continue
+                if 500 <= exc.code < 600 and attempt < self.max_attempts:
+                    time.sleep(min(2.0**attempt, 30.0))
+                    continue
+                raise MassiveApiError(f"Massive HTTP error {exc.code}") from exc
+            except URLError as exc:
+                if attempt < self.max_attempts:
+                    time.sleep(min(2.0**attempt, 30.0))
+                    continue
+                raise MassiveApiError(f"Massive network error: {exc.reason}") from exc
+        raise MassiveApiError("Massive request exhausted retry policy")
+
+    def _retry_delay(self, exc: HTTPError, attempt: int) -> float:
+        retry_after = exc.headers.get("Retry-After") if exc.headers is not None else None
+        if retry_after is not None:
+            try:
+                return max(float(retry_after), 1.0)
+            except ValueError:
+                pass
+        return self.fallback_retry_seconds * min(attempt, 3)
+
+
+class _CachingJsonClient:
+    """Cache non-aggregate reference evidence while repeating price retrievals live."""
+
+    def __init__(self, client: MassiveHttpClient) -> None:
+        self._client = client
+        self._cache: dict[tuple[str, tuple[tuple[str, Primitive], ...]], Mapping[str, object]] = {}
+
+    def get_json(
+        self,
+        endpoint: str,
+        parameters: Mapping[str, Primitive] | None = None,
+    ) -> Mapping[str, object]:
+        params = dict(parameters or {})
+        if endpoint.startswith("/v2/aggs/"):
+            return self._client.get_json(endpoint, params)
+        key = (endpoint, tuple(sorted(params.items(), key=lambda item: item[0])))
+        cached = self._cache.get(key)
+        if cached is None:
+            cached = self._client.get_json(endpoint, params)
+            self._cache[key] = cached
+        return cached
+
+
 class _CachedInstrumentAdapter:
-    """Delegate to a real adapter while reusing one expensive instrument inventory retrieval."""
+    """Delegate to a real adapter while reusing targeted instrument and health evidence."""
 
     def __init__(
         self,
         adapter: ProviderAdapter,
         instruments: tuple[ProviderInstrument, ...],
+        capabilities: ProviderCapabilities,
+        health: ProviderHealth,
     ) -> None:
         self.provider_id = adapter.provider_id
         self._adapter = adapter
         self._instruments = instruments
+        self._capabilities = capabilities
+        self._health = health
 
     def describe_capabilities(self) -> ProviderCapabilities:
-        return self._adapter.describe_capabilities()
+        return self._capabilities
 
     def health_check(self) -> ProviderHealth:
-        return self._adapter.health_check()
+        return self._health
 
     def get_instruments(self, *, as_of: date | None = None) -> Sequence[ProviderInstrument]:
         if as_of is None:
@@ -200,11 +278,123 @@ def _instrument_snapshot(instrument: ProviderInstrument) -> dict[str, object]:
     }
 
 
+def _discover_instrument(client: _CachingJsonClient, symbol: str) -> ProviderInstrument:
+    matches: dict[str, ProviderInstrument] = {}
+    for active in (True, False):
+        response = client.get_json(
+            "/v3/reference/tickers",
+            {
+                "ticker": symbol,
+                "market": "stocks",
+                "type": "CS",
+                "active": active,
+                "limit": 10,
+            },
+        )
+        results = response.get("results", [])
+        if not isinstance(results, list):
+            raise MassiveApiError("Massive targeted ticker results must be a list")
+        for raw_item in results:
+            if not isinstance(raw_item, dict):
+                raise MassiveApiError("Massive targeted ticker result must be an object")
+            item = cast(Mapping[str, object], raw_item)
+            if item.get("ticker") != symbol:
+                continue
+            provider_instrument_id = _stable_id(item)
+            if provider_instrument_id is None:
+                continue
+            instrument = _provider_instrument_from_reference(item, provider_instrument_id)
+            matches[provider_instrument_id] = instrument
+
+    if len(matches) != 1:
+        raise MassiveApiError(
+            f"expected one stable current/inactive identity for {symbol}; found {len(matches)}"
+        )
+    return next(iter(matches.values()))
+
+
+def _stable_id(item: Mapping[str, object]) -> str | None:
+    composite = item.get("composite_figi")
+    if isinstance(composite, str) and composite:
+        return composite
+    share_class = item.get("share_class_figi")
+    if isinstance(share_class, str) and share_class:
+        return share_class
+    return None
+
+
+def _provider_instrument_from_reference(
+    item: Mapping[str, object],
+    provider_instrument_id: str,
+) -> ProviderInstrument:
+    symbol = _required_string(item, "ticker")
+    name = _required_string(item, "name")
+    exchange = _required_string(item, "primary_exchange")
+    active = item.get("active")
+    if not isinstance(active, bool):
+        raise MassiveApiError("Massive targeted ticker active field must be boolean")
+    currency_value = item.get("currency_symbol") or item.get("currency_name")
+    if not isinstance(currency_value, str) or not currency_value:
+        raise MassiveApiError("Massive targeted ticker currency is unavailable")
+
+    source_fields: dict[str, str | int | float | bool | None] = {}
+    for key, value in item.items():
+        if value is None or isinstance(value, str | int | float | bool):
+            source_fields[key] = value
+
+    end_date = _optional_date(item.get("delisted_utc"))
+    return ProviderInstrument(
+        provider_id="massive",
+        provider_instrument_id=provider_instrument_id,
+        symbol=symbol,
+        name=name,
+        exchange=exchange,
+        security_type=SecurityType.COMMON_STOCK,
+        currency=currency_value.upper(),
+        active=active,
+        first_trade_date=None,
+        end_date=end_date,
+        source_fields=source_fields,
+    )
+
+
+def _required_string(item: Mapping[str, object], key: str) -> str:
+    value = item.get(key)
+    if not isinstance(value, str) or not value:
+        raise MassiveApiError(f"Massive targeted ticker field {key} must be a string")
+    return value
+
+
+def _optional_date(value: object) -> date | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise MassiveApiError("Massive targeted ticker date must be a string or null")
+    try:
+        return date.fromisoformat(value[:10])
+    except ValueError as exc:
+        raise MassiveApiError("Massive targeted ticker date is invalid") from exc
+
+
+def _write_report(path: Path, output: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n")
+
+
 def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
     """Execute the real sample and write a sanitized machine-readable evidence report."""
 
     started_at = datetime.now(UTC)
-    adapter = MassiveAdapter.from_api_key(api_key, raw_root=raw_root)
+    raw_store = RawBatchStore(raw_root)
+    raw_capture = RawStoreCapture(raw_store)
+    http_client = MassiveHttpClient(
+        api_key,
+        transport=_RateLimitedTransport(),
+        raw_capture=raw_capture,
+        timeout=30.0,
+    )
+    client = _CachingJsonClient(http_client)
+    adapter = MassiveAdapter(client)
     output: dict[str, Any] = {
         "evaluation_version": str(_EVALUATION_VERSION),
         "started_at": started_at.isoformat(),
@@ -215,16 +405,17 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
     }
 
     try:
-        instruments = tuple(adapter.get_instruments(as_of=None))
+        capabilities = adapter.describe_capabilities()
+        health = adapter.health_check()
+        instruments = tuple(_discover_instrument(client, spec.symbol) for spec in _SAMPLE_SPECS)
     except Exception as exc:  # noqa: BLE001 - evidence runner must persist provider failures
         output["fatal_error"] = _exception_record(exc)
         output["finished_at"] = datetime.now(UTC).isoformat()
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n")
+        _write_report(report_path, output)
         return False
 
-    output["instrument_inventory_count"] = len(instruments)
-    cached_adapter = _CachedInstrumentAdapter(adapter, instruments)
+    output["targeted_instrument_count"] = len(instruments)
+    cached_adapter = _CachedInstrumentAdapter(adapter, instruments, capabilities, health)
     automated_results: list[bool] = []
     unresolved_gates: set[str] = set()
 
@@ -238,8 +429,7 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
         }
         if len(matches) != 1:
             case_output["discovery_error"] = (
-                f"expected one current/inactive inventory record for {spec.symbol}; "
-                f"found {len(matches)}"
+                f"expected one targeted inventory record for {spec.symbol}; found {len(matches)}"
             )
             case_output["automated_gate_passed"] = False
             automated_results.append(False)
@@ -270,8 +460,7 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
             case_output["automated_gate_passed"] = False
             automated_results.append(False)
         else:
-            rendered = _report_to_dict(report)
-            case_output["evaluation"] = rendered
+            case_output["evaluation"] = _report_to_dict(report)
             case_output["automated_gate_passed"] = report.automated_gate_passed
             automated_results.append(report.automated_gate_passed)
             unresolved_gates.update(report.unresolved_manual_gates)
@@ -292,8 +481,7 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
     ]
     output["finished_at"] = datetime.now(UTC).isoformat()
 
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n")
+    _write_report(report_path, output)
     return bool(output["automated_gate_passed"])
 
 
