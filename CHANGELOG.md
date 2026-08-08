@@ -26,3 +26,5 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Reproducible canonical-storage benchmark harness reporting Parquet/DuckDB size, promotion, load, and filtered-query measurements without inventing performance thresholds.
 - Reusable provider-evaluation harness for capability, inactive/delisted, deterministic retrieval, canonical normalization, corporate-action, and symbol-history sample checks while preserving external licensing/raw-revision acceptance gates.
 - Massive candidate Stocks REST adapter with FIGI-based identity, active/inactive reference retrieval, paired raw/split-adjusted daily bars, corporate actions, experimental ticker-event history, same-host pagination checks, and optional immutable raw response capture.
+- Live Massive evaluation workflow using repository-secret credentials, targeted rate-limit-aware evidence collection, and sanitized report artifacts only.
+- Evidence-driven fractional-volume support across provider, canonical, Parquet, research-serving, and reconciliation contracts without integer coercion.
