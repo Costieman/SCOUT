@@ -109,9 +109,7 @@ def test_submissions_endpoint_uses_zero_padded_cik_and_returns_metadata() -> Non
 
 def test_malformed_ticker_payload_fails_visibly() -> None:
     url = "https://www.sec.gov/files/company_tickers_exchange.json"
-    malformed = json.dumps(
-        {"fields": ["cik", "ticker"], "data": [[320193, "AAPL"]]}
-    ).encode()
+    malformed = json.dumps({"fields": ["cik", "ticker"], "data": [[320193, "AAPL"]]}).encode()
     adapter = SecEdgarAdapter(
         SecEdgarClient(
             "Trade Scout research@example.com",
