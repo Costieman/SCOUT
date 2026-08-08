@@ -212,8 +212,7 @@ class SecEdgarAdapter:
                 "point-in-time snapshot"
             )
         return tuple(
-            self._to_provider_instrument(item)
-            for item in self._client.get_ticker_associations()
+            self._to_provider_instrument(item) for item in self._client.get_ticker_associations()
         )
 
     def get_symbol_history(
