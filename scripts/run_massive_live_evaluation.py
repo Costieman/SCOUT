@@ -30,7 +30,7 @@ from trade_scout.data.providers.massive_evaluation import discover_massive_evalu
 from trade_scout.data.providers.massive_transport import RetryingUrllibBytesTransport
 from trade_scout.data.raw_store import RawBatchStore
 
-_DATASET_VERSION = DatasetVersion("massive-live-evaluation-2026-08-08-v1")
+_DATASET_VERSION = DatasetVersion("massive-live-evaluation-2026-08-08-v2")
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,14 +209,14 @@ def _sample_specs() -> tuple[SampleSpec, ...]:
         SampleSpec(
             case_id="delisted_para_2025_08",
             symbol="PARA",
-            discovery_date=date(2025, 8, 7),
+            discovery_date=date(2025, 8, 8),
             start=date(2025, 8, 1),
             end=date(2025, 8, 6),
             expected_active=False,
         ),
         SampleSpec(
-            case_id="symbol_history_meta",
-            symbol="META",
+            case_id="symbol_history_xyz",
+            symbol="XYZ",
             discovery_date=date(2026, 6, 18),
             start=date(2026, 6, 15),
             end=date(2026, 6, 18),
