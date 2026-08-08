@@ -44,3 +44,5 @@ jobs:
           path: runtime/massive-evaluation/report.json
           if-no-files-found: warn
           retention-days: 14
+
+# Re-run after preserving provider-reported fractional volume without coercion.
