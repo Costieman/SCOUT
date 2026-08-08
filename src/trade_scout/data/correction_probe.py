@@ -48,7 +48,7 @@ def capture_daily_bar_correction_snapshot(
     adapter: ProviderAdapter,
     request: DailyBarRequest,
 ) -> DailyBarCorrectionSnapshot:
-    """Capture a deterministic logical hash without storing provider payload bytes in the snapshot."""
+    """Capture a deterministic logical hash without retaining vendor payload bytes."""
 
     if not request.provider_symbols:
         raise ValueError("correction probe requires explicit provider symbols")
