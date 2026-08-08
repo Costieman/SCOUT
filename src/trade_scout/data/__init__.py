@@ -1,9 +1,8 @@
 """Trade Scout canonical data contracts, provider boundary, identity, and quality controls.
 
 The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
-validation, reconciliation, and immutable canonical storage. It does not calculate research
-features,
-detect patterns, or repair suspicious upstream observations silently.
+validation, reconciliation, immutable canonical storage, and contextual quality checks. It does not
+calculate research features, detect patterns, or repair suspicious upstream observations silently.
 """
 
 from trade_scout.data.canonical_storage import (
@@ -15,6 +14,21 @@ from trade_scout.data.canonical_storage import (
     DatasetPromotionRequest,
     DatasetQualitySummary,
     DatasetVersionConflictError,
+)
+from trade_scout.data.context_quality import (
+    CompletenessReport,
+    CorporateActionQualityReport,
+    CoveragePolicy,
+    CrossSectionCountResult,
+    CrossSectionExpectation,
+    CrossSectionReport,
+    MissingObservation,
+    PriceJumpAnomaly,
+    PriceJumpPolicy,
+    UnexpectedObservation,
+    validate_completeness,
+    validate_corporate_action_price_jumps,
+    validate_cross_section_counts,
 )
 from trade_scout.data.contracts import (
     CorporateActionRecord,
@@ -65,8 +79,14 @@ __all__ = [
     "CanonicalDatasetIntegrityError",
     "CanonicalDatasetManifest",
     "CanonicalDatasetNotFoundError",
+    "CompletenessReport",
+    "CorporateActionQualityReport",
     "CorporateActionRecord",
     "CorporateActionType",
+    "CoveragePolicy",
+    "CrossSectionCountResult",
+    "CrossSectionExpectation",
+    "CrossSectionReport",
     "DailyBar",
     "DatasetPromotionQualityError",
     "DatasetPromotionRequest",
@@ -79,6 +99,9 @@ __all__ = [
     "InstrumentIdentityConflictError",
     "InstrumentRecord",
     "InvalidReconciliationDecisionError",
+    "MissingObservation",
+    "PriceJumpAnomaly",
+    "PriceJumpPolicy",
     "PriceRepresentation",
     "ProviderAdapter",
     "QualityIssue",
@@ -97,6 +120,7 @@ __all__ = [
     "SecretParameterError",
     "SymbolHistoryConflictError",
     "SymbolHistoryRecord",
+    "UnexpectedObservation",
     "compare_daily_bars",
     "derive_instrument_id",
     "instrument_from_primary_provider",
@@ -106,5 +130,8 @@ __all__ = [
     "resolve_provider_identity",
     "symbol_as_of",
     "to_research_bar",
+    "validate_completeness",
+    "validate_corporate_action_price_jumps",
+    "validate_cross_section_counts",
     "validate_daily_bars",
 ]
