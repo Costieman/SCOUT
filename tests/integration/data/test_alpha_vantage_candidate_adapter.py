@@ -136,10 +136,7 @@ def test_long_history_is_not_silently_requested_with_unverified_free_entitlement
 
 
 def test_full_history_can_be_explicitly_enabled_after_entitlement_verification() -> None:
-    payload = (
-        b"timestamp,open,high,low,close,volume\n"
-        b"2010-01-04,10.0,11.0,9.5,10.5,1000\n"
-    )
+    payload = b"timestamp,open,high,low,close,volume\n2010-01-04,10.0,11.0,9.5,10.5,1000\n"
     client = FakeCsvClient(
         {
             _key(
