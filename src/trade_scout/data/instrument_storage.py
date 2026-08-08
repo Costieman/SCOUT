@@ -245,7 +245,7 @@ class InstrumentMasterStore:
                 (
                     manifest.snapshot_version,
                     manifest.primary_provider_id,
-                    manifest.created_at,
+                    manifest.created_at.isoformat(),
                     json.dumps(manifest.source_batch_ids),
                     manifest.identity_definition_version,
                     manifest.symbol_history_definition_version,
@@ -257,7 +257,7 @@ class InstrumentMasterStore:
                     manifest.symbol_history_parquet_sha256,
                     manifest.instrument_parquet_relative_path,
                     manifest.symbol_history_parquet_relative_path,
-                    datetime.now(manifest.created_at.tzinfo),
+                    datetime.now(manifest.created_at.tzinfo).isoformat(),
                 ),
             )
 
@@ -288,7 +288,7 @@ class InstrumentMasterStore:
                 CREATE TABLE IF NOT EXISTS instrument_master_versions (
                     snapshot_version VARCHAR PRIMARY KEY,
                     primary_provider_id VARCHAR NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL,
+                    created_at VARCHAR NOT NULL,
                     source_batch_ids VARCHAR NOT NULL,
                     identity_definition_version VARCHAR NOT NULL,
                     symbol_history_definition_version VARCHAR NOT NULL,
@@ -300,7 +300,7 @@ class InstrumentMasterStore:
                     symbol_history_parquet_sha256 VARCHAR NOT NULL,
                     instrument_parquet_relative_path VARCHAR NOT NULL,
                     symbol_history_parquet_relative_path VARCHAR NOT NULL,
-                    registered_at TIMESTAMPTZ NOT NULL
+                    registered_at VARCHAR NOT NULL
                 )
                 """
             )
@@ -564,9 +564,12 @@ def _manifest_from_row(row: tuple[object, ...]) -> InstrumentMasterManifest:
     source_ids = json.loads(str(row[3]))
     if not isinstance(source_ids, list) or not all(isinstance(item, str) for item in source_ids):
         raise InstrumentMasterIntegrityError("registered source_batch_ids are invalid")
-    created_at = row[2]
-    if not isinstance(created_at, datetime):
-        raise InstrumentMasterIntegrityError("registered created_at is invalid")
+    try:
+        created_at = datetime.fromisoformat(str(row[2]))
+    except ValueError as exc:
+        raise InstrumentMasterIntegrityError("registered created_at is invalid") from exc
+    if created_at.tzinfo is None or created_at.utcoffset() is None:
+        raise InstrumentMasterIntegrityError("registered created_at is not timezone-aware")
     return InstrumentMasterManifest(
         snapshot_version=str(row[0]),
         primary_provider_id=str(row[1]),
