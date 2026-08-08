@@ -23,3 +23,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Provider-neutral daily-bar normalization with exact identity resolution, explicit adjustment metadata, and per-record quality status propagation.
 - Deterministic incremental canonical revision planning with explicit correction windows, append/correction accounting, and no implicit historical deletion.
 - Versioned `ResearchDataRequest` serving with point-in-time eligibility, explicit price representation, quality gates, and a provider-independent downstream `ResearchBar` contract test.
+- Reproducible canonical-storage benchmark harness reporting Parquet/DuckDB size, promotion, load, and filtered-query measurements without inventing performance thresholds.
