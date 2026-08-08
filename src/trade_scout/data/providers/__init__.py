@@ -8,6 +8,15 @@ from trade_scout.data.providers.massive import (
     MassiveResponseError,
     RawStoreCapture,
 )
+from trade_scout.data.providers.tiingo import (
+    TiingoAdapter,
+    TiingoApiError,
+    TiingoHttpClient,
+    TiingoIdentityError,
+    TiingoInstrumentLink,
+    TiingoResponseError,
+    TiingoUnsupportedError,
+)
 
 __all__ = [
     "MassiveAdapter",
@@ -16,4 +25,11 @@ __all__ = [
     "MassiveIdentityError",
     "MassiveResponseError",
     "RawStoreCapture",
+    "TiingoAdapter",
+    "TiingoApiError",
+    "TiingoHttpClient",
+    "TiingoIdentityError",
+    "TiingoInstrumentLink",
+    "TiingoResponseError",
+    "TiingoUnsupportedError",
 ]
