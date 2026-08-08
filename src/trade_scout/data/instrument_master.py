@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import date
+from itertools import pairwise
 from types import MappingProxyType
 from uuid import UUID, uuid5
 
@@ -44,9 +45,10 @@ class SymbolHistoryNormalizationResult:
 def derive_instrument_id(provider_id: str, provider_instrument_id: str) -> InstrumentId:
     """Derive a stable opaque ID from the first admitted non-ticker provider identity.
 
-    The seed deliberately excludes ticker, company name, and exchange because those can change or be
-    reused. The resulting identifier is an internal key, not a claim that the provider ID itself is a
-    universal security identifier. Later providers must be explicitly linked to the existing internal ID.
+    The seed deliberately excludes ticker, company name, and exchange because those can change or
+    be reused. The resulting identifier is an internal key, not a claim that the provider ID itself
+    is a universal security identifier. Later providers must be explicitly linked to the existing
+    internal ID.
     """
 
     normalized_provider = provider_id.strip().lower()
@@ -213,7 +215,7 @@ def _validate_non_overlapping_history(records: tuple[SymbolHistoryRecord, ...]) 
 
     for instrument_id, instrument_records in by_instrument.items():
         ordered = sorted(instrument_records, key=lambda item: item.effective_from)
-        for previous, current in zip(ordered, ordered[1:], strict=False):
+        for previous, current in pairwise(ordered):
             previous_end = previous.effective_to
             if previous_end is None or current.effective_from <= previous_end:
                 raise SymbolHistoryConflictError(
