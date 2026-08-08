@@ -383,7 +383,7 @@ class MassiveAdapter:
                         high=_require_number(raw_row, "h"),
                         low=_require_number(raw_row, "l"),
                         close=raw_close,
-                        volume=_require_integral_number(raw_row, "v"),
+                        volume=_require_number(raw_row, "v"),
                         split_factor=adjusted_close / raw_close,
                         dividend_cash=dividends.get(trade_date, 0.0),
                         adjusted_open=_require_number(adjusted_row, "o"),
