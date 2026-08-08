@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from datetime import date
-from typing import Sequence
 
 from trade_scout.data.contracts import PriceRepresentation
 from trade_scout.data.provider import (
