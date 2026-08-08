@@ -1,0 +1,65 @@
+name: Symbol History Fix
+
+on:
+  push:
+    branches: [phase-1/massive-symbol-history-boundary]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Apply bounded symbol-history reference lookup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/trade_scout/data/providers/massive.py')
+          text = source.read_text()
+          text = text.replace(
+              '                identity = self._resolve_symbol_identity(symbol, effective_date)\n',
+              '                identity = self._resolve_symbol_history_identity(\n'
+              '                    symbol, effective_date, provider_instrument_id\n'
+              '                )\n',
+              1,
+          )
+          old = '''    def _resolve_symbol_identity(self, symbol: str, as_of: date) -> _ReferenceIdentity:\n        matches: dict[str, _ReferenceIdentity] = {}\n        for active in (True, False):\n            response = self._client.get_json(\n                "/v3/reference/tickers",\n                {\n                    "ticker": symbol,\n                    "market": "stocks",\n                    "type": "CS",\n                    "date": as_of.isoformat(),\n                    "active": active,\n                    "limit": 1000,\n                },\n            )\n            for item in _require_results_list(response):\n                if _optional_string(item.get("ticker")) != symbol:\n                    continue\n                provider_instrument_id = _stable_provider_id(item)\n                exchange = _optional_string(item.get("primary_exchange"))\n                if provider_instrument_id is None or exchange is None:\n                    continue\n                matches[provider_instrument_id] = _ReferenceIdentity(\n                    provider_instrument_id=provider_instrument_id,\n                    symbol=symbol,\n                    exchange=exchange,\n                )\n        if len(matches) != 1:\n            raise MassiveIdentityError(\n                f"expected one stable Massive identity for {symbol} on {as_of}; "\n                f"found {len(matches)}"\n            )\n        return next(iter(matches.values()))\n'''
+          new = '''    def _resolve_symbol_history_identity(\n        self,\n        symbol: str,\n        effective_date: date,\n        expected_provider_instrument_id: str,\n    ) -> _ReferenceIdentity:\n        """Resolve ticker-event identity from the first available reference day in a bounded window."""\n\n        for day_offset in range(8):\n            lookup_date = effective_date + timedelta(days=day_offset)\n            identity = self._try_resolve_symbol_identity(symbol, lookup_date)\n            if identity is None:\n                continue\n            if identity.provider_instrument_id != expected_provider_instrument_id:\n                raise MassiveIdentityError(\n                    f"symbol-history event {symbol} on {effective_date} resolves to "\n                    f"{identity.provider_instrument_id}, expected {expected_provider_instrument_id}"\n                )\n            return identity\n        raise MassiveIdentityError(\n            f"could not resolve {symbol} from ticker event {effective_date} within 7 days"\n        )\n\n    def _resolve_symbol_identity(self, symbol: str, as_of: date) -> _ReferenceIdentity:\n        identity = self._try_resolve_symbol_identity(symbol, as_of)\n        if identity is None:\n            raise MassiveIdentityError(\n                f"expected one stable Massive identity for {symbol} on {as_of}; found 0"\n            )\n        return identity\n\n    def _try_resolve_symbol_identity(\n        self, symbol: str, as_of: date\n    ) -> _ReferenceIdentity | None:\n        matches: dict[str, _ReferenceIdentity] = {}\n        for active in (True, False):\n            response = self._client.get_json(\n                "/v3/reference/tickers",\n                {\n                    "ticker": symbol,\n                    "market": "stocks",\n                    "type": "CS",\n                    "date": as_of.isoformat(),\n                    "active": active,\n                    "limit": 1000,\n                },\n            )\n            for item in _require_results_list(response):\n                if _optional_string(item.get("ticker")) != symbol:\n                    continue\n                provider_instrument_id = _stable_provider_id(item)\n                exchange = _optional_string(item.get("primary_exchange"))\n                if provider_instrument_id is None or exchange is None:\n                    continue\n                matches[provider_instrument_id] = _ReferenceIdentity(\n                    provider_instrument_id=provider_instrument_id,\n                    symbol=symbol,\n                    exchange=exchange,\n                )\n        if len(matches) > 1:\n            raise MassiveIdentityError(\n                f"expected one stable Massive identity for {symbol} on {as_of}; "\n                f"found {len(matches)}"\n            )\n        return next(iter(matches.values())) if matches else None\n'''
+          if old not in text:
+              raise SystemExit('expected identity block not found')
+          text = text.replace(old, new, 1)
+          text = text.replace(
+              '                "ticker-events symbol history is documented by Massive as experimental",\n',
+              '                "ticker-events symbol history is documented by Massive as experimental",\n'
+              '                "ticker-event exchange uses the first matching reference record within 7 days",\n',
+              1,
+          )
+          source.write_text(text)
+
+          tests = Path('tests/integration/data/test_massive_candidate_adapter.py')
+          test_text = tests.read_text()
+          marker = '''def test_symbol_identity_ambiguity_fails_instead_of_using_ticker_as_identity() -> None:\n'''
+          addition = '''def test_symbol_history_allows_bounded_reference_lag_without_changing_identity() -> None:\n    class DelayedReferenceClient(FakeMassiveClient):\n        def get_json(\n            self,\n            endpoint: str,\n            parameters: Mapping[str, Primitive] | None = None,\n        ) -> Mapping[str, object]:\n            params = dict(parameters or {})\n            if (\n                endpoint == "/v3/reference/tickers"\n                and params.get("ticker") == "OLD"\n                and params.get("date") in {"2010-01-04", "2010-01-05"}\n            ):\n                self.calls.append((endpoint, params))\n                return {"results": []}\n            return super().get_json(endpoint, parameters)\n\n    client = DelayedReferenceClient()\n    adapter = MassiveAdapter(client)\n\n    history = adapter.get_symbol_history(provider_instrument_ids=("BBG000EXAMPL",))\n\n    assert history[0].symbol == "OLD"\n    assert history[0].effective_from == date(2010, 1, 4)\n    assert any(\n        endpoint == "/v3/reference/tickers"\n        and params.get("ticker") == "OLD"\n        and params.get("date") == "2010-01-06"\n        for endpoint, params in client.calls\n    )\n\n\n'''
+          if marker not in test_text:
+              raise SystemExit('expected test marker not found')
+          test_text = test_text.replace(marker, addition + marker, 1)
+          tests.write_text(test_text)
+          PY
+          uv sync --locked --dev
+          uv run --frozen ruff format src/trade_scout/data/providers/massive.py tests/integration/data/test_massive_candidate_adapter.py
+          uv run --frozen ruff check --fix src/trade_scout/data/providers/massive.py tests/integration/data/test_massive_candidate_adapter.py
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/trade_scout/data/providers/massive.py tests/integration/data/test_massive_candidate_adapter.py
+          git commit -m "fix(data): bound Massive ticker-event reference lookup"
+          git push
