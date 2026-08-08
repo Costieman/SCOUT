@@ -25,6 +25,17 @@ jobs:
       - name: Sync locked environment
         run: uv sync --locked --dev
 
+      - name: Check repository hygiene
+        shell: bash
+        run: |
+          secret_files="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$' || true)"
+          data_files="$(git ls-files | grep -E '^(runtime|data|cache|logs|artifacts|outputs)/|\.(duckdb|parquet)$|\.duckdb\.wal$' || true)"
+          if [[ -n "${secret_files}${data_files}" ]]; then
+            echo "Forbidden runtime, data, or secret-bearing files are tracked:"
+            printf '%s\n%s\n' "$secret_files" "$data_files"
+            exit 1
+          fi
+
       - name: Check formatting
         run: uv run --frozen ruff format --check .
 
