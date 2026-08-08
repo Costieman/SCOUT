@@ -24,19 +24,19 @@ Thumbs.db
 .ipynb_checkpoints/
 
 # Runtime data, licensed market data, caches, and generated artifacts
-runtime/
-data/
-cache/
-logs/
-artifacts/
-outputs/
+/runtime/
+/data/
+/cache/
+/logs/
+/artifacts/
+/outputs/
 *.duckdb
 *.duckdb.wal
 *.parquet
 
 # Experiment outputs; manifests/schemas remain version controlled
-experiments/artifacts/
-experiments/runtime/
+/experiments/artifacts/
+/experiments/runtime/
 
 # Build artifacts
 build/
