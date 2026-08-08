@@ -83,12 +83,26 @@ class FakeMassiveClient:
             if adjusted is False:
                 return {
                     "results": [
-                        {"t": 1786075200000, "o": 100, "h": 105, "l": 99, "c": 103, "v": 1000000}
+                        {
+                            "t": 1786075200000,
+                            "o": 100,
+                            "h": 105,
+                            "l": 99,
+                            "c": 103,
+                            "v": 1_000_000.375,
+                        }
                     ]
                 }
             return {
                 "results": [
-                    {"t": 1786075200000, "o": 50, "h": 52.5, "l": 49.5, "c": 51.5, "v": 2000000}
+                    {
+                        "t": 1786075200000,
+                        "o": 50,
+                        "h": 52.5,
+                        "l": 49.5,
+                        "c": 51.5,
+                        "v": 2_000_000.75,
+                    }
                 ]
             }
 
@@ -191,7 +205,7 @@ def test_daily_bars_pair_raw_and_split_adjusted_responses_and_attach_dividend() 
     assert bar.adjusted_close == 51.5
     assert bar.split_factor == 0.5
     assert bar.dividend_cash == 0.25
-    assert bar.volume == 1_000_000
+    assert bar.volume == 1_000_000.375
 
 
 def test_corporate_actions_map_split_and_cash_dividend_without_blending() -> None:
