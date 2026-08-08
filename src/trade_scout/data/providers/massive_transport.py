@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from email.utils import parsedate_to_datetime
-from typing import cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -70,10 +69,10 @@ class RetryingUrllibBytesTransport:
         self._last_request_started = now
 
     def _retry_delay(self, error: HTTPError, attempt: int) -> float:
-        retry_after = cast(str | None, error.headers.get("Retry-After"))
+        retry_after = error.headers.get("Retry-After")
         parsed = _parse_retry_after(retry_after, wall_time=self._wall_time())
         if parsed is not None:
-            return min(max(parsed, 0.0), self._max_backoff_seconds)
+            return float(min(max(parsed, 0.0), self._max_backoff_seconds))
         exponential = self._base_backoff_seconds * (2**attempt)
         return min(exponential, self._max_backoff_seconds)
 
