@@ -16,3 +16,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Phase 1 provider-evaluation baseline, acceptance matrix, and sample-design gate.
 - Permanent instrument-ID derivation, explicit cross-provider identity linking, and point-in-time symbol-history resolution.
 - Immutable raw-batch persistence with SHA-256 integrity, provenance manifests, secret-parameter rejection, and idempotency checks.
+- Point-in-time universe eligibility with explicit temporal, delisting, security-type, quality, price, liquidity, and trading-history gates.
