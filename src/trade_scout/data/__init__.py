@@ -1,7 +1,7 @@
 """Trade Scout canonical data contracts, provider boundary, identity, and quality controls.
 
 The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
-normalization, validation, reconciliation, canonical storage, and contextual quality checks. It does
+normalization, validation, reconciliation, canonical storage, and deterministic revisions. It does
 not calculate research features, detect patterns, or repair suspicious upstream observations.
 """
 
@@ -79,12 +79,19 @@ from trade_scout.data.reconciliation import (
     compare_daily_bars,
     record_reconciliation_decision,
 )
+from trade_scout.data.revisions import (
+    CanonicalRevisionResult,
+    RevisedObservation,
+    RevisionConflictError,
+    build_canonical_revision,
+)
 
 __all__ = [
     "CanonicalDailyBarStore",
     "CanonicalDatasetIntegrityError",
     "CanonicalDatasetManifest",
     "CanonicalDatasetNotFoundError",
+    "CanonicalRevisionResult",
     "CompletenessReport",
     "CorporateActionQualityReport",
     "CorporateActionRecord",
@@ -126,10 +133,13 @@ __all__ = [
     "ReconciliationState",
     "ReconciliationTolerance",
     "ResearchBar",
+    "RevisedObservation",
+    "RevisionConflictError",
     "SecretParameterError",
     "SymbolHistoryConflictError",
     "SymbolHistoryRecord",
     "UnexpectedObservation",
+    "build_canonical_revision",
     "compare_daily_bars",
     "derive_instrument_id",
     "instrument_from_primary_provider",
