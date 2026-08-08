@@ -41,7 +41,7 @@ class RetryingUrllibBytesTransport:
         self._last_request_started: float | None = None
 
     def get(self, url: str, *, timeout: float) -> bytes:
-        """Return response bytes, pacing requests and retrying only explicit rate-limit responses."""
+        """Return bytes while pacing requests and retrying explicit rate-limit responses."""
 
         for attempt in range(self._max_attempts):
             self._pace()
