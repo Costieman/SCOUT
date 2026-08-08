@@ -35,9 +35,7 @@ def _bar(*, adjusted: bool = True) -> DailyBar:
 
 
 def test_raw_research_bar_is_explicit() -> None:
-    result = to_research_bar(
-        _bar(), representation=PriceRepresentation.RAW, eligibility=True
-    )
+    result = to_research_bar(_bar(), representation=PriceRepresentation.RAW, eligibility=True)
 
     assert result.close == 103.0
     assert result.price_representation is PriceRepresentation.RAW
