@@ -20,6 +20,48 @@ jobs:
           python-version: "3.13"
       - name: Format, persist, and validate instrument storage
         run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/trade_scout/data/instrument_storage.py')
+          text = path.read_text()
+          text = text.replace(
+              'from collections.abc import Iterable, Mapping\n',
+              'from collections.abc import Iterable\n',
+          )
+          text = text.replace(
+              '                    f"snapshot {request.snapshot_version} already exists with different content/provenance"\n',
+              '                    f"snapshot {request.snapshot_version} already exists with different "\n'
+              '                    "content/provenance"\n',
+          )
+          text = text.replace(
+              '                INSERT INTO instrument_master_versions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n',
+              '                INSERT INTO instrument_master_versions VALUES (\n'
+              '                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?\n'
+              '                )\n',
+          )
+          text = text.replace(
+              '        if instrument.first_trade_date and instrument.delisting_date:\n'
+              '            if instrument.delisting_date < instrument.first_trade_date:\n'
+              '                raise InstrumentMasterIntegrityError(\n'
+              '                    f"instrument {instrument.instrument_id} delists before first trade"\n'
+              '                )\n',
+              '        if (\n'
+              '            instrument.first_trade_date\n'
+              '            and instrument.delisting_date\n'
+              '            and instrument.delisting_date < instrument.first_trade_date\n'
+              '        ):\n'
+              '            raise InstrumentMasterIntegrityError(\n'
+              '                f"instrument {instrument.instrument_id} delists before first trade"\n'
+              '            )\n',
+          )
+          text = text.replace(
+              '                    f"provider identity {provider_id}:{provider_instrument_id} maps to multiple instruments"\n',
+              '                    f"provider identity {provider_id}:{provider_instrument_id} maps to "\n'
+              '                    "multiple instruments"\n',
+          )
+          path.write_text(text)
+          PY
           uv sync --locked --dev
           uv run --frozen ruff format src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
           uv run --frozen ruff check --fix src/trade_scout/data/instrument_storage.py tests/integration/data/test_instrument_storage.py
