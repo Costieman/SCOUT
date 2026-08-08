@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The data module owns provider isolation, canonical market-data contracts, permanent instrument identity, immutable raw preservation, provenance, validation, and the serving boundary consumed by later research modules.
+The data module owns provider isolation, canonical market-data contracts, permanent instrument identity, immutable raw preservation, provenance, validation, cross-provider reconciliation, and the serving boundary consumed by later research modules.
 
 ## Explicit non-responsibilities
 
@@ -26,6 +26,9 @@ The data foundation now establishes:
 - a vendor-neutral `ProviderAdapter` protocol and capability declaration;
 - provider-neutral staging records for instruments, symbols, bars, and corporate actions;
 - deterministic structural/market-logic checks for daily bars;
+- cross-provider price/volume comparison with explicit tolerances and no averaging;
+- reconciliation states `AGREE`, `PRIMARY_ACCEPTED`, `SECONDARY_CONFIRMED_ERROR`, `UNRESOLVED`, and `NOT_COMPARABLE`;
+- reviewed reconciliation decisions that preserve the original provider values and require an audit note;
 - a stable `ResearchBar` serving contract that never silently changes price representation.
 
 ## Identity rule
@@ -40,6 +43,10 @@ Raw vendor bytes are stored before normalization whenever licensing permits. A r
 
 Runtime raw data belong outside Git; tests use temporary directories only.
 
+## Reconciliation rule
+
+Secondary-provider values are validation evidence, not replacement truth. Trade Scout compares matching instrument/date records using explicit price and volume tolerances. Material differences remain `UNRESOLVED` until a reviewed decision is recorded. The reconciliation layer does not average feeds, silently replace the canonical primary value, or compare records whose identity/date does not match.
+
 ## Provider evaluation direction
 
 The Phase 1 public-documentation screen is recorded in [`docs/research/data-provider-evaluation-v0.1.md`](../../../docs/research/data-provider-evaluation-v0.1.md). Massive is the first primary-provider evaluation candidate, Tiingo is the first secondary-validation candidate, and EODHD is retained as a fallback/tertiary candidate.
@@ -50,8 +57,7 @@ This ordering is not provider acceptance. The primary source must still pass a s
 
 1. Build and run the small provider-evaluation harness/dataset once provider credentials are available.
 2. Normalize and promote canonical Parquet datasets with DuckDB metadata.
-3. Implement point-in-time universe history and eligibility.
-4. Add completeness, cross-sectional, corporate-action, and cross-provider quality checks.
-5. Prove deterministic historical backfill and incremental-update behavior.
+3. Add completeness, cross-sectional, and corporate-action quality checks.
+4. Prove deterministic historical backfill and incremental-update behavior.
 
 No downstream feature or pattern work should begin until the complete data-foundation acceptance criteria pass.
