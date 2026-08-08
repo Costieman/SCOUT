@@ -13,7 +13,6 @@ from typing import cast
 from trade_scout.data.contracts import SecurityType
 from trade_scout.data.provider import ProviderInstrument
 from trade_scout.data.providers.massive import MassiveHttpClient, MassiveIdentityError
-from trade_scout.data.raw_store import Primitive
 
 
 def discover_massive_evaluation_instrument(
@@ -86,7 +85,7 @@ def _evaluation_instrument(item: dict[str, object]) -> ProviderInstrument | None
         first_trade_date=_date(item.get("list_date")),
         end_date=_date(item.get("delisted_utc")),
         source_fields={
-            key: cast(Primitive, value)
+            key: value
             for key, value in item.items()
             if value is None or isinstance(value, str | int | float | bool)
         },
