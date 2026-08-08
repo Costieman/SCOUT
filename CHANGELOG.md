@@ -26,6 +26,7 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Reproducible canonical-storage benchmark harness reporting Parquet/DuckDB size, promotion, load, and filtered-query measurements without inventing performance thresholds.
 - Reusable provider-evaluation harness for capability, inactive/delisted, deterministic retrieval, canonical normalization, corporate-action, and symbol-history sample checks while preserving external licensing/raw-revision acceptance gates.
 - Massive candidate Stocks REST adapter with FIGI-based identity, active/inactive reference retrieval, paired raw/split-adjusted daily bars, corporate actions, experimental ticker-event history, same-host pagination checks, and optional immutable raw response capture.
+- Deterministic historical daily-bar backfill planning with bounded date/symbol batches, immutable staged provider-neutral batches, atomic checkpoints, and resume-after-failure semantics.
 
 ### Changed
 - Provider, canonical, Parquet, research-serving, and reconciliation volume contracts now preserve provider-reported fractional volume instead of requiring integer coercion.
