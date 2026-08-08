@@ -22,3 +22,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Contextual completeness, cross-sectional coverage, and unexplained corporate-action price-jump quality checks with explicit policy thresholds.
 - Provider-neutral daily-bar normalization with exact identity resolution, explicit adjustment metadata, and per-record quality status propagation.
 - Deterministic incremental canonical revision planning with explicit correction windows, append/correction accounting, and no implicit historical deletion.
+- Versioned `ResearchDataRequest` serving with point-in-time eligibility, explicit price representation, quality gates, and a provider-independent downstream `ResearchBar` contract test.
