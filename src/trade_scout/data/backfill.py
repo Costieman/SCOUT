@@ -302,7 +302,8 @@ def execute_daily_bar_backfill(
 
     if adapter.provider_id != plan.provider_id:
         raise BackfillPlanError(
-            f"adapter provider {adapter.provider_id} does not match plan provider {plan.provider_id}"
+            f"adapter provider {adapter.provider_id} does not match plan provider "
+            f"{plan.provider_id}"
         )
     checkpoint = store.checkpoint(plan)
     completed = set(checkpoint.completed_batch_ids)
@@ -346,7 +347,8 @@ def _validate_batch_response(
     for bar in bars:
         if bar.provider_id != provider_id:
             raise BackfillRuntimeConflictError(
-                f"batch {batch.batch_id} returned provider {bar.provider_id}; expected {provider_id}"
+                f"batch {batch.batch_id} returned provider {bar.provider_id}; "
+                f"expected {provider_id}"
             )
         if bar.symbol not in allowed_symbols:
             raise BackfillRuntimeConflictError(
@@ -438,7 +440,11 @@ def _bar_from_payload(payload: object) -> ProviderDailyBar:
 
 
 def _optional_float(value: object) -> float | None:
-    return None if value is None else float(value)
+    if value is None:
+        return None
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        raise BackfillRuntimeConflictError("staged numeric field is invalid")
+    return float(value)
 
 
 def _sha256_json(payload: object) -> str:
