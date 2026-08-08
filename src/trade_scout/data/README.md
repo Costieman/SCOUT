@@ -8,7 +8,7 @@ The data module owns provider isolation, canonical market-data contracts, proven
 
 This module does not calculate technical features, detect patterns/events, evaluate outcomes or stops, rank candidates, issue alerts, or silently repair suspicious market data.
 
-## Current Phase 1 slice
+## Completed Phase 1 slice
 
 The first implementation slice establishes:
 
@@ -20,9 +20,15 @@ The first implementation slice establishes:
 - deterministic structural/market-logic checks for daily bars;
 - a stable `ResearchBar` serving contract that never silently changes price representation.
 
+## Provider evaluation direction
+
+The Phase 1 public-documentation screen is recorded in [`docs/research/data-provider-evaluation-v0.1.md`](../../../docs/research/data-provider-evaluation-v0.1.md). Massive is the first primary-provider evaluation candidate, Tiingo is the first secondary-validation candidate, and EODHD is retained as a fallback/tertiary candidate.
+
+This ordering is not provider acceptance. The primary source must still pass a small reproducible historical evaluation covering inactive/delisted securities, identifiers/symbol history, corporate actions, raw/adjusted semantics, corrections, licensing, and deterministic ingestion.
+
 ## Next implementation slices
 
-1. Evaluate the primary and secondary provider candidates on a small historical sample.
+1. Build and run the small provider-evaluation harness/dataset once provider credentials are available.
 2. Implement identifier resolution and the instrument master.
 3. Persist immutable raw batches and provenance/checksums.
 4. Normalize and promote canonical Parquet datasets with DuckDB metadata.
