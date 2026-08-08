@@ -27,6 +27,7 @@ from trade_scout.data.provider_evaluation import (
 )
 from trade_scout.data.providers.massive import MassiveAdapter, MassiveHttpClient, RawStoreCapture
 from trade_scout.data.providers.massive_evaluation import discover_massive_evaluation_instrument
+from trade_scout.data.providers.massive_transport import RetryingUrllibBytesTransport
 from trade_scout.data.raw_store import RawBatchStore
 
 _DATASET_VERSION = DatasetVersion("massive-live-evaluation-2026-08-08-v1")
@@ -98,7 +99,13 @@ def main() -> int:
     report_root.mkdir(parents=True, exist_ok=True)
 
     raw_store = RawBatchStore(raw_root)
-    client = MassiveHttpClient(api_key, raw_capture=RawStoreCapture(raw_store))
+    interval_seconds = float(os.environ.get("MASSIVE_EVAL_MIN_REQUEST_INTERVAL_SECONDS", "12.5"))
+    transport = RetryingUrllibBytesTransport(min_interval_seconds=interval_seconds)
+    client = MassiveHttpClient(
+        api_key,
+        transport=transport,
+        raw_capture=RawStoreCapture(raw_store),
+    )
     adapter = MassiveAdapter(client)
 
     case_runs = tuple(_run_case(adapter, client, spec) for spec in _sample_specs())
@@ -107,6 +114,7 @@ def main() -> int:
         "evaluation_id": str(_DATASET_VERSION),
         "provider_id": adapter.provider_id,
         "generated_for": "Trade Scout Phase 1 provider acceptance gate",
+        "request_interval_seconds": interval_seconds,
         "case_runs": [asdict(item) for item in case_runs],
         "raw_capture": {
             "manifest_count": len(raw_evidence),
@@ -275,6 +283,7 @@ def _markdown_report(payload: dict[str, Any]) -> str:
         "# Massive live provider evaluation",
         "",
         f"Evaluation: `{payload['evaluation_id']}`",
+        f"Request interval: **{payload['request_interval_seconds']} seconds**",
         "",
         "**Provider acceptance: NO.** This run collects evidence; it does not close manual gates.",
         "",
