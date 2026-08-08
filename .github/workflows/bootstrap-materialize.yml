@@ -25,8 +25,7 @@ jobs:
         run: |
           base64 --decode .bootstrap/scaffold.b64 > /tmp/trade-scout-scaffold.tar.gz
           tar -xzf /tmp/trade-scout-scaffold.tar.gz -C .
-          rm -rf .bootstrap
-          rm -f .github/workflows/bootstrap-materialize.yml
+          rm -f .github/workflows/ci.yml
           uv lock
 
       - name: Commit scaffold and lockfile
