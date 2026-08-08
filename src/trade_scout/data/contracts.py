@@ -115,7 +115,7 @@ class DailyBar:
     high_raw: float
     low_raw: float
     close_raw: float
-    volume_raw: int
+    volume_raw: float
     split_factor: float
     dividend_cash: float
     open_split_adjusted: float | None
@@ -137,7 +137,7 @@ class ResearchBar:
     high: float
     low: float
     close: float
-    volume: int
+    volume: float
     eligibility: bool
     quality_status: QualityStatus
     dataset_version: DatasetVersion

@@ -25,7 +25,7 @@ class ReconciliationTolerance:
 
     price_absolute: float = 0.0
     price_relative: float = 0.0
-    volume_absolute: int = 0
+    volume_absolute: float = 0.0
     volume_relative: float = 0.0
 
     def __post_init__(self) -> None:
@@ -156,8 +156,8 @@ def _price_difference(
 
 
 def _volume_difference(
-    primary: int,
-    secondary: int,
+    primary: float,
+    secondary: float,
     tolerance: ReconciliationTolerance,
 ) -> FieldDifference | None:
     if isclose(

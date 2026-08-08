@@ -239,7 +239,9 @@ def _report_to_dict(report: ProviderEvaluationReport) -> dict[str, Any]:
                 "daily_bar_count": case.daily_bar_count,
                 "corporate_action_count": case.corporate_action_count,
                 "normalization_status": (
-                    str(case.normalization_status) if case.normalization_status is not None else None
+                    str(case.normalization_status)
+                    if case.normalization_status is not None
+                    else None
                 ),
                 "checks": [
                     {
@@ -408,7 +410,7 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
         capabilities = adapter.describe_capabilities()
         health = adapter.health_check()
         instruments = tuple(_discover_instrument(client, spec.symbol) for spec in _SAMPLE_SPECS)
-    except Exception as exc:  # noqa: BLE001 - evidence runner must persist provider failures
+    except Exception as exc:
         output["fatal_error"] = _exception_record(exc)
         output["finished_at"] = datetime.now(UTC).isoformat()
         _write_report(report_path, output)
@@ -420,7 +422,9 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
     unresolved_gates: set[str] = set()
 
     for spec in _SAMPLE_SPECS:
-        matches = tuple(instrument for instrument in instruments if instrument.symbol == spec.symbol)
+        matches = tuple(
+            instrument for instrument in instruments if instrument.symbol == spec.symbol
+        )
         case_output: dict[str, Any] = {
             "case_id": spec.case_id,
             "symbol": spec.symbol,
@@ -455,7 +459,7 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
                 (case,),
                 dataset_version=_EVALUATION_VERSION,
             )
-        except Exception as exc:  # noqa: BLE001 - preserve failed real-provider evidence
+        except Exception as exc:
             case_output["execution_error"] = _exception_record(exc)
             case_output["automated_gate_passed"] = False
             automated_results.append(False)
@@ -476,7 +480,8 @@ def run_evaluation(*, api_key: str, report_path: Path, raw_root: Path) -> bool:
     output["scientific_gaps"] = [
         "licensing/storage rights still require explicit confirmation",
         "correction/revision behavior requires comparison across separated retrieval times",
-        "first-trade/IPO boundary evidence remains unresolved where provider reference data omit it",
+        "first-trade/IPO boundary evidence remains unresolved where provider "
+        "reference data omit it",
         "secondary-provider reconciliation has not yet been run on this live sample",
     ]
     output["finished_at"] = datetime.now(UTC).isoformat()
