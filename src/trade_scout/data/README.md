@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The data module owns provider isolation, canonical market-data contracts, permanent instrument identity, immutable raw preservation, provenance, validation, cross-provider reconciliation, and the serving boundary consumed by later research modules.
+The data module owns provider isolation, canonical market-data contracts, permanent instrument identity, immutable raw preservation, provenance, validation, cross-provider reconciliation, immutable canonical storage, and the serving boundary consumed by later research modules.
 
 ## Explicit non-responsibilities
 
@@ -29,6 +29,12 @@ The data foundation now establishes:
 - cross-provider price/volume comparison with explicit tolerances and no averaging;
 - reconciliation states `AGREE`, `PRIMARY_ACCEPTED`, `SECONDARY_CONFIRMED_ERROR`, `UNRESOLVED`, and `NOT_COMPARABLE`;
 - reviewed reconciliation decisions that preserve the original provider values and require an audit note;
+- point-in-time universe eligibility with explicit temporal and survivorship controls;
+- immutable canonical daily-bar promotion to versioned Parquet files;
+- DuckDB metadata registry for dataset identity, provenance, quality counts, date coverage, and checksums;
+- logical-content and physical-Parquet SHA-256 integrity checks;
+- idempotent re-promotion only when both content and provenance are identical;
+- explicit rejection of dataset-version reuse, primary-provider mismatch, and quarantined/rejected records;
 - a stable `ResearchBar` serving contract that never silently changes price representation.
 
 ## Identity rule
@@ -43,6 +49,14 @@ Raw vendor bytes are stored before normalization whenever licensing permits. A r
 
 Runtime raw data belong outside Git; tests use temporary directories only.
 
+## Canonical-storage rule
+
+Research-ready daily bars are promoted into `canonical/equities_daily/<dataset_version>/daily_bars.parquet`. A separate `metadata/datasets.duckdb` registry records the immutable dataset identity, canonical provider, source raw batches, transformation/adjustment/universe/quality-definition versions, quality counts, date coverage, logical-content checksum, and physical Parquet checksum.
+
+A dataset version cannot be silently rewritten. Repeating the exact same promotion is idempotent; changing either the data or provenance requires a new dataset version. `QUARANTINE` and `REJECT` records are not eligible for research-ready promotion. Runtime Parquet and DuckDB files remain outside Git.
+
+DuckDB is deliberately the only new storage dependency for this slice because it can both write/read Parquet and maintain the local metadata registry. This preserves the accepted Parquet/DuckDB architecture without introducing a broader dataframe or database stack.
+
 ## Reconciliation rule
 
 Secondary-provider values are validation evidence, not replacement truth. Trade Scout compares matching instrument/date records using explicit price and volume tolerances. Material differences remain `UNRESOLVED` until a reviewed decision is recorded. The reconciliation layer does not average feeds, silently replace the canonical primary value, or compare records whose identity/date does not match.
@@ -56,8 +70,9 @@ This ordering is not provider acceptance. The primary source must still pass a s
 ## Next implementation slices
 
 1. Build and run the small provider-evaluation harness/dataset once provider credentials are available.
-2. Normalize and promote canonical Parquet datasets with DuckDB metadata.
-3. Add completeness, cross-sectional, and corporate-action quality checks.
-4. Prove deterministic historical backfill and incremental-update behavior.
+2. Add completeness, cross-sectional, and corporate-action quality checks.
+3. Implement deterministic historical backfill orchestration and incremental correction-lookback updates.
+4. Benchmark Parquet/DuckDB on a representative multi-year US-equity sample.
+5. Prove a downstream test module can consume the full research data contract without provider-native imports.
 
 No downstream feature or pattern work should begin until the complete data-foundation acceptance criteria pass.
