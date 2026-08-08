@@ -19,3 +19,4 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Point-in-time universe eligibility with explicit temporal, delisting, security-type, quality, price, liquidity, and trading-history gates.
 - Cross-provider daily-bar reconciliation with explicit tolerances, audit states, and no feed blending.
 - Versioned canonical daily-bar Parquet storage with DuckDB dataset metadata, provenance, quality summaries, integrity checks, and immutable promotion behavior.
+- Contextual completeness, cross-sectional coverage, and unexplained corporate-action price-jump quality checks with explicit policy thresholds.
