@@ -316,7 +316,9 @@ class AlphaVantageAdapter:
         }
         if as_of is not None:
             parameters["date"] = as_of.isoformat()
-        return tuple(_parse_listing_row(row) for row in _read_csv_rows(self._client.get_csv(parameters)))
+        return tuple(
+            _parse_listing_row(row) for row in _read_csv_rows(self._client.get_csv(parameters))
+        )
 
     def _to_provider_instrument(self, row: _ListingRow) -> ProviderInstrument:
         return ProviderInstrument(
