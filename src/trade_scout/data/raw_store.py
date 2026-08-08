@@ -13,9 +13,9 @@ from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
 from types import MappingProxyType
-from typing import TypeAlias
 
-Primitive: TypeAlias = str | int | float | bool | None
+
+type Primitive = str | int | float | bool | None
 
 _SAFE_COMPONENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 _SENSITIVE_PARAMETER_NAMES = frozenset(
@@ -159,7 +159,8 @@ class RawBatchStore:
             or existing_payload != expected_payload
         ):
             raise RawBatchConflictError(
-                f"immutable raw batch {expected_manifest.batch_id} already exists with different content"
+                f"immutable raw batch {expected_manifest.batch_id} already exists "
+                "with different content"
             )
         return _record_from_directory(target, existing_manifest)
 
