@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Mapping, NewType, cast
+from typing import NewType, cast
 
 InstrumentId = NewType("InstrumentId", str)
 DatasetVersion = NewType("DatasetVersion", str)
