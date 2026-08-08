@@ -11,6 +11,10 @@ on:
       - "src/trade_scout/data/providers/massive.py"
       - "src/trade_scout/data/providers/massive_evaluation.py"
 
+concurrency:
+  group: massive-live-evaluation
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
