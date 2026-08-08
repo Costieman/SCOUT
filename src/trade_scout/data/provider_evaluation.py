@@ -147,7 +147,8 @@ def evaluate_provider_adapter(
             "confirm licensing permits intended local raw/canonical storage and use",
             "verify exact raw vendor payload preservation in the concrete adapter transport path",
             "characterize provider correction/revision behavior across retrieval times",
-            "run the sample on real historical active, inactive, corporate-action, and symbol-change cases",
+            "run the agreed real historical sample across active, inactive, corporate-action, "
+            "and symbol-change cases",
         ),
     )
 
@@ -229,9 +230,7 @@ def _evaluate_case(
         )
     )
 
-    out_of_range = tuple(
-        bar for bar in first_bars if not case.start <= bar.trade_date <= case.end
-    )
+    out_of_range = tuple(bar for bar in first_bars if not case.start <= bar.trade_date <= case.end)
     wrong_identity = tuple(
         bar
         for bar in first_bars
@@ -246,9 +245,7 @@ def _evaluate_case(
                 if not out_of_range and not wrong_identity
                 else EvaluationState.FAIL
             ),
-            detail=(
-                f"out_of_range={len(out_of_range)}, wrong_identity={len(wrong_identity)}"
-            ),
+            detail=(f"out_of_range={len(out_of_range)}, wrong_identity={len(wrong_identity)}"),
         )
     )
 
@@ -305,9 +302,7 @@ def _evaluate_case(
             )
         else:
             history = tuple(
-                adapter.get_symbol_history(
-                    provider_instrument_ids=(case.provider_instrument_id,)
-                )
+                adapter.get_symbol_history(provider_instrument_ids=(case.provider_instrument_id,))
             )
             checks.append(
                 EvaluationCheck(
@@ -369,8 +364,6 @@ def _capability_check(
 def _delisting_capability_check(capabilities: ProviderCapabilities) -> EvaluationCheck:
     return EvaluationCheck(
         check_id="delisted_instrument_support",
-        state=(
-            EvaluationState.PASS if capabilities.supports_delisted else EvaluationState.FAIL
-        ),
+        state=(EvaluationState.PASS if capabilities.supports_delisted else EvaluationState.FAIL),
         detail=f"supports_delisted={capabilities.supports_delisted}",
     )

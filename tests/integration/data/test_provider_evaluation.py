@@ -1,7 +1,12 @@
 from collections.abc import Sequence
 from datetime import date
 
-from trade_scout.data.contracts import CorporateActionType, DatasetVersion, PriceRepresentation, SecurityType
+from trade_scout.data.contracts import (
+    CorporateActionType,
+    DatasetVersion,
+    PriceRepresentation,
+    SecurityType,
+)
 from trade_scout.data.provider import (
     CorporateActionRequest,
     DailyBarRequest,
