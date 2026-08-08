@@ -1,8 +1,8 @@
 """Trade Scout canonical data contracts, provider boundary, identity, and quality controls.
 
 The data layer owns provider isolation, canonical meaning, provenance, identity, raw preservation,
-normalization, validation, reconciliation, canonical storage, and deterministic revisions. It does
-not calculate research features, detect patterns, or repair suspicious upstream observations.
+normalization, validation, reconciliation, canonical storage, deterministic revisions, and research
+serving. It does not calculate features, detect patterns, or repair suspicious upstream data.
 """
 
 from trade_scout.data.canonical_storage import (
@@ -85,6 +85,14 @@ from trade_scout.data.revisions import (
     RevisionConflictError,
     build_canonical_revision,
 )
+from trade_scout.data.serving import (
+    DuplicateResearchBarError,
+    MissingEligibilityError,
+    ResearchDataContractError,
+    ResearchDataRequest,
+    ResearchDatasetVersionError,
+    serve_research_bars,
+)
 
 __all__ = [
     "CanonicalDailyBarStore",
@@ -107,12 +115,14 @@ __all__ = [
     "DatasetQualitySummary",
     "DatasetVersion",
     "DatasetVersionConflictError",
+    "DuplicateResearchBarError",
     "FieldDifference",
     "IngestionJobState",
     "InstrumentId",
     "InstrumentIdentityConflictError",
     "InstrumentRecord",
     "InvalidReconciliationDecisionError",
+    "MissingEligibilityError",
     "MissingObservation",
     "NormalizationIssue",
     "NormalizationRule",
@@ -133,6 +143,9 @@ __all__ = [
     "ReconciliationState",
     "ReconciliationTolerance",
     "ResearchBar",
+    "ResearchDataContractError",
+    "ResearchDataRequest",
+    "ResearchDatasetVersionError",
     "RevisedObservation",
     "RevisionConflictError",
     "SecretParameterError",
@@ -148,6 +161,7 @@ __all__ = [
     "normalize_symbol_history",
     "record_reconciliation_decision",
     "resolve_provider_identity",
+    "serve_research_bars",
     "symbol_as_of",
     "to_research_bar",
     "validate_completeness",
