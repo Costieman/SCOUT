@@ -4,6 +4,7 @@ from urllib.error import HTTPError
 import pytest
 
 import trade_scout.data.providers.massive_transport as massive_transport
+from trade_scout.data.providers.massive import MassiveApiError
 from trade_scout.data.providers.massive_transport import RetryingUrllibBytesTransport
 
 
@@ -112,7 +113,7 @@ def test_transport_does_not_retry_nontransient_http_error(
     )
     monkeypatch.setattr(massive_transport, "urlopen", fake_urlopen)
 
-    with pytest.raises(Exception, match="Massive HTTP error 404"):
+    with pytest.raises(MassiveApiError, match="Massive HTTP error 404"):
         transport.get("https://api.massive.com/test", timeout=1.0)
 
     assert attempts == 1
