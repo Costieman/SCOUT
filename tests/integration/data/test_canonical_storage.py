@@ -19,6 +19,7 @@ def _bar(
     instrument_id: str = "tsi_1",
     trade_date: date = date(2026, 8, 6),
     close: float = 103.0,
+    volume: float = 1_000_000.0,
     quality_status: QualityStatus = QualityStatus.PASS,
     provider_id: str = "primary",
     dataset_version: DatasetVersion = VERSION,
@@ -30,7 +31,7 @@ def _bar(
         high_raw=105.0,
         low_raw=99.0,
         close_raw=close,
-        volume_raw=1_000_000,
+        volume_raw=volume,
         split_factor=1.0,
         dividend_cash=0.0,
         open_split_adjusted=100.0,
@@ -74,6 +75,18 @@ def test_promote_round_trips_parquet_and_manifest(tmp_path) -> None:
     assert (tmp_path / "metadata" / "datasets.duckdb").is_file()
     assert store.get_manifest(VERSION) == manifest
     assert store.load(VERSION) == tuple(sorted(bars, key=lambda bar: str(bar.instrument_id)))
+
+
+def test_fractional_volume_round_trips_without_coercion(tmp_path) -> None:
+    store = CanonicalDailyBarStore(tmp_path)
+    source = _bar(volume=1_000_000.375)
+
+    store.promote((source,), _request())
+    loaded = store.load(VERSION)
+
+    assert len(loaded) == 1
+    assert loaded[0].volume_raw == 1_000_000.375
+    assert loaded[0] == source
 
 
 def test_identical_promotion_is_idempotent(tmp_path) -> None:
