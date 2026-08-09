@@ -6,8 +6,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from trade_scout.data.evidence_bridge import assess_runtime_evidence
 from trade_scout.data.runtime_evidence import RuntimeEvidenceArtifact
+from trade_scout.data.runtime_evidence_dispatch import assess_runtime_evidence
 from trade_scout.data.runtime_evidence_manifest import load_runtime_evidence_manifest
 
 
