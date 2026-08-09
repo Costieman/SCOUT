@@ -131,8 +131,10 @@ def test_registered_dataset_replay_preserves_source_and_provenance(tmp_path) -> 
 
     assert result.record_count == 4
     assert result.filtered_query_count == 2
-    assert source_store.get_manifest(VERSION) == source_manifest
-    assert source_store.get_manifest(VERSION).parquet_checksum_sha256 == source_checksum  # type: ignore[union-attr]
+    persisted_source_manifest = source_store.get_manifest(VERSION)
+    assert persisted_source_manifest is not None
+    assert persisted_source_manifest == source_manifest
+    assert persisted_source_manifest.parquet_checksum_sha256 == source_checksum
 
     replay_manifest = CanonicalDailyBarStore(benchmark_root).get_manifest(VERSION)
     assert replay_manifest is not None
@@ -141,7 +143,10 @@ def test_registered_dataset_replay_preserves_source_and_provenance(tmp_path) -> 
     assert replay_manifest.source_batch_ids == source_manifest.source_batch_ids
     assert replay_manifest.transformation_version == source_manifest.transformation_version
     assert replay_manifest.adjustment_policy_version == source_manifest.adjustment_policy_version
-    assert replay_manifest.universe_construction_version == source_manifest.universe_construction_version
+    assert (
+        replay_manifest.universe_construction_version
+        == source_manifest.universe_construction_version
+    )
     assert replay_manifest.quality_check_version == source_manifest.quality_check_version
 
 
