@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from trade_scout.data.contracts import DailyBar, InstrumentId, InstrumentRecord, SecurityType
+from trade_scout.data.contracts import DailyBar, InstrumentRecord, SecurityType
 
 
 class RepresentativeSampleError(ValueError):
@@ -28,7 +28,9 @@ class RepresentativeSamplePolicy:
 
     def __post_init__(self) -> None:
         if not self.version.strip():
-            raise RepresentativeSampleError("representative-sample policy version must be non-empty")
+            raise RepresentativeSampleError(
+                "representative-sample policy version must be non-empty"
+            )
         for name, value in (
             ("min_record_count", self.min_record_count),
             ("min_unique_instruments", self.min_unique_instruments),
@@ -66,9 +68,13 @@ def load_representative_sample_policy(path: Path) -> RepresentativeSamplePolicy:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except OSError as exc:
-        raise RepresentativeSampleError(f"cannot read representative-sample policy: {path}") from exc
+        raise RepresentativeSampleError(
+            f"cannot read representative-sample policy: {path}"
+        ) from exc
     except json.JSONDecodeError as exc:
-        raise RepresentativeSampleError(f"representative-sample policy is invalid JSON: {path}") from exc
+        raise RepresentativeSampleError(
+            f"representative-sample policy is invalid JSON: {path}"
+        ) from exc
     if not isinstance(payload, dict):
         raise RepresentativeSampleError("representative-sample policy root must be a JSON object")
 
@@ -89,7 +95,9 @@ def load_representative_sample_policy(path: Path) -> RepresentativeSamplePolicy:
             details.append("missing=" + ",".join(sorted(missing)))
         if unknown:
             details.append("unknown=" + ",".join(sorted(unknown)))
-        raise RepresentativeSampleError("invalid representative-sample policy fields: " + "; ".join(details))
+        raise RepresentativeSampleError(
+            "invalid representative-sample policy fields: " + "; ".join(details)
+        )
 
     def _nonnegative_int(name: str) -> int:
         value = payload[name]
@@ -121,7 +129,7 @@ def assess_representative_sample(
     *,
     policy: RepresentativeSamplePolicy,
 ) -> RepresentativeSampleAssessment:
-    """Assess observable benchmark scope without claiming statistical representativeness beyond policy."""
+    """Assess observable benchmark scope without overstating statistical representativeness."""
 
     if not bars:
         raise RepresentativeSampleError("representative sample requires canonical bars")
