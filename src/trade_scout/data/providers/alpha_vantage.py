@@ -162,6 +162,7 @@ class _ListingRow:
     ipo_date: date | None
     delisting_date: date | None
     status: str
+    name_missing: bool
 
 
 class AlphaVantageAdapter:
@@ -203,11 +204,7 @@ class AlphaVantageAdapter:
         return ProviderCapabilities(
             provider_id=self.provider_id,
             data_families=frozenset(
-                {
-                    DataFamily.INSTRUMENTS,
-                    DataFamily.STATUS_DELISTINGS,
-                    DataFamily.DAILY_BARS,
-                }
+                {DataFamily.INSTRUMENTS, DataFamily.STATUS_DELISTINGS, DataFamily.DAILY_BARS}
             ),
             adjustment_modes=frozenset({PriceRepresentation.RAW}),
             earliest_daily_bar_date=None,
@@ -216,6 +213,8 @@ class AlphaVantageAdapter:
             timestamp_convention="US equity trading-session date from Alpha Vantage CSV output",
             known_limitations=(
                 "LISTING_STATUS history begins after 2010-01-01.",
+                "Historical LISTING_STATUS rows can contain blank company names; those rows are "
+                "retained with explicit metadata-quality flags rather than discarded.",
                 "LISTING_STATUS provides symbols rather than a documented permanent security "
                 "identifier; ticker must not become the canonical Trade Scout identity.",
                 "TIME_SERIES_DAILY compact output is limited to the latest approximately 100 "
@@ -259,8 +258,7 @@ class AlphaVantageAdapter:
     ) -> Sequence[ProviderSymbolHistory]:
         del provider_instrument_ids
         raise AlphaVantageCapabilityError(
-            "Alpha Vantage LISTING_STATUS does not by itself provide accepted permanent "
-            "symbol history"
+            "LISTING_STATUS does not provide accepted permanent symbol history"
         )
 
     def get_daily_bars(self, request: DailyBarRequest) -> Sequence[ProviderDailyBar]:
@@ -302,8 +300,7 @@ class AlphaVantageAdapter:
     ) -> Sequence[ProviderCorporateAction]:
         del request
         raise AlphaVantageCapabilityError(
-            "Corporate-action coverage must pass a separate Alpha Vantage validation gate "
-            "before use"
+            "Corporate-action coverage requires a separate validation gate"
         )
 
     def _listing_rows(self, *, as_of: date | None, state: str) -> tuple[_ListingRow, ...]:
@@ -313,10 +310,7 @@ class AlphaVantageAdapter:
             raise AlphaVantageCapabilityError(
                 "Alpha Vantage LISTING_STATUS supports historical dates later than 2010-01-01"
             )
-        parameters: dict[str, Primitive] = {
-            "function": "LISTING_STATUS",
-            "state": state,
-        }
+        parameters: dict[str, Primitive] = {"function": "LISTING_STATUS", "state": state}
         if as_of is not None:
             parameters["date"] = as_of.isoformat()
         return tuple(
@@ -338,18 +332,14 @@ class AlphaVantageAdapter:
             source_fields={
                 "asset_type": row.asset_type,
                 "status": row.status,
-                "identity_warning": (
-                    "symbol-derived provider ID is not permanent canonical identity"
-                ),
+                "name_missing": row.name_missing,
+                "metadata_quality": "WARN" if row.name_missing else "PASS",
+                "identity_warning": "symbol-derived ID is not permanent canonical identity",
             },
         )
 
 
-def _to_provider_bar(
-    symbol: str,
-    row: Mapping[str, str],
-    trade_date: date,
-) -> ProviderDailyBar:
+def _to_provider_bar(symbol: str, row: Mapping[str, str], trade_date: date) -> ProviderDailyBar:
     return ProviderDailyBar(
         provider_id="alpha_vantage",
         provider_instrument_id=_symbol_identity(symbol),
@@ -393,14 +383,17 @@ def _read_csv_rows(payload: bytes) -> list[dict[str, str]]:
 
 
 def _parse_listing_row(row: Mapping[str, str]) -> _ListingRow:
+    raw_name = row.get("name")
+    name = raw_name.strip() if raw_name is not None else ""
     return _ListingRow(
         symbol=_required_text(row.get("symbol"), field="symbol"),
-        name=_required_text(row.get("name"), field="name"),
+        name=name,
         exchange=_required_text(row.get("exchange"), field="exchange"),
         asset_type=_required_text(row.get("assetType"), field="assetType"),
         ipo_date=_parse_optional_date(row.get("ipoDate")),
         delisting_date=_parse_optional_date(row.get("delistingDate")),
         status=_required_text(row.get("status"), field="status"),
+        name_missing=not bool(name),
     )
 
 

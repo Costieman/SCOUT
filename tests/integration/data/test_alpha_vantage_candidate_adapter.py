@@ -62,6 +62,7 @@ def test_listing_status_maps_active_and_delisted_point_in_time_records() -> None
     assert ibm.first_trade_date == date(1915, 11, 11)
     assert ibm.end_date is None
     assert ibm.active is True
+    assert ibm.source_fields["metadata_quality"] == "PASS"
     old = instruments[2]
     assert old.active is False
     assert old.end_date == date(2014, 3, 14)
@@ -70,6 +71,28 @@ def test_listing_status_maps_active_and_delisted_point_in_time_records() -> None
         {"function": "LISTING_STATUS", "state": "active", "date": "2014-07-10"},
         {"function": "LISTING_STATUS", "state": "delisted", "date": "2014-07-10"},
     ]
+
+
+def test_blank_listing_name_is_retained_as_warn_metadata_not_rejected() -> None:
+    active = (
+        b"symbol,name,exchange,assetType,ipoDate,delistingDate,status\n"
+        b"ARGD,,NYSE,Stock,2002-12-10,null,Active\n"
+    )
+    delisted = b"symbol,name,exchange,assetType,ipoDate,delistingDate,status\n"
+    as_of = date(2014, 7, 10)
+    client = FakeCsvClient(
+        {
+            _key(function="LISTING_STATUS", state="active", date=as_of.isoformat()): active,
+            _key(function="LISTING_STATUS", state="delisted", date=as_of.isoformat()): delisted,
+        }
+    )
+
+    instrument = AlphaVantageAdapter(client).get_instruments(as_of=as_of)[0]
+
+    assert instrument.symbol == "ARGD"
+    assert instrument.name == ""
+    assert instrument.source_fields["name_missing"] is True
+    assert instrument.source_fields["metadata_quality"] == "WARN"
 
 
 def test_capability_declaration_is_conservative() -> None:
@@ -85,6 +108,7 @@ def test_capability_declaration_is_conservative() -> None:
     assert capabilities.supports_delisted is True
     assert capabilities.supports_symbol_history is False
     assert capabilities.earliest_daily_bar_date is None
+    assert any("blank company names" in item for item in capabilities.known_limitations)
     assert any("full output is plan-dependent" in item for item in capabilities.known_limitations)
 
 
