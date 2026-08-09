@@ -157,12 +157,7 @@ def test_partial_campaign_cannot_demonstrate_backfill_or_raw_preservation(tmp_pa
 def test_result_must_match_immutable_campaign_spec(tmp_path: Path) -> None:
     _build_campaign(tmp_path)
     result_path = (
-        tmp_path
-        / "campaign-state"
-        / "eodhd-campaign-test"
-        / "cases"
-        / "active"
-        / "result.json"
+        tmp_path / "campaign-state" / "eodhd-campaign-test" / "cases" / "active" / "result.json"
     )
     payload = json.loads(result_path.read_text(encoding="utf-8"))
     payload["symbol"] = "WRONG.US"
