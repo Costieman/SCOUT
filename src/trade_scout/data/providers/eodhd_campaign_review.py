@@ -123,10 +123,7 @@ def _derive_evidence(
         _nonempty_text(item.get("provider_instrument_id")) for item in completed_results
     )
     has_delisted = any(item.get("expected_state") == "delisted" for item in completed_results)
-    has_actions = any(
-        isinstance(item.get("action_count"), int) and item["action_count"] > 0
-        for item in completed_results
-    )
+    has_actions = any(_positive_int(item.get("action_count")) for item in completed_results)
 
     return (
         ProviderAcceptanceEvidence(
