@@ -10,10 +10,10 @@ promoted automatically.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
-from typing import Sequence
 
 from trade_scout.data.provider import ProviderDailyBar
 
