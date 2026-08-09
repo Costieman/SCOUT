@@ -26,6 +26,24 @@ class EodhdDailyUpdateEvidence:
     revision: CanonicalRevisionResult
 
 
+def matching_eodhd_parent_bars(
+    parent_bars: Iterable[DailyBar],
+    incoming_bars: Iterable[DailyBar],
+) -> tuple[DailyBar, ...]:
+    """Select the parent slice for the one instrument in a bounded live update retrieval."""
+
+    parent = tuple(parent_bars)
+    incoming = tuple(incoming_bars)
+    instrument_ids = {bar.instrument_id for bar in incoming}
+    if len(instrument_ids) != 1:
+        raise ValueError("live EODHD daily-update evidence requires exactly one incoming instrument")
+    instrument_id = next(iter(instrument_ids))
+    matched = tuple(bar for bar in parent if bar.instrument_id == instrument_id)
+    if not matched:
+        raise ValueError("incoming EODHD instrument is absent from the parent canonical dataset")
+    return matched
+
+
 def assess_eodhd_daily_update(
     base_bars: Iterable[DailyBar],
     incoming_bars: Iterable[DailyBar],
