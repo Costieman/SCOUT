@@ -111,7 +111,9 @@ def run_eodhd_campaign_suite(
         complete=complete,
         new_case_count=new_case_count,
         remaining_case_count=remaining_case_count,
-        stopped_by_limit=not complete and max_new_cases is not None and new_case_count >= max_new_cases,
+        stopped_by_limit=not complete
+        and max_new_cases is not None
+        and new_case_count >= max_new_cases,
     )
 
 
