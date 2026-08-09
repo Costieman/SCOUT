@@ -7,6 +7,7 @@ calendar, or promote retrieved observations into canonical storage.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -87,13 +88,15 @@ class HistoricalEvidenceReport:
 def evaluate_historical_ohlcv(
     adapter: ProviderAdapter,
     cases: tuple[HistoricalEvidenceCase, ...],
+    *,
+    pace: Callable[[], None] | None = None,
 ) -> HistoricalEvidenceReport:
     """Evaluate reproducibility, scope, identity, uniqueness, and date coverage.
 
     Each case is retrieved twice through the same provider-neutral request. Exact normalized-record
     equality is required between the two retrievals. Date-coverage tolerances are calendar-day
     tolerances supplied by the caller; this function deliberately does not invent a trading
-    calendar.
+    calendar. ``pace`` is an optional transport-neutral hook invoked between repeated retrievals.
     """
 
     if not cases:
@@ -102,13 +105,15 @@ def evaluate_historical_ohlcv(
     if len(set(case_ids)) != len(case_ids):
         raise ValueError("historical evidence case_id values must be unique")
 
-    results = tuple(_evaluate_case(adapter, case) for case in cases)
+    results = tuple(_evaluate_case(adapter, case, pace=pace) for case in cases)
     return HistoricalEvidenceReport(provider_id=adapter.provider_id, cases=results)
 
 
 def _evaluate_case(
     adapter: ProviderAdapter,
     case: HistoricalEvidenceCase,
+    *,
+    pace: Callable[[], None] | None,
 ) -> HistoricalEvidenceCaseResult:
     request = DailyBarRequest(
         start=case.start,
@@ -118,6 +123,8 @@ def _evaluate_case(
         run_id=f"historical-evidence:{case.case_id}",
     )
     first = tuple(adapter.get_daily_bars(request))
+    if pace is not None:
+        pace()
     second = tuple(adapter.get_daily_bars(request))
 
     checks = [
