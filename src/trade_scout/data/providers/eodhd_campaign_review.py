@@ -38,8 +38,10 @@ def review_eodhd_campaign(output_root: Path) -> EodhdCampaignReview:
 
     summaries = tuple((output_root / "report").glob("*/campaign-summary.json"))
     if len(summaries) != 1:
+        report_root = output_root / "report"
         raise EodhdCampaignReviewError(
-            f"expected exactly one campaign summary under {output_root / 'report'}; found {len(summaries)}"
+            f"expected exactly one campaign summary under {report_root}; "
+            f"found {len(summaries)}"
         )
     summary_path = summaries[0]
     summary = _read_object(summary_path)
@@ -139,8 +141,8 @@ def _derive_evidence(
             evidence=(reference,),
             note=(
                 f"Bounded campaign completed {len(completed_results)}/{expected_case_count} cases "
-                "through the canonical historical path. This demonstrates the configured cases only, "
-                "not representative-universe completeness."
+                "through the canonical historical path. This demonstrates only the configured "
+                "cases, not representative-universe completeness."
             ),
         ),
         ProviderAcceptanceEvidence(
@@ -151,7 +153,10 @@ def _derive_evidence(
                 else ProviderEvidenceStatus.PARTIAL
             ),
             evidence=(reference,),
-            note="Completed cases retain immutable raw batch identities before canonical promotion.",
+            note=(
+                "Completed cases retain immutable raw batch identities before canonical "
+                "promotion."
+            ),
         ),
         ProviderAcceptanceEvidence(
             criterion=ProviderAcceptanceCriterion.IDENTIFIER_AND_SYMBOL_MAPPING,
@@ -162,8 +167,8 @@ def _derive_evidence(
             ),
             evidence=(reference,) if all_have_identity else (),
             note=(
-                "Campaign cases resolved provider instrument identities, but a three-case campaign cannot "
-                "demonstrate broad historical symbol/identifier coverage."
+                "Campaign cases resolved provider instrument identities, but the bounded "
+                "campaign cannot demonstrate broad historical symbol/identifier coverage."
             ),
         ),
         ProviderAcceptanceEvidence(
@@ -175,8 +180,8 @@ def _derive_evidence(
             ),
             evidence=(reference,) if has_actions else (),
             note=(
-                "At least one completed case exercised non-empty split/dividend handling through canonical "
-                "promotion."
+                "At least one completed case exercised non-empty split/dividend handling "
+                "through canonical promotion."
                 if has_actions
                 else "No completed campaign case contains a corporate action yet."
             ),
@@ -190,8 +195,8 @@ def _derive_evidence(
             ),
             evidence=(reference,) if has_delisted else (),
             note=(
-                "A delisted security is included in the completed bounded evidence. Broader delisting coverage "
-                "remains uncharacterized."
+                "A delisted security is included in the completed bounded evidence. Broader "
+                "delisting coverage remains uncharacterized."
                 if has_delisted
                 else "No delisted campaign case has completed."
             ),
@@ -205,8 +210,8 @@ def _derive_evidence(
             ),
             evidence=(reference,),
             note=(
-                "Configured cases completed normalization, quality gating, immutable canonical promotion, "
-                "record-count reconciliation, and checksum generation."
+                "Configured cases completed normalization, quality gating, immutable canonical "
+                "promotion, record-count reconciliation, and checksum generation."
             ),
         ),
     )
