@@ -10,10 +10,12 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 from trade_scout.data.contracts import SecurityType
 from trade_scout.data.provider import (
@@ -28,6 +30,7 @@ from trade_scout.data.provider import (
     ProviderInstrument,
     ProviderSymbolHistory,
 )
+from trade_scout.data.raw_store import Primitive, RawBatchStore
 
 _SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers_exchange.json"
 _SEC_SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
@@ -51,6 +54,19 @@ class JsonTransport(Protocol):
     def get(self, url: str, *, user_agent: str, timeout: float) -> bytes: ...
 
 
+class RawResponseCapture(Protocol):
+    """Optional immutable raw-response sink."""
+
+    def capture(
+        self,
+        payload: bytes,
+        *,
+        endpoint: str,
+        request_parameters: Mapping[str, Primitive],
+        media_type: str,
+    ) -> None: ...
+
+
 class UrllibJsonTransport:
     """Small standard-library transport that declares an SEC-compatible user agent."""
 
@@ -71,6 +87,31 @@ class UrllibJsonTransport:
             raise SecEdgarApiError(f"SEC EDGAR network error: {exc.reason}") from exc
 
 
+class SecRawStoreCapture:
+    """Persist exact SEC responses through the immutable raw-zone store."""
+
+    def __init__(self, store: RawBatchStore) -> None:
+        self._store = store
+
+    def capture(
+        self,
+        payload: bytes,
+        *,
+        endpoint: str,
+        request_parameters: Mapping[str, Primitive],
+        media_type: str,
+    ) -> None:
+        self._store.persist(
+            payload,
+            batch_id=f"sec-edgar-{uuid4().hex}",
+            provider_id="sec_edgar",
+            endpoint=endpoint,
+            retrieval_time=datetime.now(UTC),
+            request_parameters=request_parameters,
+            media_type=media_type,
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class SecTickerAssociation:
     """Current SEC association between issuer CIK, ticker, exchange, and company name."""
@@ -89,6 +130,7 @@ class SecEdgarClient:
         user_agent: str,
         *,
         transport: JsonTransport | None = None,
+        raw_capture: RawResponseCapture | None = None,
         timeout: float = 30.0,
     ) -> None:
         if not user_agent.strip():
@@ -97,10 +139,15 @@ class SecEdgarClient:
             raise ValueError("SEC EDGAR HTTP timeout must be positive")
         self._user_agent = user_agent.strip()
         self._transport = transport or UrllibJsonTransport()
+        self._raw_capture = raw_capture
         self._timeout = timeout
 
     def get_ticker_associations(self) -> tuple[SecTickerAssociation, ...]:
-        payload = self._get_json(_SEC_TICKERS_URL)
+        payload = self._get_json(
+            _SEC_TICKERS_URL,
+            endpoint="/files/company_tickers_exchange.json",
+            request_parameters={"dataset": "company_tickers_exchange"},
+        )
         if not isinstance(payload, dict):
             raise SecEdgarResponseError("SEC ticker response must be a JSON object")
         fields = payload.get("fields")
@@ -130,18 +177,36 @@ class SecEdgarClient:
     def get_submissions(self, cik: int) -> Mapping[str, Any]:
         if cik <= 0:
             raise ValueError("SEC CIK must be positive")
-        url = _SEC_SUBMISSIONS_URL.format(cik=f"{cik:010d}")
-        payload = self._get_json(url)
+        padded_cik = f"{cik:010d}"
+        url = _SEC_SUBMISSIONS_URL.format(cik=padded_cik)
+        payload = self._get_json(
+            url,
+            endpoint="/submissions/CIK.json",
+            request_parameters={"cik": padded_cik},
+        )
         if not isinstance(payload, dict):
             raise SecEdgarResponseError("SEC submissions response must be a JSON object")
         return payload
 
-    def _get_json(self, url: str) -> Any:
+    def _get_json(
+        self,
+        url: str,
+        *,
+        endpoint: str,
+        request_parameters: Mapping[str, Primitive],
+    ) -> Any:
         raw = self._transport.get(
             url,
             user_agent=self._user_agent,
             timeout=self._timeout,
         )
+        if self._raw_capture is not None:
+            self._raw_capture.capture(
+                raw,
+                endpoint=endpoint,
+                request_parameters=request_parameters,
+                media_type="application/json",
+            )
         try:
             return json.loads(raw)
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -161,9 +226,19 @@ class SecEdgarAdapter:
         cls,
         user_agent: str,
         *,
+        raw_root: Path | None = None,
         timeout: float = 30.0,
     ) -> SecEdgarAdapter:
-        return cls(SecEdgarClient(user_agent, timeout=timeout))
+        raw_capture: RawResponseCapture | None = None
+        if raw_root is not None:
+            raw_capture = SecRawStoreCapture(RawBatchStore(raw_root))
+        return cls(
+            SecEdgarClient(
+                user_agent,
+                raw_capture=raw_capture,
+                timeout=timeout,
+            )
+        )
 
     def describe_capabilities(self) -> ProviderCapabilities:
         return ProviderCapabilities(
