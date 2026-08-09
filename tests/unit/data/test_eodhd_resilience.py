@@ -8,8 +8,8 @@ from trade_scout.data.providers.eodhd import EodhdApiError, EodhdBytesTransport
 from trade_scout.data.providers.eodhd_resilience import (
     EodhdAuthenticationError,
     EodhdRateLimitError,
-    EodhdRetryPolicy,
     EodhdRetryingBytesTransport,
+    EodhdRetryPolicy,
     EodhdTransientError,
 )
 
