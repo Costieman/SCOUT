@@ -26,7 +26,9 @@ class RuntimeEvidenceArtifact:
         if not self.producer.strip():
             raise ValueError("runtime evidence producer must be non-empty")
         if self.path.is_absolute():
-            raise ValueError("runtime evidence paths must be relative to the configured evidence root")
+            raise ValueError(
+                "runtime evidence paths must be relative to the configured evidence root"
+            )
         if not self.path.parts or ".." in self.path.parts:
             raise ValueError("runtime evidence path must stay within the configured evidence root")
         normalized_checksum = self.sha256.strip().lower()
