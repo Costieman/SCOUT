@@ -118,9 +118,7 @@ def _print_status(primary_root: Path, daily_root: Path, secondary_root: Path) ->
     if daily is None:
         print("EODHD correction-lookback probe: not started")
     else:
-        overlap = int(daily.get("revised_count", 0)) + int(
-            daily.get("unchanged_incoming_count", 0)
-        )
+        overlap = int(daily.get("revised_count", 0)) + int(daily.get("unchanged_incoming_count", 0))
         print(
             "EODHD correction-lookback probe: "
             f"live={daily.get('live_provider_observation') is True}; overlap={overlap}; "
