@@ -188,9 +188,7 @@ def test_splits_and_dividends_are_preserved_as_provider_actions() -> None:
         CorporateActionType.SPLIT,
         CorporateActionType.CASH_DIVIDEND,
     ]
-    assert all(
-        action.provider_instrument_id == "eodhd:isin:US0378331005" for action in actions
-    )
+    assert all(action.provider_instrument_id == "eodhd:isin:US0378331005" for action in actions)
 
 
 def test_capabilities_keep_symbol_history_unaccepted() -> None:
