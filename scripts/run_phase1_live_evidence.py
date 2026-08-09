@@ -96,8 +96,7 @@ def _print_status(primary_root: Path, secondary_root: Path) -> None:
 
 def _has_eodhd_token() -> bool:
     return bool(
-        os.environ.get("EODHD_API_TOKEN", "").strip()
-        or os.environ.get("EODHD_API_KEY", "").strip()
+        os.environ.get("EODHD_API_TOKEN", "").strip() or os.environ.get("EODHD_API_KEY", "").strip()
     )
 
 
@@ -139,7 +138,9 @@ def main() -> int:
         str(args.max_new_cases),
     )
     if primary_code != 0:
-        print("Primary EODHD evidence stage did not complete cleanly; secondary validation withheld.")
+        print(
+            "Primary EODHD evidence stage did not complete cleanly; secondary validation withheld."
+        )
         return primary_code
 
     summary = _latest_primary_summary(primary_root)
