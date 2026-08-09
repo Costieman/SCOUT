@@ -92,8 +92,8 @@ def _policy() -> UniverseMeasurementPolicy:
 def test_history_uses_only_information_available_on_each_session() -> None:
     instrument = _instrument("tsi-1")
     bars = (
-        _bar("tsi-1", date(2020, 1, 2), close=10.0, volume=1_000_000.0),
-        _bar("tsi-1", date(2020, 1, 3), close=10.0, volume=1_000_000.0),
+        _bar("tsi-1", date(2020, 1, 2), close=10.0, volume=600_000.0),
+        _bar("tsi-1", date(2020, 1, 3), close=10.0, volume=600_000.0),
         _bar("tsi-1", date(2020, 1, 6), close=1.0, volume=1.0),
     )
 
