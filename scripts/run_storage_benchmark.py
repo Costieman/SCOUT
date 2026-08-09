@@ -38,7 +38,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--dataset-version", required=True)
     parser.add_argument("--instrument-snapshot-version", required=True)
-    parser.add_argument("--representative-policy", type=Path, default=_DEFAULT_REPRESENTATIVE_POLICY)
+    parser.add_argument(
+        "--representative-policy", type=Path, default=_DEFAULT_REPRESENTATIVE_POLICY
+    )
     parser.add_argument("--benchmark-root", type=Path, required=True)
     parser.add_argument("--query-start", type=_date, required=True)
     parser.add_argument("--query-end", type=_date, required=True)
