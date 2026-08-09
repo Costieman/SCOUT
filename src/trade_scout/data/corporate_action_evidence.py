@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from enum import StrEnum
+from itertools import pairwise
 
 from trade_scout.data.contracts import CorporateActionType
 from trade_scout.data.provider import ProviderCorporateAction, ProviderDailyBar
@@ -137,7 +138,7 @@ def _find_discontinuities(
     window = timedelta(days=action_window_days)
     for provider_instrument_id, instrument_bars in by_instrument.items():
         ordered = sorted(instrument_bars, key=lambda item: item.trade_date)
-        for previous, current in zip(ordered, ordered[1:], strict=False):
+        for previous, current in pairwise(ordered):
             if previous.close == 0:
                 continue
             change = current.close / previous.close - 1.0
