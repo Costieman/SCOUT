@@ -258,7 +258,7 @@ class AlphaVantageAdapter:
     ) -> Sequence[ProviderSymbolHistory]:
         del provider_instrument_ids
         raise AlphaVantageCapabilityError(
-            "Alpha Vantage LISTING_STATUS does not by itself provide accepted permanent symbol history"
+            "LISTING_STATUS does not provide accepted permanent symbol history"
         )
 
     def get_daily_bars(self, request: DailyBarRequest) -> Sequence[ProviderDailyBar]:
@@ -300,7 +300,7 @@ class AlphaVantageAdapter:
     ) -> Sequence[ProviderCorporateAction]:
         del request
         raise AlphaVantageCapabilityError(
-            "Corporate-action coverage must pass a separate Alpha Vantage validation gate before use"
+            "Corporate-action coverage requires a separate validation gate"
         )
 
     def _listing_rows(self, *, as_of: date | None, state: str) -> tuple[_ListingRow, ...]:
@@ -334,7 +334,7 @@ class AlphaVantageAdapter:
                 "status": row.status,
                 "name_missing": row.name_missing,
                 "metadata_quality": "WARN" if row.name_missing else "PASS",
-                "identity_warning": "symbol-derived provider ID is not permanent canonical identity",
+                "identity_warning": "symbol-derived ID is not permanent canonical identity",
             },
         )
 
