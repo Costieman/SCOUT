@@ -38,6 +38,8 @@ def assess_runtime_evidence(path: Path) -> RuntimeEvidenceAssessment:
         "eodhd-tiingo-cross-validation-v0.1",
     }:
         return _assess_cross_provider_validation(path, payload)
+    if payload.get("schema_version") == "eodhd-campaign-storage-evidence-v0.1":
+        return _assess_eodhd_campaign_storage_evidence(path, payload)
     if _looks_like_storage_benchmark(payload):
         return _assess_storage_benchmark(path, payload)
     if "cases" in payload and payload.get("provider_id"):
@@ -144,18 +146,14 @@ def _assess_cross_provider_validation(
     if not complete:
         note = "Cross-provider evidence is incomplete; not all configured cases finished."
     elif not no_unresolved:
-        note = (
-            "Cross-provider evidence contains unresolved provider discrepancies requiring review."
-        )
+        note = "Cross-provider evidence contains unresolved provider discrepancies requiring review."
     elif not representative_accepted:
         note = (
             "Cross-provider cases completed without unresolved discrepancies, but representative "
             "sample acceptance has not been explicitly reviewed."
         )
     else:
-        note = (
-            "Representative cross-provider validation completed with no unresolved discrepancies."
-        )
+        note = "Representative cross-provider validation completed with no unresolved discrepancies."
     return RuntimeEvidenceAssessment(
         source_path=path,
         evidence=AcceptanceEvidence(
@@ -165,6 +163,66 @@ def _assess_cross_provider_validation(
             note=note,
         ),
     )
+
+
+def _assess_eodhd_campaign_storage_evidence(
+    path: Path,
+    payload: dict[str, Any],
+) -> RuntimeEvidenceAssessment:
+    """Assess the nested report emitted by the representative EODHD campaign benchmark."""
+
+    dataset_version = payload.get("dataset_version")
+    if not isinstance(dataset_version, str) or not dataset_version.strip():
+        raise RuntimeEvidenceError("campaign storage evidence dataset_version must be non-empty text")
+
+    representative = payload.get("representative_sample")
+    if not isinstance(representative, dict):
+        raise RuntimeEvidenceError("campaign storage evidence requires representative_sample")
+    failures = representative.get("failures")
+    if not isinstance(failures, list) or not all(isinstance(item, str) for item in failures):
+        raise RuntimeEvidenceError("campaign storage evidence representative failures must be a list")
+
+    representative_accepted = payload.get("representative_sample_accepted") is True
+    if representative_accepted != (len(failures) == 0):
+        raise RuntimeEvidenceError(
+            "campaign storage evidence acceptance flag contradicts representative-sample failures"
+        )
+
+    benchmark = payload.get("storage_benchmark")
+    if not representative_accepted:
+        if benchmark is not None:
+            raise RuntimeEvidenceError(
+                "campaign storage benchmark must not run when representative-sample acceptance fails"
+            )
+        return RuntimeEvidenceAssessment(
+            source_path=path,
+            evidence=AcceptanceEvidence(
+                criterion=DataFoundationCriterion.STORAGE_BENCHMARK,
+                status=AcceptanceEvidenceStatus.PARTIAL,
+                evidence=(str(path),),
+                note=(
+                    "Representative-sample scope gate failed; storage benchmarking was correctly "
+                    "withheld."
+                ),
+            ),
+        )
+
+    if not isinstance(benchmark, dict):
+        raise RuntimeEvidenceError(
+            "accepted campaign storage evidence requires completed storage_benchmark measurements"
+        )
+
+    flattened = {
+        "dataset_version": dataset_version,
+        "record_count": benchmark.get("record_count"),
+        "unique_instrument_count": benchmark.get("unique_instrument_count"),
+        "first_trade_date": benchmark.get("first_trade_date"),
+        "last_trade_date": benchmark.get("last_trade_date"),
+        "parquet_bytes": benchmark.get("parquet_bytes"),
+        "filtered_query_count": benchmark.get("filtered_query_count"),
+        "representative_sample_accepted": True,
+    }
+    return _assess_storage_benchmark(path, flattened)
 
 
 def _looks_like_storage_benchmark(payload: dict[str, Any]) -> bool:
