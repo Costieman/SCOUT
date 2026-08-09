@@ -103,7 +103,7 @@ def load_representative_sample_policy(path: Path) -> RepresentativeSamplePolicy:
         value = payload[name]
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise RepresentativeSampleError(f"{name} must be a non-negative integer")
-        return value
+        return int(value)
 
     version = payload["version"]
     require_common_stock = payload["require_common_stock"]
