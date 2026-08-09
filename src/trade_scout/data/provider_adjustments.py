@@ -45,7 +45,10 @@ def materialize_split_adjusted_bars(
     for action in materialized_actions:
         if action.action_type is CorporateActionType.SPLIT:
             split_events[action.provider_instrument_id].append(
-                (action.effective_date, _required_positive_number(action.source_fields, "split_ratio"))
+                (
+                    action.effective_date,
+                    _required_positive_number(action.source_fields, "split_ratio"),
+                )
             )
         elif action.action_type is CorporateActionType.CASH_DIVIDEND:
             dividend_events[action.provider_instrument_id][action.effective_date] += (
@@ -96,7 +99,9 @@ def _validate_scope(
 
     bar_keys = [(bar.provider_instrument_id, bar.trade_date) for bar in bars]
     if len(bar_keys) != len(set(bar_keys)):
-        raise ProviderAdjustmentError("provider bars contain duplicate instrument/date observations")
+        raise ProviderAdjustmentError(
+            "provider bars contain duplicate instrument/date observations"
+        )
 
     action_instruments = {action.provider_instrument_id for action in actions}
     bar_instruments = {bar.provider_instrument_id for bar in bars}
