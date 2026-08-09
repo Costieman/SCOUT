@@ -1,5 +1,5 @@
-from datetime import date
 import json
+from datetime import date
 
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
 from trade_scout.data.providers.eodhd_daily_update import assess_eodhd_daily_update
