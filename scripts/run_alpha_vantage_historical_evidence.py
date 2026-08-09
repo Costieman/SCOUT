@@ -103,7 +103,8 @@ def _payload(report: HistoricalEvidenceReport) -> dict[str, object]:
     payload["acceptance_note"] = (
         "A passing run demonstrates the configured historical retrieval sample only. Provider "
         "acceptance still requires licensing/storage review, identity evidence, delisting and "
-        "corporate-action characterization, cross-provider validation, and the complete Phase 1 gate."
+        "corporate-action characterization, cross-provider validation, and the complete Phase 1 "
+        "gate."
     )
     return payload
 
