@@ -46,7 +46,7 @@ def _assess_eodhd_daily_update(
     added = _required_nonnegative_int(payload, "added_count")
     revised = _required_nonnegative_int(payload, "revised_count")
     unchanged = _required_nonnegative_int(payload, "unchanged_incoming_count")
-    carried = _required_nonnegative_int(payload, "carried_forward_count")
+    _required_nonnegative_int(payload, "carried_forward_count")
     change_count = _required_nonnegative_int(payload, "change_count")
 
     if incoming != added + revised + unchanged:
@@ -58,17 +58,15 @@ def _assess_eodhd_daily_update(
     if payload.get("requires_new_version") is not (change_count > 0):
         raise RuntimeEvidenceError("daily-update requires_new_version contradicts change_count")
     if incoming < 1:
-        raise RuntimeEvidenceError("daily-update evidence requires at least one incoming observation")
-    if carried < 0:  # defensive despite non-negative validation above
-        raise RuntimeEvidenceError("daily-update carried_forward_count must be non-negative")
+        raise RuntimeEvidenceError(
+            "daily-update evidence requires at least one incoming observation"
+        )
 
     live = payload.get("live_provider_observation") is True
     overlap_count = revised + unchanged
     demonstrated = live and overlap_count > 0
     status = (
-        AcceptanceEvidenceStatus.DEMONSTRATED
-        if demonstrated
-        else AcceptanceEvidenceStatus.PARTIAL
+        AcceptanceEvidenceStatus.DEMONSTRATED if demonstrated else AcceptanceEvidenceStatus.PARTIAL
     )
     if not live:
         note = (
