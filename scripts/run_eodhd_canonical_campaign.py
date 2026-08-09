@@ -95,7 +95,8 @@ def main() -> int:
         "acceptance_note": (
             "A successful bounded case proves this exact identity/date scope can traverse the raw, "
             "corporate-action, normalization, quality, provenance, and canonical-storage path. "
-            "It does not establish representative multi-year coverage or primary-provider acceptance."
+            "It does not establish representative multi-year coverage or primary-provider "
+            "acceptance."
         ),
     }
     json_path = report_root / "eodhd-canonical-campaign.json"
@@ -107,6 +108,8 @@ def main() -> int:
 
 
 def _markdown(payload: dict[str, object]) -> str:
+    raw_batches = payload["raw_batch_ids"]
+    raw_batch_count = len(raw_batches) if isinstance(raw_batches, list) else 0
     return "\n".join(
         [
             "# EODHD canonical Phase 1 evaluation case",
@@ -120,7 +123,7 @@ def _markdown(payload: dict[str, object]) -> str:
             f"Canonical records: {payload['canonical_record_count']}",
             f"Corporate actions: {payload['action_count']} "
             f"(splits={payload['split_count']}, dividends={payload['dividend_count']})",
-            f"Raw batches preserved: {len(payload['raw_batch_ids']) if isinstance(payload['raw_batch_ids'], list) else 0}",
+            f"Raw batches preserved: {raw_batch_count}",
             "",
             "**Provider accepted: false. Representative sample accepted: false.**",
             "",
