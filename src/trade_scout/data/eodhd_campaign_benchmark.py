@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
-from trade_scout.data.contracts import DatasetVersion, InstrumentRecord
+from trade_scout.data.contracts import (
+    DatasetVersion,
+    InstrumentId,
+    InstrumentRecord,
+    SecurityType,
+)
 from trade_scout.data.representative_sample import (
     RepresentativeSampleAssessment,
     RepresentativeSamplePolicy,
@@ -27,6 +33,36 @@ class EodhdCampaignBenchmarkEvidence:
     @property
     def representative_sample_accepted(self) -> bool:
         return self.representative_sample.accepted
+
+
+def load_aggregate_campaign_instruments(path: Path) -> tuple[InstrumentRecord, ...]:
+    """Load the instrument slice emitted by the aggregate campaign report."""
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("aggregate report must be a JSON object")
+    raw_instruments = payload.get("instruments")
+    if not isinstance(raw_instruments, list) or not raw_instruments:
+        raise ValueError("aggregate report instruments must be a non-empty list")
+
+    instruments: list[InstrumentRecord] = []
+    for raw in raw_instruments:
+        if not isinstance(raw, dict):
+            raise ValueError("aggregate report instrument entries must be objects")
+        instruments.append(
+            InstrumentRecord(
+                instrument_id=InstrumentId(_text(raw, "instrument_id")),
+                primary_symbol=_text(raw, "symbol"),
+                name=_text(raw, "name"),
+                exchange=_text(raw, "exchange"),
+                security_type=SecurityType(_text(raw, "security_type")),
+                currency=_text(raw, "currency"),
+                first_trade_date=_optional_date(raw.get("first_trade_date")),
+                delisting_date=_optional_date(raw.get("delisting_date")),
+                provider_ids={"eodhd": _text(raw, "provider_instrument_id")},
+            )
+        )
+    return tuple(instruments)
 
 
 def assess_and_benchmark_eodhd_campaign(
@@ -63,3 +99,18 @@ def assess_and_benchmark_eodhd_campaign(
         representative_sample=assessment,
         storage_benchmark=benchmark,
     )
+
+
+def _text(payload: dict[str, object], key: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"aggregate report {key} must be non-empty text")
+    return value.strip()
+
+
+def _optional_date(value: object) -> date | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("aggregate report dates must be ISO dates or null")
+    return date.fromisoformat(value)
