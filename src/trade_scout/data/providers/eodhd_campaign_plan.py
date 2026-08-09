@@ -35,7 +35,9 @@ def load_eodhd_campaign_plan(path: Path) -> EodhdCampaignPlan:
     if not isinstance(payload, dict):
         raise EodhdCampaignPlanError("EODHD campaign plan root must be an object")
     if set(payload) != {"schema_version", "plan_version", "cases"}:
-        raise EodhdCampaignPlanError("EODHD campaign plan contains missing or unknown top-level fields")
+        raise EodhdCampaignPlanError(
+            "EODHD campaign plan contains missing or unknown top-level fields"
+        )
     if payload.get("schema_version") != "eodhd-campaign-plan-v0.1":
         raise EodhdCampaignPlanError("unsupported EODHD campaign plan schema_version")
     plan_version = payload.get("plan_version")
@@ -66,7 +68,9 @@ def _case_from_payload(payload: object) -> EodhdCampaignSuiteCase:
     symbol = payload["symbol"]
     expected_state = payload["expected_state"]
     dataset_version = payload["dataset_version"]
-    if not all(isinstance(item, str) for item in (case_id, symbol, expected_state, dataset_version)):
+    if not all(
+        isinstance(item, str) for item in (case_id, symbol, expected_state, dataset_version)
+    ):
         raise EodhdCampaignPlanError("EODHD campaign case text fields must be strings")
     if expected_state not in {"active", "delisted"}:
         raise EodhdCampaignPlanError("EODHD expected_state must be active or delisted")
