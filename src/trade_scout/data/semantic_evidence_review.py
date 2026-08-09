@@ -100,7 +100,8 @@ def review_semantic_runtime_evidence(
                     semantic_status=None,
                     semantic_note=None,
                     assessment_error=(
-                        "registered criterion does not match the runtime report's semantic criterion"
+                        "registered criterion does not match the runtime report's "
+                        "semantic criterion"
                     ),
                 )
             )
