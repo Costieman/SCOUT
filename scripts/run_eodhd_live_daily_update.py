@@ -9,9 +9,12 @@ from pathlib import Path
 
 from trade_scout.data.acceptance import AcceptanceEvidenceStatus
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
-from trade_scout.data.contracts import DailyBar, DatasetVersion
+from trade_scout.data.contracts import DatasetVersion
 from trade_scout.data.providers.eodhd_campaign import EodhdCampaignCase, run_eodhd_canonical_case
-from trade_scout.data.providers.eodhd_daily_update import assess_eodhd_daily_update
+from trade_scout.data.providers.eodhd_daily_update import (
+    assess_eodhd_daily_update,
+    matching_eodhd_parent_bars,
+)
 from trade_scout.data.providers.eodhd_daily_update_report import write_eodhd_daily_update_report
 from trade_scout.data.runtime_evidence_dispatch import assess_runtime_evidence
 from trade_scout.data.runtime_evidence_registration import register_runtime_evidence
@@ -46,21 +49,6 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-root", type=Path, default=_DEFAULT_OUTPUT)
     parser.add_argument("--manifest", type=Path, default=_DEFAULT_MANIFEST)
     return parser
-
-
-def matching_parent_bars(
-    parent: tuple[DailyBar, ...], incoming: tuple[DailyBar, ...]
-) -> tuple[DailyBar, ...]:
-    """Return the parent slice for the one instrument observed by the bounded live retrieval."""
-
-    instrument_ids = {bar.instrument_id for bar in incoming}
-    if len(instrument_ids) != 1:
-        raise ValueError("live daily-update evidence requires exactly one incoming instrument")
-    instrument_id = next(iter(instrument_ids))
-    matched = tuple(bar for bar in parent if bar.instrument_id == instrument_id)
-    if not matched:
-        raise ValueError("incoming EODHD instrument is absent from the parent canonical dataset")
-    return matched
 
 
 def _token() -> str:
@@ -108,7 +96,7 @@ def main() -> int:
         quality_check_version="daily-bar-quality-v1",
     )
     incoming = incoming_store.load(target_version)
-    parent_slice = matching_parent_bars(parent, incoming)
+    parent_slice = matching_eodhd_parent_bars(parent, incoming)
 
     evidence = assess_eodhd_daily_update(
         parent_slice,
