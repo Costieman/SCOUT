@@ -142,14 +142,14 @@ class AlphaVantageHttpClient:
             f"{_ALPHA_VANTAGE_URL}?{urlencode(query)}",
             timeout=self._timeout,
         )
-        _raise_for_api_message(payload)
         if self._raw_capture is not None:
             self._raw_capture.capture(
                 payload,
                 endpoint="/query",
                 request_parameters=safe_parameters,
-                media_type="text/csv",
+                media_type=_response_media_type(payload),
             )
+        _raise_for_api_message(payload)
         return payload
 
 
@@ -353,6 +353,10 @@ def _to_provider_bar(symbol: str, row: Mapping[str, str], trade_date: date) -> P
     )
 
 
+def _response_media_type(payload: bytes) -> str:
+    return "application/json" if payload.lstrip().startswith(b"{") else "text/csv"
+
+
 def _raise_for_api_message(payload: bytes) -> None:
     if not payload.lstrip().startswith(b"{"):
         return
@@ -368,7 +372,10 @@ def _raise_for_api_message(payload: bytes) -> None:
         value = parsed.get(key)
         if isinstance(value, str) and value.strip():
             raise AlphaVantageApiError(f"Alpha Vantage {key}: {value.strip()}")
-    raise AlphaVantageResponseError("Alpha Vantage returned JSON where CSV was expected")
+    keys = ", ".join(sorted(str(key) for key in parsed)) or "<none>"
+    raise AlphaVantageResponseError(
+        f"Alpha Vantage returned JSON where CSV was expected; keys: {keys}"
+    )
 
 
 def _read_csv_rows(payload: bytes) -> list[dict[str, str]]:
