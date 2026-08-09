@@ -75,25 +75,29 @@ def main() -> int:
 
     incoming_root = args.output_root / "incoming" / str(target_version)
     incoming_store = CanonicalDailyBarStore(incoming_root / "data")
-    case = EodhdCampaignCase(
-        symbol=args.symbol,
-        start=args.start,
-        end=args.end,
-        expected_active=True,
-    )
-    run_eodhd_canonical_case(
-        _token(),
-        case,
-        raw_root=incoming_root / "raw",
-        canonical_store=incoming_store,
-        dataset_id="eodhd-live-daily-update-evidence",
-        dataset_version=target_version,
-        created_at=datetime.now(UTC),
-        transformation_version="provider-normalization-v1",
-        adjustment_policy_version="split-only-v1",
-        universe_construction_version="bounded-live-update-evidence-v1",
-        quality_check_version="daily-bar-quality-v1",
-    )
+    if incoming_store.get_manifest(target_version) is None:
+        case = EodhdCampaignCase(
+            symbol=args.symbol,
+            start=args.start,
+            end=args.end,
+            expected_active=True,
+        )
+        run_eodhd_canonical_case(
+            _token(),
+            case,
+            raw_root=incoming_root / "raw",
+            canonical_store=incoming_store,
+            dataset_id="eodhd-live-daily-update-evidence",
+            dataset_version=target_version,
+            created_at=datetime.now(UTC),
+            transformation_version="provider-normalization-v1",
+            adjustment_policy_version="split-only-v1",
+            universe_construction_version="bounded-live-update-evidence-v1",
+            quality_check_version="daily-bar-quality-v1",
+        )
+    else:
+        print(f"Reusing checkpointed live incoming dataset: {target_version}")
+
     incoming = incoming_store.load(target_version)
     parent_slice = matching_eodhd_parent_bars(parent, incoming)
 
