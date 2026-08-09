@@ -28,7 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--dataset-version", required=True)
-    parser.add_argument("--instrument-manifest", type=Path, required=True)
+    parser.add_argument("--aggregate-report", type=Path, required=True)
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--benchmark-root", type=Path, required=True)
     parser.add_argument("--query-start", type=_iso_date, required=True)
@@ -39,7 +39,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = _parser().parse_args()
-    instruments = _load_instruments(args.instrument_manifest)
+    instruments = _load_instruments(args.aggregate_report)
     policy = load_representative_sample_policy(args.policy)
     evidence = assess_and_benchmark_eodhd_campaign(
         source_root=args.source_root,
@@ -68,7 +68,9 @@ def main() -> int:
             "common_stock_count": assessment.common_stock_count,
             "failures": list(assessment.failures),
         },
-        "storage_benchmark": None if benchmark is None else {
+        "storage_benchmark": None
+        if benchmark is None
+        else {
             "record_count": benchmark.record_count,
             "unique_instrument_count": benchmark.unique_instrument_count,
             "first_trade_date": benchmark.first_trade_date.isoformat(),
@@ -90,16 +92,19 @@ def main() -> int:
 
 def _load_instruments(path: Path) -> tuple[InstrumentRecord, ...]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, list):
-        raise ValueError("instrument manifest must be a JSON list")
+    if not isinstance(payload, dict):
+        raise ValueError("aggregate report must be a JSON object")
+    raw_instruments = payload.get("instruments")
+    if not isinstance(raw_instruments, list) or not raw_instruments:
+        raise ValueError("aggregate report instruments must be a non-empty list")
     instruments: list[InstrumentRecord] = []
-    for raw in payload:
+    for raw in raw_instruments:
         if not isinstance(raw, dict):
-            raise ValueError("instrument manifest entries must be objects")
+            raise ValueError("aggregate report instrument entries must be objects")
         instruments.append(
             InstrumentRecord(
                 instrument_id=InstrumentId(_text(raw, "instrument_id")),
-                primary_symbol=_text(raw, "primary_symbol"),
+                primary_symbol=_text(raw, "symbol"),
                 name=_text(raw, "name"),
                 exchange=_text(raw, "exchange"),
                 security_type=SecurityType(_text(raw, "security_type")),
@@ -115,7 +120,7 @@ def _load_instruments(path: Path) -> tuple[InstrumentRecord, ...]:
 def _text(payload: dict[str, object], key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"instrument manifest {key} must be non-empty text")
+        raise ValueError(f"aggregate report {key} must be non-empty text")
     return value.strip()
 
 
@@ -123,7 +128,7 @@ def _optional_date(value: object) -> date | None:
     if value is None:
         return None
     if not isinstance(value, str):
-        raise ValueError("instrument manifest dates must be ISO dates or null")
+        raise ValueError("aggregate report dates must be ISO dates or null")
     return date.fromisoformat(value)
 
 
