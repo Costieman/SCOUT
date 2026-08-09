@@ -188,6 +188,64 @@ def test_reviewed_storage_benchmark_can_demonstrate_criterion(tmp_path: Path) ->
     assert result.evidence.status is AcceptanceEvidenceStatus.DEMONSTRATED
 
 
+def test_campaign_storage_evidence_can_demonstrate_benchmark(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "campaign-storage.json",
+        {
+            "schema_version": "eodhd-campaign-storage-evidence-v0.1",
+            "dataset_version": "eodhd-representative-v1",
+            "representative_sample_accepted": True,
+            "representative_sample": {"failures": []},
+            "storage_benchmark": {
+                "record_count": 1_250_000,
+                "unique_instrument_count": 525,
+                "first_trade_date": "2018-01-02",
+                "last_trade_date": "2025-12-31",
+                "parquet_bytes": 50_000_000,
+                "filtered_query_count": 250_000,
+            },
+        },
+    )
+
+    result = assess_runtime_evidence(path)
+
+    assert result.evidence.criterion is DataFoundationCriterion.STORAGE_BENCHMARK
+    assert result.evidence.status is AcceptanceEvidenceStatus.DEMONSTRATED
+
+
+def test_campaign_storage_scope_failure_remains_partial_without_benchmark(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "campaign-storage.json",
+        {
+            "schema_version": "eodhd-campaign-storage-evidence-v0.1",
+            "dataset_version": "eodhd-representative-v1",
+            "representative_sample_accepted": False,
+            "representative_sample": {"failures": ["record_count_below_minimum"]},
+            "storage_benchmark": None,
+        },
+    )
+
+    result = assess_runtime_evidence(path)
+
+    assert result.evidence.status is AcceptanceEvidenceStatus.PARTIAL
+
+
+def test_campaign_storage_evidence_rejects_contradictory_acceptance(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "campaign-storage.json",
+        {
+            "schema_version": "eodhd-campaign-storage-evidence-v0.1",
+            "dataset_version": "eodhd-representative-v1",
+            "representative_sample_accepted": True,
+            "representative_sample": {"failures": ["exchange_count_below_minimum"]},
+            "storage_benchmark": None,
+        },
+    )
+
+    with pytest.raises(RuntimeEvidenceError, match="contradicts"):
+        assess_runtime_evidence(path)
+
+
 def test_unknown_report_is_rejected(tmp_path: Path) -> None:
     path = _write(tmp_path / "unknown.json", {"hello": "world"})
 
