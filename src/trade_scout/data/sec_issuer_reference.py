@@ -1,4 +1,4 @@
-"""Project reviewed SEC provider links into issuer-reference records without changing security identity."""
+"""Project reviewed SEC links into issuer references without changing security identity."""
 
 from __future__ import annotations
 
