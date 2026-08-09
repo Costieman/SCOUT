@@ -112,10 +112,7 @@ def characterize_stooq_split_semantics(
             "observed close discontinuity is materially closer to the supplied split ratio than "
             "to continuity; this is raw-like evidence, not definitive provider semantics"
         )
-    elif (
-        adjusted_error <= log_error_tolerance
-        and adjusted_error + separation_margin < raw_error
-    ):
+    elif adjusted_error <= log_error_tolerance and adjusted_error + separation_margin < raw_error:
         state = StooqAdjustmentEvidenceState.SPLIT_ADJUSTED_LIKE
         note = (
             "observed closes remain materially closer to continuity than to the supplied split "
