@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from trade_scout.data.canonical_storage import (
@@ -12,7 +12,13 @@ from trade_scout.data.canonical_storage import (
     CanonicalDatasetManifest,
     DatasetPromotionRequest,
 )
-from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, InstrumentRecord, SecurityType
+from trade_scout.data.contracts import (
+    DailyBar,
+    DatasetVersion,
+    InstrumentId,
+    InstrumentRecord,
+    SecurityType,
+)
 
 
 class EodhdCampaignAggregateError(ValueError):
@@ -50,13 +56,17 @@ def aggregate_eodhd_campaign(
     completed_ids = checkpoint.get("completed_case_ids")
     if not isinstance(raw_cases, list) or not raw_cases:
         raise EodhdCampaignAggregateError("campaign cases must be a non-empty list")
-    if not isinstance(completed_ids, list) or not all(isinstance(item, str) for item in completed_ids):
+    if not isinstance(completed_ids, list) or not all(
+        isinstance(item, str) for item in completed_ids
+    ):
         raise EodhdCampaignAggregateError("checkpoint completed_case_ids are invalid")
 
-    case_ids = tuple(_required_text(case.get("case_id"), field="case_id") for case in raw_cases if isinstance(case, dict))
-    if len(case_ids) != len(raw_cases):
-        raise EodhdCampaignAggregateError("campaign contains a malformed case")
-    if tuple(completed_ids) != case_ids:
+    case_ids: list[str] = []
+    for case in raw_cases:
+        if not isinstance(case, dict):
+            raise EodhdCampaignAggregateError("campaign contains a malformed case")
+        case_ids.append(_required_text(case.get("case_id"), field="case_id"))
+    if tuple(completed_ids) != tuple(case_ids):
         raise EodhdCampaignAggregateError("campaign must be fully completed before aggregation")
 
     bars: list[DailyBar] = []
@@ -64,9 +74,7 @@ def aggregate_eodhd_campaign(
     source_batch_ids: list[str] = []
     seen_instruments: set[InstrumentId] = set()
 
-    for case in raw_cases:
-        assert isinstance(case, dict)
-        case_id = _required_text(case.get("case_id"), field="case_id")
+    for case_id in case_ids:
         result = _read_json(campaign_root / "cases" / case_id / "result.json")
         if result.get("case_id") != case_id:
             raise EodhdCampaignAggregateError(f"case result identity mismatch for {case_id}")
@@ -77,12 +85,13 @@ def aggregate_eodhd_campaign(
         case_bars = case_store.load(case_dataset_version)
         expected_count = result.get("canonical_record_count")
         if isinstance(expected_count, bool) or not isinstance(expected_count, int):
-            raise EodhdCampaignAggregateError(f"case {case_id} canonical_record_count is invalid")
+            raise EodhdCampaignAggregateError(
+                f"case {case_id} canonical_record_count is invalid"
+            )
         if len(case_bars) != expected_count:
             raise EodhdCampaignAggregateError(f"case {case_id} canonical record count changed")
 
-        for bar in case_bars:
-            bars.append(replace(bar, dataset_version=dataset_version))
+        bars.extend(replace(bar, dataset_version=dataset_version) for bar in case_bars)
 
         instrument = _instrument_from_result(result)
         if instrument.instrument_id in seen_instruments:
@@ -93,7 +102,9 @@ def aggregate_eodhd_campaign(
         instruments.append(instrument)
 
         batch_ids = result.get("raw_batch_ids")
-        if not isinstance(batch_ids, list) or not all(isinstance(item, str) and item for item in batch_ids):
+        if not isinstance(batch_ids, list) or not all(
+            isinstance(item, str) and item for item in batch_ids
+        ):
             raise EodhdCampaignAggregateError(f"case {case_id} raw_batch_ids are invalid")
         source_batch_ids.extend(batch_ids)
 
@@ -133,8 +144,9 @@ def _instrument_from_result(payload: dict[str, object]) -> InstrumentRecord:
     provider_instrument_id = _required_text(
         payload.get("provider_instrument_id"), field="provider_instrument_id"
     )
+    instrument_id = _required_text(payload.get("instrument_id"), field="instrument_id")
     return InstrumentRecord(
-        instrument_id=InstrumentId(_required_text(payload.get("instrument_id"), field="instrument_id")),
+        instrument_id=InstrumentId(instrument_id),
         primary_symbol=_required_text(payload.get("symbol"), field="symbol"),
         name=_required_text(payload.get("name"), field="name"),
         exchange=_required_text(payload.get("exchange"), field="exchange"),
@@ -164,9 +176,7 @@ def _required_text(value: object, *, field: str) -> str:
     return value.strip()
 
 
-def _optional_date(value: object, *, field: str):
-    from datetime import date
-
+def _optional_date(value: object, *, field: str) -> date | None:
     if value is None:
         return None
     if not isinstance(value, str):
