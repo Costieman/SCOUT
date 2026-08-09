@@ -6,8 +6,8 @@
   "criteria": [
     {
       "criterion": "stooq_historical_ohlcv_retrieval",
-      "status": "NOT_DEMONSTRATED",
-      "note": "Implement and live-test a Stooq daily OHLCV adapter before canonical promotion."
+      "status": "PARTIAL",
+      "note": "A no-credential Stooq daily adapter, bounded resumable live-evidence runner, raw-response preservation path, and provider-neutral repeatability/scope tests are implemented. A registered live multi-case report is still required before this criterion can be DEMONSTRATED."
     },
     {
       "criterion": "stooq_adjustment_semantics",
