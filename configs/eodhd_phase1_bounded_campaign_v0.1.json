@@ -1,0 +1,30 @@
+{
+  "schema_version": "eodhd-campaign-plan-v0.1",
+  "plan_version": "phase1-bounded-v0.1",
+  "cases": [
+    {
+      "case_id": "aapl-long-active",
+      "symbol": "AAPL.US",
+      "start": "2010-01-04",
+      "end": "2025-12-31",
+      "expected_state": "active",
+      "dataset_version": "eodhd-eval-aapl-v0.1"
+    },
+    {
+      "case_id": "meta-corporate-history",
+      "symbol": "META.US",
+      "start": "2012-05-18",
+      "end": "2025-12-31",
+      "expected_state": "active",
+      "dataset_version": "eodhd-eval-meta-v0.1"
+    },
+    {
+      "case_id": "aaic-delisted-history",
+      "symbol": "AAIC.US",
+      "start": "2010-01-04",
+      "end": "2023-12-31",
+      "expected_state": "delisted",
+      "dataset_version": "eodhd-eval-aaic-v0.1"
+    }
+  ]
+}
