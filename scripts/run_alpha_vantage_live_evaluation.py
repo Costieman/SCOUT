@@ -157,6 +157,10 @@ def _identity_probe(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _markdown_report(payload: dict[str, Any]) -> str:
+    table_header = (
+        "| as-of | total | active | delisted | missing names | review symbols | "
+        "AAPL | FB | META | TWTR |"
+    )
     lines = [
         "# Alpha Vantage live evaluation",
         "",
@@ -164,7 +168,7 @@ def _markdown_report(payload: dict[str, Any]) -> str:
         "",
         "## Point-in-time listing snapshots",
         "",
-        "| as-of | total | active | delisted | missing names | review symbols | AAPL | FB | META | TWTR |",
+        table_header,
         "|---|---:|---:|---:|---:|---:|---|---|---|---|",
     ]
     for snapshot in payload["listing_snapshots"]:
@@ -204,9 +208,9 @@ def _markdown_report(payload: dict[str, Any]) -> str:
             "",
             "**NOT ACCEPTED.** " + str(payload["acceptance_note"]),
             "",
-            "Blank company names are treated as reference-metadata warnings rather than fatal "
-            "universe errors. Security-type labels remain provisional and must be reconciled before "
-            "eligibility filtering is trusted.",
+            "Blank company names are reference-metadata warnings, not fatal universe errors. "
+            "Security-type labels remain provisional and require reconciliation before eligibility "
+            "filtering is trusted.",
             "",
             "The strongest question tested by this run is whether `LISTING_STATUS` can support a "
             "2010-present point-in-time universe layer. Permanent security identity, corporate "
