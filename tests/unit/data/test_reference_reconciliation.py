@@ -59,9 +59,7 @@ def test_exact_current_symbol_exchange_yields_review_candidate_not_identity_link
     assert candidate.state is ReferenceCandidateState.EXACT_SYMBOL_EXCHANGE
     assert candidate.has_unique_candidate is True
     assert candidate.market_provider_instrument_id == "AAPL"
-    assert candidate.reference_provider_instrument_ids == (
-        "sec_edgar:cik:320193:ticker:AAPL",
-    )
+    assert candidate.reference_provider_instrument_ids == ("sec_edgar:cik:320193:ticker:AAPL",)
     assert any("non-authoritative" in item for item in candidate.evidence)
 
 
