@@ -233,17 +233,25 @@ def _load_checkpoint(
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise CrossValidationConfigurationError("cross-validation checkpoint is unreadable") from exc
+        raise CrossValidationConfigurationError(
+            "cross-validation checkpoint is unreadable"
+        ) from exc
     if not isinstance(payload, dict):
-        raise CrossValidationConfigurationError("cross-validation checkpoint root must be an object")
+        raise CrossValidationConfigurationError(
+            "cross-validation checkpoint root must be an object"
+        )
     if payload.get("runtime_id") != "alpha-tiingo-cross-validation-v0.1":
-        raise CrossValidationConfigurationError("cross-validation checkpoint runtime is incompatible")
+        raise CrossValidationConfigurationError(
+            "cross-validation checkpoint runtime is incompatible"
+        )
     if payload.get("configuration_id") != configuration_id:
         raise CrossValidationConfigurationError(
             "cross-validation checkpoint configuration does not match requested cases/tolerances"
         )
     if not isinstance(payload.get("completed_cases"), dict):
-        raise CrossValidationConfigurationError("cross-validation completed_cases must be an object")
+        raise CrossValidationConfigurationError(
+            "cross-validation completed_cases must be an object"
+        )
     return payload
 
 
