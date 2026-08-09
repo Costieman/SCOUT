@@ -21,6 +21,11 @@ from trade_scout.data.providers.eodhd import (
     EodhdRawResponseCapture,
 )
 from trade_scout.data.providers.eodhd_adjustments import normalize_eodhd_adjustment_actions
+from trade_scout.data.providers.eodhd_resilience import (
+    EodhdClassifyingUrllibTransport,
+    EodhdRetryingBytesTransport,
+    EodhdRetryPolicy,
+)
 from trade_scout.data.raw_store import Primitive, RawBatchStore
 
 
@@ -94,6 +99,9 @@ class EodhdTrackingRawCapture(EodhdRawResponseCapture):
         self._batch_ids.append(record.manifest.batch_id)
 
 
+_DEFAULT_RETRY_POLICY = EodhdRetryPolicy()
+
+
 def run_eodhd_canonical_case(
     api_token: str,
     case: EodhdCampaignCase,
@@ -107,17 +115,23 @@ def run_eodhd_canonical_case(
     adjustment_policy_version: str,
     universe_construction_version: str,
     quality_check_version: str,
+    retry_policy: EodhdRetryPolicy = _DEFAULT_RETRY_POLICY,
 ) -> EodhdCanonicalCaseEvidence:
     """Exercise EODHD raw -> identity -> actions -> normalization -> canonical promotion.
 
     The case deliberately requires an ISIN-backed EODHD identity. Current/delisted inventories are
     used only to identify the requested evaluation security; they are never projected backward as
     a historical universe. Corporate-action absence is treated as zero only after both split and
-    dividend endpoints have been queried for the exact bar interval.
+    dividend endpoints have been queried for the exact bar interval. Classified transient and
+    throttling failures use bounded retry; authentication and permanent request errors fail early.
     """
 
     capture = EodhdTrackingRawCapture(RawBatchStore(raw_root))
-    client = EodhdHttpClient(api_token, raw_capture=capture)
+    transport = EodhdRetryingBytesTransport(
+        EodhdClassifyingUrllibTransport(),
+        policy=retry_policy,
+    )
+    client = EodhdHttpClient(api_token, transport=transport, raw_capture=capture)
     inventory_adapter = EodhdAdapter(client)
     instrument = _select_instrument(
         tuple(inventory_adapter.get_instruments()),
