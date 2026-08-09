@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore, CanonicalDatasetManifest
 from trade_scout.data.contracts import CorporateActionType, DatasetVersion, PriceRepresentation
@@ -75,23 +77,18 @@ class EodhdTrackingRawCapture(EodhdRawResponseCapture):
         payload: bytes,
         *,
         endpoint: str,
-        request_parameters: dict[str, Primitive] | object,
+        request_parameters: Mapping[str, Primitive],
     ) -> None:
         """Persist one exact response and remember its generated immutable batch identity."""
 
-        # Runtime protocol supplies a Mapping; the local annotation is widened to avoid coupling
-        # this evidence helper to a concrete mapping implementation.
-        if not hasattr(request_parameters, "items"):
-            raise EodhdCampaignError("EODHD raw request parameters must be a mapping")
-        parameters = dict(request_parameters.items())  # type: ignore[union-attr]
-        batch_id = _next_batch_id(len(self._batch_ids) + 1)
+        batch_id = f"eodhd-campaign-{len(self._batch_ids) + 1:04d}-{uuid4().hex}"
         record = self._store.persist(
             payload,
             batch_id=batch_id,
             provider_id="eodhd",
             endpoint=endpoint,
-            retrieval_time=_utc_now(),
-            request_parameters=parameters,
+            retrieval_time=datetime.now(UTC),
+            request_parameters=request_parameters,
             media_type="application/json",
         )
         self._batch_ids.append(record.manifest.batch_id)
@@ -214,15 +211,3 @@ def _select_instrument(
             f"found {len(matches)}"
         )
     return matches[0]
-
-
-def _next_batch_id(sequence: int) -> str:
-    from uuid import uuid4
-
-    return f"eodhd-campaign-{sequence:04d}-{uuid4().hex}"
-
-
-def _utc_now() -> datetime:
-    from datetime import UTC
-
-    return datetime.now(UTC)
