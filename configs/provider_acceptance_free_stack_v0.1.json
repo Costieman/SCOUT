@@ -16,8 +16,8 @@
     },
     {
       "criterion": "stooq_inactive_delisted_coverage",
-      "status": "NOT_DEMONSTRATED",
-      "note": "Characterize inactive/delisted price coverage explicitly; absence narrows the free-edition research claim."
+      "status": "PARTIAL",
+      "note": "An evidence-only inactive/delisted characterization path now tests independently identified inactive securities for history presence and terminal-date fidelity while treating missing data as absence evidence rather than inferred delisting. Multiple independently reviewed live cases are still required, and complete historical delisted-universe coverage or terminal returns are not claimed."
     },
     {
       "criterion": "stooq_licensing_and_redistribution",
