@@ -90,7 +90,8 @@ def _assess_historical_ohlcv(path: Path, payload: dict[str, Any]) -> RuntimeEvid
         else AcceptanceEvidenceStatus.PARTIAL
     )
     note = (
-        "Configured historical OHLCV cases passed repeatability, scope, uniqueness, ordering, and coverage checks."
+        "Configured historical OHLCV cases passed repeatability, scope, uniqueness, ordering, "
+        "and coverage checks."
         if status is AcceptanceEvidenceStatus.DEMONSTRATED
         else "Historical OHLCV runtime evidence is incomplete or contains failed configured checks."
     )
