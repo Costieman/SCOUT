@@ -1,0 +1,9 @@
+{
+  "version": "phase1-storage-representative-v0.1",
+  "min_record_count": 1000000,
+  "min_unique_instruments": 500,
+  "min_span_days": 1825,
+  "min_delisted_instruments": 25,
+  "min_exchanges": 2,
+  "require_common_stock": true
+}
