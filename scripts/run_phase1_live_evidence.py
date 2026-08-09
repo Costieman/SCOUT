@@ -9,11 +9,21 @@ import subprocess
 import sys
 from pathlib import Path
 
+from trade_scout.data.live_evidence_preflight import (
+    LiveEvidencePreflight,
+    assess_live_evidence_preflight,
+)
 from trade_scout.data.runtime_evidence_registration import register_runtime_evidence
 
 _PRIMARY_ROOT = Path("runtime/eodhd-campaign-suite")
 _SECONDARY_ROOT = Path("runtime/eodhd-tiingo-cross-validation")
 _MANIFEST = Path("runtime/phase1-evidence/manifest.json")
+_REPRESENTATIVE_POLICY = Path("configs/representative_storage_sample_v0.1.json")
+_PROVIDER_LEDGER = Path("configs/provider_acceptance_eodhd_v0.1.json")
+_DATA_LEDGER = Path("configs/data_foundation_acceptance_v0.1.json")
+_REPRESENTATIVE_PLAN = Path(
+    "runtime/eodhd-representative-plan/eodhd-phase1-representative-v0.1.json"
+)
 
 
 def _positive_int(value: str) -> int:
@@ -44,6 +54,11 @@ def _parser() -> argparse.ArgumentParser:
         "--status-only",
         action="store_true",
         help="Report persisted live-evidence state without provider calls.",
+    )
+    parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="Validate local prerequisites and report the next safe action without provider calls.",
     )
     return parser
 
@@ -94,10 +109,39 @@ def _print_status(primary_root: Path, secondary_root: Path) -> None:
     )
 
 
-def _has_eodhd_token() -> bool:
-    return bool(
-        os.environ.get("EODHD_API_TOKEN", "").strip() or os.environ.get("EODHD_API_KEY", "").strip()
+def _preflight() -> LiveEvidencePreflight:
+    return assess_live_evidence_preflight(
+        environment=os.environ,
+        representative_policy=_REPRESENTATIVE_POLICY,
+        provider_ledger=_PROVIDER_LEDGER,
+        data_ledger=_DATA_LEDGER,
+        representative_plan=_REPRESENTATIVE_PLAN,
     )
+
+
+def _print_preflight() -> bool:
+    report = _preflight()
+    print("Phase 1 live-evidence preflight")
+    print(f"Primary EODHD stage ready: {report.primary_ready}")
+    print(f"Secondary EODHD/Tiingo stage ready: {report.secondary_ready}")
+    print(f"Frozen representative plan present: {report.plan_present}")
+    if report.blockers:
+        print("Blockers:")
+        for blocker in report.blockers:
+            print(f"- {blocker}")
+    else:
+        print("Blockers: none")
+    if report.notes:
+        print("Notes:")
+        for note in report.notes:
+            print(f"- {note}")
+    if report.primary_ready:
+        print(
+            "Next safe action: uv run python scripts/run_phase1_live_evidence.py --max-new-cases 10"
+        )
+    else:
+        print("Next safe action: resolve the blockers above; do not start provider calls yet.")
+    return report.primary_ready
 
 
 def _has_tiingo_token() -> bool:
@@ -121,12 +165,15 @@ def main() -> int:
     primary_root: Path = args.primary_root
     secondary_root: Path = args.secondary_root
 
+    if args.preflight:
+        return 0 if _print_preflight() else 2
     if args.status_only:
         _print_status(primary_root, secondary_root)
         return 0
 
-    if not _has_eodhd_token():
-        raise SystemExit("EODHD_API_TOKEN or EODHD_API_KEY is not configured")
+    if not _preflight().primary_ready:
+        _print_preflight()
+        return 2
 
     primary_code = _run(
         "scripts/run_phase1_eodhd_evidence.py",
