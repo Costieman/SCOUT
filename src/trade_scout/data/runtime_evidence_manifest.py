@@ -39,7 +39,9 @@ def _parse_artifact(raw: object) -> RuntimeEvidenceArtifact:
         details = ",".join(sorted(missing))
         raise RuntimeEvidenceManifestError(f"runtime evidence artifact missing fields: {details}")
     provider_ids = raw.get("provider_ids", [])
-    if not isinstance(provider_ids, list) or any(not isinstance(item, str) for item in provider_ids):
+    if not isinstance(provider_ids, list) or any(
+        not isinstance(item, str) for item in provider_ids
+    ):
         raise RuntimeEvidenceManifestError("runtime evidence provider_ids must be a string list")
     try:
         criterion = DataFoundationCriterion(str(raw["criterion"]))
