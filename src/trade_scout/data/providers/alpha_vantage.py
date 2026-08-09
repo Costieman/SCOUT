@@ -359,7 +359,9 @@ def _raise_for_api_message(payload: bytes) -> None:
     try:
         parsed = json.loads(payload)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AlphaVantageResponseError("Alpha Vantage returned invalid JSON instead of CSV") from exc
+        raise AlphaVantageResponseError(
+            "Alpha Vantage returned invalid JSON instead of CSV"
+        ) from exc
     if not isinstance(parsed, dict):
         raise AlphaVantageResponseError("Alpha Vantage returned unexpected JSON instead of CSV")
     for key in ("Error Message", "Information", "Note"):
