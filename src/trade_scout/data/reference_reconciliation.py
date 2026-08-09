@@ -73,7 +73,8 @@ def reconcile_current_reference_candidates(
 
     if market_as_of is not None:
         raise HistoricalReferenceBackProjectionError(
-            "current reference associations cannot be reconciled against a historical market snapshot"
+            "current reference associations cannot be reconciled against a historical "
+            "market snapshot"
         )
 
     references = tuple(reference_records)
