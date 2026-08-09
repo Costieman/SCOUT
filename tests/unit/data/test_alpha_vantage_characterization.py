@@ -20,7 +20,9 @@ def _batch(root: Path, name: str, payload: bytes, *, params: dict[str, object]) 
                 "batch_id": name,
                 "retrieval_time": f"2026-08-09T00:00:0{name[-1]}+00:00",
                 "request_parameters": params,
-                "media_type": "application/json" if payload.lstrip().startswith(b"{") else "text/csv",
+                "media_type": "application/json"
+                if payload.lstrip().startswith(b"{")
+                else "text/csv",
             }
         ),
         encoding="utf-8",
