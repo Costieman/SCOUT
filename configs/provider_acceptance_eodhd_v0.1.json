@@ -59,8 +59,8 @@
     {
       "criterion": "idempotent_deterministic_daily_update",
       "status": "PARTIAL",
-      "evidence": ["src/trade_scout/data/revisions.py"],
-      "note": "Provider-neutral deterministic revision mechanics exist, but an EODHD-specific correction-lookback daily cycle has not yet been demonstrated."
+      "evidence": ["src/trade_scout/data/revisions.py", "src/trade_scout/data/providers/eodhd_daily_update.py", "src/trade_scout/data/providers/eodhd_daily_update_report.py", "src/trade_scout/data/runtime_evidence_dispatch.py", "scripts/assess_eodhd_daily_update.py"],
+      "note": "EODHD-specific correction-lookback assessment, strict runtime reporting, semantic validation, and immutable evidence registration are implemented. The criterion remains partial until a live EODHD retrieval produces registered overlap evidence; synthetic or append-only runs cannot demonstrate it."
     },
     {
       "criterion": "downstream_vendor_independence",
