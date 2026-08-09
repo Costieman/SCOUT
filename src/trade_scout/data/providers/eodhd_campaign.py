@@ -23,8 +23,8 @@ from trade_scout.data.providers.eodhd import (
 from trade_scout.data.providers.eodhd_adjustments import normalize_eodhd_adjustment_actions
 from trade_scout.data.providers.eodhd_resilience import (
     EodhdClassifyingUrllibTransport,
-    EodhdRetryPolicy,
     EodhdRetryingBytesTransport,
+    EodhdRetryPolicy,
 )
 from trade_scout.data.raw_store import Primitive, RawBatchStore
 
@@ -99,6 +99,9 @@ class EodhdTrackingRawCapture(EodhdRawResponseCapture):
         self._batch_ids.append(record.manifest.batch_id)
 
 
+_DEFAULT_RETRY_POLICY = EodhdRetryPolicy()
+
+
 def run_eodhd_canonical_case(
     api_token: str,
     case: EodhdCampaignCase,
@@ -112,7 +115,7 @@ def run_eodhd_canonical_case(
     adjustment_policy_version: str,
     universe_construction_version: str,
     quality_check_version: str,
-    retry_policy: EodhdRetryPolicy = EodhdRetryPolicy(),
+    retry_policy: EodhdRetryPolicy = _DEFAULT_RETRY_POLICY,
 ) -> EodhdCanonicalCaseEvidence:
     """Exercise EODHD raw -> identity -> actions -> normalization -> canonical promotion.
 
