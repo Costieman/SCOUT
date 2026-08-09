@@ -95,4 +95,6 @@ def test_downstream_module_consumes_only_research_contract() -> None:
     assert result.eligible_rows == 2
     assert result.mean_close == 102.0
     assert result.dataset_version == version
-    assert all(row.price_representation is PriceRepresentation.SPLIT_ADJUSTED for row in research_rows)
+    assert all(
+        row.price_representation is PriceRepresentation.SPLIT_ADJUSTED for row in research_rows
+    )
