@@ -23,7 +23,9 @@ def main() -> int:
             "SEC_EDGAR_USER_AGENT is not configured; use a declared application/contact identity"
         )
 
-    output_root = Path(os.environ.get("TRADE_SCOUT_EVALUATION_ROOT", "runtime/sec-edgar-evaluation"))
+    output_root = Path(
+        os.environ.get("TRADE_SCOUT_EVALUATION_ROOT", "runtime/sec-edgar-evaluation")
+    )
     report_root = output_root / "report"
     raw_root = output_root / "raw"
     report_root.mkdir(parents=True, exist_ok=True)
@@ -71,7 +73,9 @@ def main() -> int:
     }
 
     json_path = report_root / "sec-edgar-reference-evaluation.json"
-    json_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8"
+    )
     markdown_path = report_root / "sec-edgar-reference-evaluation.md"
     markdown_path.write_text(_markdown(payload), encoding="utf-8")
     print(markdown_path.read_text(encoding="utf-8"))
