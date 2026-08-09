@@ -1,0 +1,84 @@
+{
+  "provider_id": "eodhd",
+  "assessment_version": "eodhd-provider-acceptance-v0.1",
+  "criteria": [
+    {
+      "criterion": "license_and_retention_rights",
+      "status": "PARTIAL",
+      "evidence": ["docs/data/provider_selection_2026-08-09.md"],
+      "note": "Public personal-use terms have been reviewed, but the exact intended use, retention period, and eventual product/commercial boundary are not yet accepted for the canonical provider role."
+    },
+    {
+      "criterion": "reproducible_historical_backfill",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/backfill.py", "src/trade_scout/data/providers/eodhd_campaign.py"],
+      "note": "Deterministic backfill and a full EODHD canonical campaign path exist, but paid multi-year active and delisted history has not yet been demonstrated live."
+    },
+    {
+      "criterion": "immutable_raw_preservation",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/raw_store.py", "src/trade_scout/data/providers/eodhd_campaign.py"],
+      "note": "Exact EODHD response capture with secret-free manifests is implemented and integration-tested; live campaign evidence remains to be captured."
+    },
+    {
+      "criterion": "identifier_and_symbol_mapping",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/providers/eodhd.py", "src/trade_scout/data/instrument_master.py"],
+      "note": "ISIN-backed provider identity is supported and provisional ticker identity is rejected by the canonical campaign, but full historical symbol continuity is not demonstrated."
+    },
+    {
+      "criterion": "corporate_action_handling",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/providers/eodhd_adjustments.py", "src/trade_scout/data/provider_adjustments.py"],
+      "note": "Split/dividend normalization and split-only price materialization are implemented and tested, but representative live corporate-action coverage is not yet demonstrated."
+    },
+    {
+      "criterion": "delisting_coverage_characterized",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/providers/eodhd.py", "scripts/run_eodhd_live_evaluation.py"],
+      "note": "The adapter exposes current and delisted inventories, but breadth, history depth, terminal dates/returns, and delisted price coverage remain to be characterized live."
+    },
+    {
+      "criterion": "rate_retry_checkpoint_behavior",
+      "status": "NOT_DEMONSTRATED",
+      "evidence": [],
+      "note": "Bounded requests exist, but EODHD-specific throttling, retry/backoff, and long-campaign checkpoint behavior have not yet been demonstrated."
+    },
+    {
+      "criterion": "canonical_normalization_and_quality",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/provider_promotion.py", "src/trade_scout/data/providers/eodhd_campaign.py"],
+      "note": "The candidate can traverse identity, adjustment, normalization, quality, provenance, and canonical-promotion gates in deterministic integration tests; live evidence remains outstanding."
+    },
+    {
+      "criterion": "secondary_provider_validation",
+      "status": "NOT_DEMONSTRATED",
+      "evidence": [],
+      "note": "Representative EODHD values have not yet been reconciled against an independent secondary source."
+    },
+    {
+      "criterion": "idempotent_deterministic_daily_update",
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/revisions.py"],
+      "note": "Provider-neutral deterministic revision mechanics exist, but an EODHD-specific correction-lookback daily cycle has not yet been demonstrated."
+    },
+    {
+      "criterion": "downstream_vendor_independence",
+      "status": "DEMONSTRATED",
+      "evidence": ["src/trade_scout/data/provider.py", "src/trade_scout/data/serving.py", "tests/contract/data/test_downstream_research_consumer.py"],
+      "note": "Downstream research consumes canonical Trade Scout contracts and does not import EODHD-native objects."
+    },
+    {
+      "criterion": "known_limitations_documented",
+      "status": "DEMONSTRATED",
+      "evidence": ["docs/data/provider_selection_2026-08-09.md", "src/trade_scout/data/providers/eodhd.py"],
+      "note": "Current licensing, entitlement, symbol-history, identity, and adjustment limitations are explicitly documented and machine-readable through adapter capabilities."
+    },
+    {
+      "criterion": "representative_canonical_sample",
+      "status": "NOT_DEMONSTRATED",
+      "evidence": [],
+      "note": "No representative multi-year real EODHD canonical sample has yet passed the Phase 1 storage and evidence gates."
+    }
+  ]
+}
