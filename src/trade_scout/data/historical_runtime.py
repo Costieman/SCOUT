@@ -8,7 +8,10 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from trade_scout.data.historical_evidence import HistoricalEvidenceCase, HistoricalEvidenceCaseResult
+from trade_scout.data.historical_evidence import (
+    HistoricalEvidenceCase,
+    HistoricalEvidenceCaseResult,
+)
 
 _RUNTIME_ID = "historical-ohlcv-runtime-v0.1"
 
