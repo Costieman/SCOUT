@@ -118,17 +118,17 @@ def _assess_cross_provider_validation(
     cases = payload.get("cases")
     if not isinstance(cases, list):
         raise RuntimeEvidenceError("cross-provider report cases must be a list")
-    expected_count = payload.get("expected_case_count")
-    completed_count = payload.get("completed_case_count")
-    unresolved_count = payload.get("unresolved_discrepancy_count")
-    if not all(
-        isinstance(value, int) for value in (expected_count, completed_count, unresolved_count)
-    ):
-        raise RuntimeEvidenceError("cross-provider report counts must be integers")
-    if expected_count < 1 or completed_count < 0 or completed_count > expected_count:
+    expected_count = _required_nonnegative_int(
+        payload, "expected_case_count", context="cross-provider report"
+    )
+    completed_count = _required_nonnegative_int(
+        payload, "completed_case_count", context="cross-provider report"
+    )
+    unresolved_count = _required_nonnegative_int(
+        payload, "unresolved_discrepancy_count", context="cross-provider report"
+    )
+    if expected_count < 1 or completed_count > expected_count:
         raise RuntimeEvidenceError("cross-provider report contains invalid case counts")
-    if unresolved_count < 0:
-        raise RuntimeEvidenceError("cross-provider unresolved count must be non-negative")
 
     complete = payload.get("complete") is True and completed_count == expected_count
     representative_accepted = payload.get("representative_sample_accepted") is True
@@ -179,21 +179,13 @@ def _looks_like_storage_benchmark(payload: dict[str, Any]) -> bool:
 
 
 def _assess_storage_benchmark(path: Path, payload: dict[str, Any]) -> RuntimeEvidenceAssessment:
-    numeric_fields = (
-        "record_count",
-        "unique_instrument_count",
-        "parquet_bytes",
-        "filtered_query_count",
+    record_count = _required_nonnegative_int(payload, "record_count", context="storage benchmark")
+    instrument_count = _required_nonnegative_int(
+        payload, "unique_instrument_count", context="storage benchmark"
     )
-    for field in numeric_fields:
-        value = payload.get(field)
-        if not isinstance(value, int) or value < 0:
-            raise RuntimeEvidenceError(f"storage benchmark {field} must be a non-negative integer")
-    has_sample = (
-        payload["record_count"] > 0
-        and payload["unique_instrument_count"] > 0
-        and payload["parquet_bytes"] > 0
-    )
+    parquet_bytes = _required_nonnegative_int(payload, "parquet_bytes", context="storage benchmark")
+    _required_nonnegative_int(payload, "filtered_query_count", context="storage benchmark")
+    has_sample = record_count > 0 and instrument_count > 0 and parquet_bytes > 0
     representative_accepted = payload.get("representative_sample_accepted") is True
     status = (
         AcceptanceEvidenceStatus.DEMONSTRATED
@@ -214,6 +206,18 @@ def _assess_storage_benchmark(path: Path, payload: dict[str, Any]) -> RuntimeEvi
             note=note,
         ),
     )
+
+
+def _required_nonnegative_int(
+    payload: dict[str, Any],
+    field: str,
+    *,
+    context: str,
+) -> int:
+    value = payload.get(field)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise RuntimeEvidenceError(f"{context} {field} must be a non-negative integer")
+    return value
 
 
 def _read_json(path: Path) -> dict[str, Any]:
