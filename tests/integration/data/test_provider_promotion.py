@@ -6,13 +6,17 @@ from pathlib import Path
 import pytest
 
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
-from trade_scout.data.contracts import DatasetVersion, SecurityType
+from trade_scout.data.contracts import DatasetVersion, InstrumentRecord, SecurityType
 from trade_scout.data.instrument_master import instrument_from_primary_provider
 from trade_scout.data.provider import ProviderDailyBar, ProviderInstrument
-from trade_scout.data.provider_promotion import ProviderPromotionError, promote_provider_daily_bar_evaluation
+from trade_scout.data.provider_promotion import (
+    ProviderPromotionError,
+    ProviderPromotionResult,
+    promote_provider_daily_bar_evaluation,
+)
 
 
-def _instrument(provider_instrument_id: str = "fixture:ABC"):
+def _instrument(provider_instrument_id: str = "fixture:ABC") -> InstrumentRecord:
     return instrument_from_primary_provider(
         ProviderInstrument(
             provider_id="fixture",
@@ -50,7 +54,13 @@ def _bar(*, high: float = 11.0, low: float = 9.0) -> ProviderDailyBar:
     )
 
 
-def _promote(tmp_path: Path, bars: tuple[ProviderDailyBar, ...], *, instruments=None, batches=("raw-1",)):
+def _promote(
+    tmp_path: Path,
+    bars: tuple[ProviderDailyBar, ...],
+    *,
+    instruments: tuple[InstrumentRecord, ...] | None = None,
+    batches: tuple[str, ...] = ("raw-1",),
+) -> ProviderPromotionResult:
     return promote_provider_daily_bar_evaluation(
         bars,
         instruments=(_instrument(),) if instruments is None else instruments,
@@ -67,7 +77,9 @@ def _promote(tmp_path: Path, bars: tuple[ProviderDailyBar, ...], *, instruments=
     )
 
 
-def test_promotes_only_after_normalization_and_preserves_raw_batch_provenance(tmp_path: Path) -> None:
+def test_promotes_only_after_normalization_and_preserves_raw_batch_provenance(
+    tmp_path: Path,
+) -> None:
     result = _promote(tmp_path, (_bar(),), batches=("raw-1", "raw-2"))
 
     assert result.normalization.normalization_issues == ()
