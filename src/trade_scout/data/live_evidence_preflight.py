@@ -48,7 +48,9 @@ class LiveEvidencePreflight:
     def notes(self) -> tuple[str, ...]:
         notes: list[str] = []
         if not self.plan_present:
-            notes.append("representative plan is absent and will be created from live EODHD inventory")
+            notes.append(
+                "representative plan is absent and will be created from live EODHD inventory"
+            )
         if not self.tiingo_configured:
             notes.append("TIINGO_API_KEY is absent; secondary validation will remain outstanding")
         return tuple(notes)
