@@ -99,9 +99,9 @@ def main() -> int:
         "provider_accepted": False,
         "interpretation": (
             "This evidence describes Stooq behavior only for independently identified inactive "
-            "securities and supplied query symbols. It does not establish complete delisted-universe "
-            "coverage, terminal returns, bankruptcy outcomes, symbol continuity, or canonical "
-            "provider acceptance."
+            "securities and supplied query symbols. It does not establish complete historical "
+            "delisted-universe coverage, terminal returns, bankruptcy outcomes, symbol continuity, "
+            "or canonical provider acceptance."
         ),
     }
     json_path = report_root / "stooq-inactive-evidence.json"
