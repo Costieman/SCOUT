@@ -74,7 +74,11 @@ def main() -> int:
         )
 
     states = [item.state for item in evidence]
-    consistent = bool(states) and len(set(states)) == 1 and states[0] is not StooqAdjustmentEvidenceState.INCONCLUSIVE
+    consistent = (
+        bool(states)
+        and len(set(states)) == 1
+        and states[0] is not StooqAdjustmentEvidenceState.INCONCLUSIVE
+    )
     payload: dict[str, Any] = {
         "report_type": "stooq-split-semantics-evidence-v0.1",
         "provider_id": "stooq",
