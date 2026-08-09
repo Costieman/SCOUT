@@ -119,9 +119,7 @@ def test_stooq_rejects_unaccepted_adjusted_request() -> None:
 
 def test_stooq_rejects_malformed_csv() -> None:
     adapter = _adapter(
-        FixtureStooqClient(
-            {"AAPL.US": b"Date,Open,High,Low,Close\n2026-08-07,1,2,1,2\n"}
-        )
+        FixtureStooqClient({"AAPL.US": b"Date,Open,High,Low,Close\n2026-08-07,1,2,1,2\n"})
     )
 
     with pytest.raises(StooqResponseError, match="missing required"):
@@ -137,12 +135,7 @@ def test_stooq_rejects_malformed_csv() -> None:
 def test_stooq_rejects_out_of_scope_dates() -> None:
     adapter = _adapter(
         FixtureStooqClient(
-            {
-                "AAPL.US": (
-                    b"Date,Open,High,Low,Close,Volume\n"
-                    b"2026-08-05,1,2,1,2,100\n"
-                )
-            }
+            {"AAPL.US": (b"Date,Open,High,Low,Close,Volume\n2026-08-05,1,2,1,2,100\n")}
         )
     )
 
