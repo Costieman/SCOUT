@@ -95,7 +95,9 @@ class EodhdUrllibBytesTransport:
 
     def get(self, url: str, *, timeout: float) -> bytes:
         try:
-            with urlopen(Request(url, headers={"Accept": "application/json"}), timeout=timeout) as response:
+            with urlopen(
+                Request(url, headers={"Accept": "application/json"}), timeout=timeout
+            ) as response:
                 return bytes(response.read())
         except HTTPError as exc:
             raise EodhdApiError(f"EODHD HTTP error {exc.code}") from exc
@@ -413,7 +415,9 @@ class EodhdAdapter:
                 **_primitive_source_fields(row),
                 "identity_quality": "ISIN" if isin else "PROVISIONAL_SYMBOL",
                 "identity_warning": (
-                    None if isin else "symbol-derived provider ID is not permanent canonical identity"
+                    None
+                    if isin
+                    else "symbol-derived provider ID is not permanent canonical identity"
                 ),
             },
         )
