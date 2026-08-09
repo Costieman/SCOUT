@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 
 import pytest
@@ -27,7 +28,12 @@ from trade_scout.data.provider import (
 class _Adapter:
     provider_id = "fixture"
 
-    def __init__(self, bars: tuple[ProviderDailyBar, ...], *, second: tuple[ProviderDailyBar, ...] | None = None) -> None:
+    def __init__(
+        self,
+        bars: tuple[ProviderDailyBar, ...],
+        *,
+        second: tuple[ProviderDailyBar, ...] | None = None,
+    ) -> None:
         self._bars = bars
         self._second = second
         self._calls = 0
@@ -47,19 +53,19 @@ class _Adapter:
     def health_check(self) -> ProviderHealth:
         return ProviderHealth(provider_id=self.provider_id, status=ProviderHealthStatus.HEALTHY)
 
-    def get_instruments(self, *, as_of: date | None = None) -> tuple[ProviderInstrument, ...]:
+    def get_instruments(self, *, as_of: date | None = None) -> Sequence[ProviderInstrument]:
         del as_of
         return ()
 
     def get_symbol_history(
         self,
         *,
-        provider_instrument_ids: tuple[str, ...] | None = None,
-    ) -> tuple[ProviderSymbolHistory, ...]:
+        provider_instrument_ids: Sequence[str] | None = None,
+    ) -> Sequence[ProviderSymbolHistory]:
         del provider_instrument_ids
         return ()
 
-    def get_daily_bars(self, request: DailyBarRequest) -> tuple[ProviderDailyBar, ...]:
+    def get_daily_bars(self, request: DailyBarRequest) -> Sequence[ProviderDailyBar]:
         del request
         self._calls += 1
         if self._calls == 2 and self._second is not None:
@@ -69,7 +75,7 @@ class _Adapter:
     def get_corporate_actions(
         self,
         request: CorporateActionRequest,
-    ) -> tuple[ProviderCorporateAction, ...]:
+    ) -> Sequence[ProviderCorporateAction]:
         del request
         return ()
 
@@ -150,9 +156,7 @@ def test_unsorted_provider_output_fails_deterministic_order_check() -> None:
 
     report = evaluate_historical_ohlcv(_Adapter(bars), (_case(),))
 
-    check = next(
-        item for item in report.cases[0].checks if item.check_id == "deterministic_order"
-    )
+    check = next(item for item in report.cases[0].checks if item.check_id == "deterministic_order")
     assert check.state is HistoricalEvidenceState.FAIL
 
 
