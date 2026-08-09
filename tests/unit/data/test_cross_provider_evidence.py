@@ -37,12 +37,10 @@ def _bar(provider: str, day: int, close: float, *, volume: float = 1000.0) -> Pr
         low=close,
         close=close,
         volume=volume,
-        split_factor=1.0 if provider == "primary" else None,
-        dividend_cash=0.0 if provider == "primary" else None,
     )
 
 
-def test_matching_raw_bars_agree() -> None:
+def test_matching_raw_bars_agree_without_adjustment_metadata() -> None:
     report = evaluate_cross_provider_bars(
         _case(),
         primary_bars=(_bar("primary", 2, 10.0), _bar("primary", 3, 11.0)),
@@ -75,29 +73,6 @@ def test_discrepancy_and_missing_sessions_are_preserved() -> None:
     assert report.summary.not_comparable_count == 2
 
 
-def test_primary_adjustment_metadata_is_never_inferred() -> None:
-    bar = _bar("primary", 2, 10.0)
-    incomplete = ProviderDailyBar(
-        provider_id=bar.provider_id,
-        provider_instrument_id=bar.provider_instrument_id,
-        symbol=bar.symbol,
-        trade_date=bar.trade_date,
-        open=bar.open,
-        high=bar.high,
-        low=bar.low,
-        close=bar.close,
-        volume=bar.volume,
-    )
-
-    with pytest.raises(ValueError, match="missing values are not inferred"):
-        evaluate_cross_provider_bars(
-            _case(),
-            primary_bars=(incomplete,),
-            secondary_bars=(_bar("secondary", 2, 10.0),),
-            tolerance=ReconciliationTolerance(),
-        )
-
-
 def test_wrong_provider_identity_fails_before_comparison() -> None:
     wrong = ProviderDailyBar(
         provider_id="primary",
@@ -109,8 +84,6 @@ def test_wrong_provider_identity_fails_before_comparison() -> None:
         low=10.0,
         close=10.0,
         volume=1000.0,
-        split_factor=1.0,
-        dividend_cash=0.0,
     )
 
     with pytest.raises(ValueError, match="wrong provider identity"):
