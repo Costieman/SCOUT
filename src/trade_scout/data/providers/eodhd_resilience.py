@@ -48,6 +48,9 @@ class EodhdRetryPolicy:
             raise ValueError("EODHD jitter_fraction must be between zero and one")
 
 
+_DEFAULT_RETRY_POLICY = EodhdRetryPolicy()
+
+
 class EodhdClassifyingUrllibTransport:
     """HTTPS transport that separates auth, throttling, transient, and permanent failures."""
 
@@ -81,7 +84,7 @@ class EodhdRetryingBytesTransport:
         self,
         transport: EodhdBytesTransport,
         *,
-        policy: EodhdRetryPolicy = EodhdRetryPolicy(),
+        policy: EodhdRetryPolicy = _DEFAULT_RETRY_POLICY,
         sleeper: Callable[[float], None] = sleep,
         random_unit: Callable[[], float] = random,
     ) -> None:
