@@ -36,7 +36,9 @@ def matching_eodhd_parent_bars(
     incoming = tuple(incoming_bars)
     instrument_ids = {bar.instrument_id for bar in incoming}
     if len(instrument_ids) != 1:
-        raise ValueError("live EODHD daily-update evidence requires exactly one incoming instrument")
+        raise ValueError(
+            "live EODHD daily-update evidence requires exactly one incoming instrument"
+        )
     instrument_id = next(iter(instrument_ids))
     matched = tuple(bar for bar in parent if bar.instrument_id == instrument_id)
     if not matched:
