@@ -53,7 +53,10 @@ def _parser() -> argparse.ArgumentParser:
         "--delay-seconds",
         type=float,
         default=None,
-        help="Delay between provider requests; defaults to ALPHA_VANTAGE_EVIDENCE_DELAY_SECONDS or 0.",
+        help=(
+            "Delay between provider requests; defaults to "
+            "ALPHA_VANTAGE_EVIDENCE_DELAY_SECONDS or 0."
+        ),
     )
     parser.add_argument(
         "--output-root",
