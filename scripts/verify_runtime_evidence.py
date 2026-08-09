@@ -24,7 +24,7 @@ def main() -> int:
     print("# Phase 1 runtime evidence verification")
     print()
     print("| artifact | criterion | verified |")
-    print("|---|---|---|)")
+    print("|---|---|---|")
     for verification in verifications:
         print(
             f"| {verification.artifact.artifact_id} | "
