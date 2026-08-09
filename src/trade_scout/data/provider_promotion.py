@@ -12,7 +12,10 @@ from trade_scout.data.canonical_storage import (
     DatasetPromotionRequest,
 )
 from trade_scout.data.contracts import DatasetVersion, InstrumentRecord, QualityStatus
-from trade_scout.data.normalization import DailyBarNormalizationResult, normalize_provider_daily_bars
+from trade_scout.data.normalization import (
+    DailyBarNormalizationResult,
+    normalize_provider_daily_bars,
+)
 from trade_scout.data.provider import ProviderDailyBar
 
 
