@@ -39,7 +39,9 @@ class SemanticRuntimeEvidenceReport:
 
     @property
     def has_invalid_evidence(self) -> bool:
-        return any(not review.integrity_verified or review.assessment_error for review in self.reviews)
+        return any(
+            not review.integrity_verified or review.assessment_error for review in self.reviews
+        )
 
     def promotion_candidates(
         self,
