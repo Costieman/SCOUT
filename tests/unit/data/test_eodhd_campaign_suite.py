@@ -53,6 +53,10 @@ def test_suite_runs_each_case_once_and_resumes_without_repeating(tmp_path: Path)
     assert second.complete is True
     assert calls == ["active-split", "delisted-history"]
     assert first.completed_case_ids == ("active-split", "delisted-history")
+    assert first.new_case_count == 2
+    assert first.remaining_case_count == 0
+    assert first.stopped_by_limit is False
+    assert second.new_case_count == 0
 
 
 def test_failure_preserves_prior_completed_case_and_resumes_from_failure(tmp_path: Path) -> None:
@@ -74,6 +78,57 @@ def test_failure_preserves_prior_completed_case_and_resumes_from_failure(tmp_pat
 
     assert resumed.complete is True
     assert calls == ["active-split", "delisted-history", "delisted-history"]
+
+
+def test_max_new_cases_pauses_cleanly_and_resumes_without_repeating(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def runner(case: EodhdCampaignSuiteCase) -> dict[str, object]:
+        calls.append(case.case_id)
+        return {"case_id": case.case_id, "passed": True}
+
+    first = run_eodhd_campaign_suite(
+        _cases(),
+        root=tmp_path,
+        case_runner=runner,
+        max_new_cases=1,
+    )
+    second = run_eodhd_campaign_suite(
+        _cases(),
+        root=tmp_path,
+        case_runner=runner,
+        max_new_cases=1,
+    )
+
+    assert first.complete is False
+    assert first.completed_case_ids == ("active-split",)
+    assert first.new_case_count == 1
+    assert first.remaining_case_count == 1
+    assert first.stopped_by_limit is True
+    assert second.complete is True
+    assert second.completed_case_ids == ("active-split", "delisted-history")
+    assert second.new_case_count == 1
+    assert second.remaining_case_count == 0
+    assert second.stopped_by_limit is False
+    assert calls == ["active-split", "delisted-history"]
+
+
+def test_invalid_max_new_cases_fails_before_provider_execution(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def runner(case: EodhdCampaignSuiteCase) -> dict[str, object]:
+        calls.append(case.case_id)
+        return _result_for_case(case)
+
+    with pytest.raises(EodhdCampaignSuiteError, match="max_new_cases"):
+        run_eodhd_campaign_suite(
+            _cases(),
+            root=tmp_path,
+            case_runner=runner,
+            max_new_cases=0,
+        )
+
+    assert calls == []
 
 
 def test_changed_campaign_configuration_creates_distinct_campaign_identity(tmp_path: Path) -> None:

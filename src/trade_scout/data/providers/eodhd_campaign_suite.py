@@ -55,6 +55,9 @@ class EodhdCampaignSuiteResult:
     expected_case_count: int
     completed_case_ids: tuple[str, ...]
     complete: bool
+    new_case_count: int
+    remaining_case_count: int
+    stopped_by_limit: bool
 
 
 CaseRunner = Callable[[EodhdCampaignSuiteCase], dict[str, object]]
@@ -65,8 +68,12 @@ def run_eodhd_campaign_suite(
     *,
     root: Path,
     case_runner: CaseRunner,
+    max_new_cases: int | None = None,
 ) -> EodhdCampaignSuiteResult:
-    """Run pending cases in stable order and checkpoint each completed result before continuing."""
+    """Run pending cases in stable order, checkpointing each completed result before continuing."""
+
+    if max_new_cases is not None and max_new_cases < 1:
+        raise EodhdCampaignSuiteError("max_new_cases must be positive when supplied")
 
     ordered = _validate_cases(cases)
     campaign_id = _campaign_id(ordered)
@@ -74,11 +81,14 @@ def run_eodhd_campaign_suite(
     campaign_root.mkdir(parents=True, exist_ok=True)
     _persist_campaign_spec(campaign_root, campaign_id, ordered)
     completed = _load_checkpoint(campaign_root, campaign_id, ordered)
+    completed_before = len(completed)
 
     for case in ordered:
         if case.case_id in completed:
             _verify_completed_result(campaign_root, case.case_id)
             continue
+        if max_new_cases is not None and len(completed) - completed_before >= max_new_cases:
+            break
         try:
             result = case_runner(case)
             _persist_case_result(campaign_root, case.case_id, result)
@@ -91,11 +101,19 @@ def run_eodhd_campaign_suite(
             raise EodhdCampaignSuiteExecutionError(case.case_id, str(exc)) from exc
 
     completed_ids = tuple(case.case_id for case in ordered if case.case_id in completed)
+    new_case_count = len(completed) - completed_before
+    remaining_case_count = len(ordered) - len(completed_ids)
+    complete = remaining_case_count == 0
     return EodhdCampaignSuiteResult(
         campaign_id=campaign_id,
         expected_case_count=len(ordered),
         completed_case_ids=completed_ids,
-        complete=len(completed_ids) == len(ordered),
+        complete=complete,
+        new_case_count=new_case_count,
+        remaining_case_count=remaining_case_count,
+        stopped_by_limit=not complete
+        and max_new_cases is not None
+        and new_case_count >= max_new_cases,
     )
 
 

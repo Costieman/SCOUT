@@ -17,6 +17,13 @@ from trade_scout.data.providers.eodhd_campaign_suite import (
 )
 
 
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("value must be positive")
+    return parsed
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -31,14 +38,25 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("runtime/eodhd-campaign-suite"),
     )
+    parser.add_argument(
+        "--max-new-cases",
+        type=_positive_int,
+        default=None,
+        help=(
+            "Optional provider-call budget for this invocation. Completed cases remain saved, "
+            "and an identical later invocation resumes from the next pending case."
+        ),
+    )
     return parser
 
 
 def main() -> int:
     args = _parser().parse_args()
-    token = os.environ.get("EODHD_API_KEY", "").strip()
+    token = (
+        os.environ.get("EODHD_API_TOKEN", "").strip() or os.environ.get("EODHD_API_KEY", "").strip()
+    )
     if not token:
-        raise SystemExit("EODHD_API_KEY is not configured")
+        raise SystemExit("EODHD_API_TOKEN or EODHD_API_KEY is not configured")
 
     plan = load_eodhd_campaign_plan(args.plan)
     output_root: Path = args.output_root
@@ -87,6 +105,7 @@ def main() -> int:
         plan.cases,
         root=output_root / "campaign-state",
         case_runner=run_case,
+        max_new_cases=args.max_new_cases,
     )
     summary = {
         "evaluation_id": "eodhd-provider-evidence-campaign-v0.1",
@@ -95,6 +114,10 @@ def main() -> int:
         "campaign_id": state.campaign_id,
         "expected_case_count": state.expected_case_count,
         "completed_case_ids": list(state.completed_case_ids),
+        "completed_case_count": len(state.completed_case_ids),
+        "new_case_count": state.new_case_count,
+        "remaining_case_count": state.remaining_case_count,
+        "stopped_by_limit": state.stopped_by_limit,
         "complete": state.complete,
         "provider_accepted": False,
         "acceptance_note": (
@@ -107,6 +130,11 @@ def main() -> int:
     report_path = report_root / "campaign-summary.json"
     report_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(report_path)
+    if state.stopped_by_limit:
+        print(
+            f"Campaign paused cleanly after {state.new_case_count} new cases; "
+            f"{state.remaining_case_count} remain. Rerun the identical command to resume."
+        )
     return 0
 
 
