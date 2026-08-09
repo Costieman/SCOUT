@@ -10,7 +10,9 @@ def _result(state: ReconciliationState) -> ReconciliationResult:
         instrument_id=InstrumentId("tsi_fixture"),
         trade_date="2020-01-02",
         primary_provider_id="primary",
-        secondary_provider_id="secondary" if state is not ReconciliationState.NOT_COMPARABLE else None,
+        secondary_provider_id="secondary"
+        if state is not ReconciliationState.NOT_COMPARABLE
+        else None,
         state=state,
         differences=(),
     )
