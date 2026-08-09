@@ -58,7 +58,7 @@ class EodhdSecondaryValidationCase:
 
 @dataclass(frozen=True, slots=True)
 class EodhdSecondaryValidationPlan:
-    """Immutable set of cases whose completion may support secondary-provider acceptance evidence."""
+    """Immutable cases that may support secondary-provider acceptance evidence."""
 
     version: str
     cases: tuple[EodhdSecondaryValidationCase, ...]
