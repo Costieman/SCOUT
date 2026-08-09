@@ -1,0 +1,53 @@
+{
+  "assessment_version": "free-provider-stack-v0.1",
+  "policy": "free-data-first",
+  "canonical_price_candidate": "stooq",
+  "specialist_sources": ["sec_edgar", "alpha_vantage"],
+  "criteria": [
+    {
+      "criterion": "stooq_historical_ohlcv_retrieval",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Implement and live-test a Stooq daily OHLCV adapter before canonical promotion."
+    },
+    {
+      "criterion": "stooq_adjustment_semantics",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Raw versus adjusted behavior must be characterized and versioned; no assumption is permitted."
+    },
+    {
+      "criterion": "stooq_inactive_delisted_coverage",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Characterize inactive/delisted price coverage explicitly; absence narrows the free-edition research claim."
+    },
+    {
+      "criterion": "stooq_licensing_and_redistribution",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Review current terms before public redistribution or bundling of downloaded market data."
+    },
+    {
+      "criterion": "alpha_vantage_point_in_time_listing_status",
+      "status": "PARTIAL",
+      "note": "LISTING_STATUS has already returned historical active and delisted CSV evidence in live evaluation; free entitlement reliability and bounded use remain to be characterized."
+    },
+    {
+      "criterion": "sec_edgar_identity_reference",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Implement a no-key SEC reference adapter for CIK/company identity and historical metadata useful to instrument resolution."
+    },
+    {
+      "criterion": "cross_source_identity_reconciliation",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Define deterministic mappings among Stooq query symbols, Alpha Vantage symbols, SEC CIK/ticker metadata, and permanent Trade Scout instrument IDs."
+    },
+    {
+      "criterion": "representative_free_canonical_sample",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Build and benchmark a representative multi-year free-data canonical sample before closing Phase 1."
+    },
+    {
+      "criterion": "downstream_vendor_independence",
+      "status": "DEMONSTRATED",
+      "note": "Existing canonical serving and ResearchBar contracts isolate downstream research from provider-native objects."
+    }
+  ]
+}
