@@ -119,10 +119,7 @@ def main() -> int:
 
     if failure is not None:
         print("Historical OHLCV evaluation paused after a provider failure.")
-        print(
-            f"Completed cases: {payload['completed_case_count']} / "
-            f"{payload['expected_case_count']}"
-        )
+        print(f"Completed cases: {payload['completed_case_count']} / {payload['expected_case_count']}")
         print(f"Failed case: {failure['case_id']}")
         print(f"Provider error: {failure['error']}")
         print("Rerun the identical command later to resume without repeating completed cases.")
