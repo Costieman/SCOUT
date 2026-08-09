@@ -11,8 +11,8 @@
     {
       "criterion": "reproducible_historical_backfill",
       "status": "PARTIAL",
-      "evidence": ["src/trade_scout/data/backfill.py", "src/trade_scout/data/providers/eodhd_campaign.py"],
-      "note": "Deterministic backfill and a full EODHD canonical campaign path exist, but paid multi-year active and delisted history has not yet been demonstrated live."
+      "evidence": ["src/trade_scout/data/backfill.py", "src/trade_scout/data/providers/eodhd_campaign.py", "src/trade_scout/data/providers/eodhd_campaign_suite.py"],
+      "note": "Deterministic backfill and a resumable multi-case EODHD canonical campaign path exist, but paid multi-year active and delisted history has not yet been demonstrated live."
     },
     {
       "criterion": "immutable_raw_preservation",
@@ -35,14 +35,14 @@
     {
       "criterion": "delisting_coverage_characterized",
       "status": "PARTIAL",
-      "evidence": ["src/trade_scout/data/providers/eodhd.py", "scripts/run_eodhd_live_evaluation.py"],
-      "note": "The adapter exposes current and delisted inventories, but breadth, history depth, terminal dates/returns, and delisted price coverage remain to be characterized live."
+      "evidence": ["src/trade_scout/data/providers/eodhd.py", "scripts/run_eodhd_live_evaluation.py", "src/trade_scout/data/providers/eodhd_campaign_plan.py"],
+      "note": "The adapter exposes current and delisted inventories and the evidence plan now requires an explicit delisted-security case, but breadth, history depth, terminal dates/returns, and delisted price coverage remain to be characterized live."
     },
     {
       "criterion": "rate_retry_checkpoint_behavior",
-      "status": "NOT_DEMONSTRATED",
-      "evidence": [],
-      "note": "Bounded requests exist, but EODHD-specific throttling, retry/backoff, and long-campaign checkpoint behavior have not yet been demonstrated."
+      "status": "PARTIAL",
+      "evidence": ["src/trade_scout/data/providers/eodhd_resilience.py", "src/trade_scout/data/providers/eodhd_campaign_suite.py", "tests/unit/data/test_eodhd_resilience.py", "tests/unit/data/test_eodhd_campaign_suite.py"],
+      "note": "EODHD-specific error classification, bounded exponential retry with jitter, Retry-After handling, and resumable multi-case checkpoint behavior are implemented and tested. Live throttling and recovery behavior still requires provider evidence before this criterion can be demonstrated."
     },
     {
       "criterion": "canonical_normalization_and_quality",
