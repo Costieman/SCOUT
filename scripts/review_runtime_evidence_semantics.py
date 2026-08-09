@@ -31,7 +31,9 @@ def main() -> int:
     print("| artifact | criterion | integrity | semantic status | promotion candidate |")
     print("|---|---|---|---|---|")
     for review in report.reviews:
-        semantic_status = review.semantic_status.value if review.semantic_status is not None else "-"
+        semantic_status = (
+            review.semantic_status.value if review.semantic_status is not None else "-"
+        )
         print(
             f"| {review.artifact.artifact_id} | {review.artifact.criterion.value} | "
             f"{review.integrity_verified} | {semantic_status} | {review.is_promotion_candidate} |"
