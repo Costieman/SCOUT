@@ -146,14 +146,18 @@ def _assess_cross_provider_validation(
     if not complete:
         note = "Cross-provider evidence is incomplete; not all configured cases finished."
     elif not no_unresolved:
-        note = "Cross-provider evidence contains unresolved provider discrepancies requiring review."
+        note = (
+            "Cross-provider evidence contains unresolved provider discrepancies requiring review."
+        )
     elif not representative_accepted:
         note = (
             "Cross-provider cases completed without unresolved discrepancies, but representative "
             "sample acceptance has not been explicitly reviewed."
         )
     else:
-        note = "Representative cross-provider validation completed with no unresolved discrepancies."
+        note = (
+            "Representative cross-provider validation completed with no unresolved discrepancies."
+        )
     return RuntimeEvidenceAssessment(
         source_path=path,
         evidence=AcceptanceEvidence(
@@ -173,14 +177,18 @@ def _assess_eodhd_campaign_storage_evidence(
 
     dataset_version = payload.get("dataset_version")
     if not isinstance(dataset_version, str) or not dataset_version.strip():
-        raise RuntimeEvidenceError("campaign storage evidence dataset_version must be non-empty text")
+        raise RuntimeEvidenceError(
+            "campaign storage evidence dataset_version must be non-empty text"
+        )
 
     representative = payload.get("representative_sample")
     if not isinstance(representative, dict):
         raise RuntimeEvidenceError("campaign storage evidence requires representative_sample")
     failures = representative.get("failures")
     if not isinstance(failures, list) or not all(isinstance(item, str) for item in failures):
-        raise RuntimeEvidenceError("campaign storage evidence representative failures must be a list")
+        raise RuntimeEvidenceError(
+            "campaign storage evidence representative failures must be a list"
+        )
 
     representative_accepted = payload.get("representative_sample_accepted") is True
     if representative_accepted != (len(failures) == 0):
