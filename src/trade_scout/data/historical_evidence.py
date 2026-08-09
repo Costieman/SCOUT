@@ -142,8 +142,7 @@ def _evaluate_case(
         HistoricalEvidenceCheck(
             check_id="start_coverage",
             state=_state(
-                first_date is not None
-                and (first_date - case.start).days <= case.max_start_lag_days
+                first_date is not None and (first_date - case.start).days <= case.max_start_lag_days
             ),
             detail=(
                 f"requested_start={case.start.isoformat()}, first_trade_date="
