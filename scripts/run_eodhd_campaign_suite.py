@@ -43,8 +43,8 @@ def _parser() -> argparse.ArgumentParser:
         type=_positive_int,
         default=None,
         help=(
-            "Optional provider-call budget for this invocation. Completed cases remain checkpointed "
-            "and a later identical invocation resumes from the next pending case."
+            "Optional provider-call budget for this invocation. Completed cases remain saved, "
+            "and an identical later invocation resumes from the next pending case."
         ),
     )
     return parser
