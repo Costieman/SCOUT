@@ -120,6 +120,15 @@ def test_historical_evidence_passes_reproducible_scoped_sample() -> None:
     assert all(check.state is HistoricalEvidenceState.PASS for check in result.checks)
 
 
+def test_pacing_hook_runs_between_repeatability_requests() -> None:
+    bars = (_bar(2), _bar(3), _bar(7))
+    calls: list[str] = []
+
+    evaluate_historical_ohlcv(_Adapter(bars), (_case(),), pace=lambda: calls.append("paced"))
+
+    assert calls == ["paced"]
+
+
 def test_repeatability_failure_is_visible() -> None:
     first = (_bar(2), _bar(3), _bar(7))
     second = (_bar(2), _bar(3), _bar(8))
