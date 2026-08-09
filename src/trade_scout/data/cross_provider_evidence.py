@@ -9,6 +9,7 @@ from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, Q
 from trade_scout.data.provider import ProviderDailyBar
 from trade_scout.data.reconciliation import (
     ReconciliationResult,
+    ReconciliationState,
     ReconciliationTolerance,
     compare_primary_to_raw_validation,
     raw_validation_bar,
@@ -102,7 +103,7 @@ def evaluate_cross_provider_bars(
                     trade_date=trade_date.isoformat(),
                     primary_provider_id=case.primary_provider_id,
                     secondary_provider_id=case.secondary_provider_id,
-                    state="NOT_COMPARABLE",  # type: ignore[arg-type]
+                    state=ReconciliationState.NOT_COMPARABLE,
                     differences=(),
                     decision_note="secondary provider has a session absent from primary sample",
                 )
@@ -153,6 +154,11 @@ def _validated_bars(
 
 
 def _primary_bar(instrument_id: InstrumentId, bar: ProviderDailyBar) -> DailyBar:
+    if bar.split_factor is None or bar.dividend_cash is None:
+        raise ValueError(
+            "primary cross-provider evidence requires explicit split_factor and dividend_cash; "
+            "missing values are not inferred"
+        )
     return DailyBar(
         instrument_id=instrument_id,
         trade_date=bar.trade_date,
@@ -161,8 +167,8 @@ def _primary_bar(instrument_id: InstrumentId, bar: ProviderDailyBar) -> DailyBar
         low_raw=bar.low,
         close_raw=bar.close,
         volume_raw=bar.volume,
-        split_factor=bar.split_factor if bar.split_factor is not None else 1.0,
-        dividend_cash=bar.dividend_cash if bar.dividend_cash is not None else 0.0,
+        split_factor=bar.split_factor,
+        dividend_cash=bar.dividend_cash,
         open_split_adjusted=bar.adjusted_open,
         high_split_adjusted=bar.adjusted_high,
         low_split_adjusted=bar.adjusted_low,
