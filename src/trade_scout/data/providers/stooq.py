@@ -11,12 +11,13 @@ import csv
 import io
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 from trade_scout.data.contracts import PriceRepresentation
 from trade_scout.data.provider import (
@@ -86,7 +87,10 @@ class StooqUrllibBytesTransport:
     """Standard-library HTTPS transport used by the live candidate client."""
 
     def get(self, url: str, *, timeout: float) -> bytes:
-        request = Request(url, headers={"Accept": "text/csv", "User-Agent": "Trade-Scout/0.1"})
+        request = Request(
+            url,
+            headers={"Accept": "text/csv", "User-Agent": "Trade-Scout/0.1"},
+        )
         try:
             with urlopen(request, timeout=timeout) as response:
                 return bytes(response.read())
@@ -124,12 +128,6 @@ class StooqHttpClient:
             timeout=self._timeout,
         )
         if self._raw_store is not None:
-            # The deterministic request scope is preserved in the manifest; the raw
-            # bytes themselves remain outside Git. A unique batch ID prevents silent
-            # replacement of repeated provider retrievals.
-            from datetime import UTC, datetime
-            from uuid import uuid4
-
             self._raw_store.persist(
                 payload,
                 batch_id=f"stooq-{uuid4().hex}",
@@ -195,8 +193,10 @@ class StooqAdapter:
                 "historical symbol continuity is not implemented or claimed",
                 "inactive/delisted coverage is not implemented or claimed",
                 "corporate actions are not implemented or claimed",
-                "CSV OHLC adjustment semantics remain unaccepted and require empirical characterization",
-                "licensing, retention, redistribution, and public-app rights remain an explicit acceptance gate",
+                "CSV OHLC adjustment semantics remain unaccepted and require empirical "
+                "characterization",
+                "licensing, retention, redistribution, and public-app rights remain an "
+                "explicit acceptance gate",
             ),
         )
 
@@ -205,7 +205,9 @@ class StooqAdapter:
             return ProviderHealth(
                 provider_id=self.provider_id,
                 status=ProviderHealthStatus.DEGRADED,
-                message="no explicit Stooq instrument link is configured for a bounded health probe",
+                message=(
+                    "no explicit Stooq instrument link is configured for a bounded health probe"
+                ),
             )
         symbol = min(self._links_by_symbol)
         today = date.today()
@@ -236,7 +238,8 @@ class StooqAdapter:
     def get_daily_bars(self, request: DailyBarRequest) -> Sequence[ProviderDailyBar]:
         if request.adjustment is not PriceRepresentation.RAW:
             raise StooqUnsupportedError(
-                "Stooq adjustment semantics are not accepted; only observed CSV OHLC may be evaluated"
+                "Stooq adjustment semantics are not accepted; only observed CSV OHLC may "
+                "be evaluated"
             )
         symbols = self._requested_symbols(request.provider_symbols)
         bars: list[ProviderDailyBar] = []
