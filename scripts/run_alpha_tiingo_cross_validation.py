@@ -191,7 +191,8 @@ def _ensure_unique_cases(cases: tuple[CrossProviderEvidenceCase, ...]) -> None:
     symbols = [_symbol(case).upper() for case in cases]
     if len(symbols) != len(set(symbols)):
         raise SystemExit(
-            "one case per symbol is supported per run; use a separate output root for another period"
+            "one case per symbol is supported per run; use a separate output root "
+            "for another period"
         )
 
 
@@ -327,16 +328,19 @@ def _markdown(payload: dict[str, object]) -> str:
         for case in cases:
             if isinstance(case, dict):
                 lines.append(
-                    f"| {case['case_id']} | {case['comparison_count']} | {case['comparable_count']} | "
-                    f"{case['agreement_count']} | {case['unresolved_count']} | "
-                    f"{case['not_comparable_count']} |"
+                    f"| {case['case_id']} | {case['comparison_count']} | "
+                    f"{case['comparable_count']} | {case['agreement_count']} | "
+                    f"{case['unresolved_count']} | {case['not_comparable_count']} |"
                 )
     lines.extend(
         [
             "",
             "**Provider acceptance remains false.** " + str(payload["acceptance_note"]),
             "",
-            "Exact provider responses are preserved under the runtime raw roots and remain outside Git.",
+            (
+                "Exact provider responses are preserved under the runtime raw roots and remain "
+                "outside Git."
+            ),
             "",
         ]
     )
