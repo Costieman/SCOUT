@@ -9,7 +9,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from trade_scout.data.live_evidence_preflight import assess_live_evidence_preflight
+from trade_scout.data.live_evidence_preflight import (
+    LiveEvidencePreflight,
+    assess_live_evidence_preflight,
+)
 from trade_scout.data.runtime_evidence_registration import register_runtime_evidence
 
 _PRIMARY_ROOT = Path("runtime/eodhd-campaign-suite")
@@ -106,7 +109,7 @@ def _print_status(primary_root: Path, secondary_root: Path) -> None:
     )
 
 
-def _preflight():
+def _preflight() -> LiveEvidencePreflight:
     return assess_live_evidence_preflight(
         environment=os.environ,
         representative_policy=_REPRESENTATIVE_POLICY,
@@ -133,7 +136,9 @@ def _print_preflight() -> bool:
         for note in report.notes:
             print(f"- {note}")
     if report.primary_ready:
-        print("Next safe action: uv run python scripts/run_phase1_live_evidence.py --max-new-cases 10")
+        print(
+            "Next safe action: uv run python scripts/run_phase1_live_evidence.py --max-new-cases 10"
+        )
     else:
         print("Next safe action: resolve the blockers above; do not start provider calls yet.")
     return report.primary_ready
