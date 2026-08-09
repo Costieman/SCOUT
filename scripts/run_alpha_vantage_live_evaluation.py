@@ -180,9 +180,7 @@ def _bar_summary(bars: tuple[Any, ...]) -> dict[str, Any]:
     }
 
 
-def _evaluation_payload(
-    adapter: AlphaVantageAdapter, checkpoint: dict[str, Any]
-) -> dict[str, Any]:
+def _evaluation_payload(adapter: AlphaVantageAdapter, checkpoint: dict[str, Any]) -> dict[str, Any]:
     snapshots = [
         checkpoint["listing_snapshots"][label]
         for label in (_snapshot_label(item) for item in _SNAPSHOT_DATES)
