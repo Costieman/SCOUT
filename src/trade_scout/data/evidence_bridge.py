@@ -121,7 +121,9 @@ def _assess_cross_provider_validation(
     expected_count = payload.get("expected_case_count")
     completed_count = payload.get("completed_case_count")
     unresolved_count = payload.get("unresolved_discrepancy_count")
-    if not all(isinstance(value, int) for value in (expected_count, completed_count, unresolved_count)):
+    if not all(
+        isinstance(value, int) for value in (expected_count, completed_count, unresolved_count)
+    ):
         raise RuntimeEvidenceError("cross-provider report counts must be integers")
     if expected_count < 1 or completed_count < 0 or completed_count > expected_count:
         raise RuntimeEvidenceError("cross-provider report contains invalid case counts")
@@ -139,7 +141,9 @@ def _assess_cross_provider_validation(
     if not complete:
         note = "Cross-provider evidence is incomplete; not all configured cases finished."
     elif not no_unresolved:
-        note = "Cross-provider evidence contains unresolved provider discrepancies requiring review."
+        note = (
+            "Cross-provider evidence contains unresolved provider discrepancies requiring review."
+        )
     elif not representative_accepted:
         note = (
             "Cross-provider cases completed without unresolved discrepancies, but representative "
