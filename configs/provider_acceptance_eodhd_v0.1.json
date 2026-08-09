@@ -52,9 +52,9 @@
     },
     {
       "criterion": "secondary_provider_validation",
-      "status": "NOT_DEMONSTRATED",
-      "evidence": [],
-      "note": "Representative EODHD values have not yet been reconciled against an independent secondary source."
+      "status": "PARTIAL",
+      "evidence": ["configs/eodhd_tiingo_secondary_validation_v0.1.json", "src/trade_scout/data/providers/eodhd_secondary_validation.py", "scripts/run_eodhd_tiingo_cross_validation.py"],
+      "note": "A strict, resumable EODHD-versus-Tiingo raw-OHLCV evidence campaign is now implemented with explicit provider query symbols and identities. It remains partial until the checked-in cases are run live, discrepancies are reviewed, and representative-sample acceptance is justified separately."
     },
     {
       "criterion": "idempotent_deterministic_daily_update",
