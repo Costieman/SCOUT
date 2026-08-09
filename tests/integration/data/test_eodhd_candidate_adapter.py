@@ -22,7 +22,10 @@ from trade_scout.data.raw_store import RawBatchStore
 
 
 class FixtureClient:
-    def __init__(self, responses: Mapping[tuple[str, tuple[tuple[str, object], ...]], object]) -> None:
+    def __init__(
+        self,
+        responses: Mapping[tuple[str, tuple[tuple[str, object], ...]], object],
+    ) -> None:
         self.responses = dict(responses)
 
     def get_json(self, endpoint: str, parameters: Mapping[str, object] | None = None) -> object:
@@ -121,9 +124,7 @@ def test_daily_bars_require_explicit_identity_and_remain_raw() -> None:
     )
     adapter = EodhdAdapter(
         client,
-        instrument_links=(
-            EodhdInstrumentLink("AAPL.US", "eodhd:isin:US0378331005"),
-        ),
+        instrument_links=(EodhdInstrumentLink("AAPL.US", "eodhd:isin:US0378331005"),),
     )
     request = DailyBarRequest(
         start=date(2026, 1, 2),
