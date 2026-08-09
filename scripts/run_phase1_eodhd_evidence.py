@@ -80,9 +80,10 @@ def _print_status(root: Path) -> None:
 
 
 def _require_eodhd_token() -> None:
-    token = os.environ.get("EODHD_API_TOKEN", "").strip() or os.environ.get(
-        "EODHD_API_KEY", ""
-    ).strip()
+    token = (
+        os.environ.get("EODHD_API_TOKEN", "").strip()
+        or os.environ.get("EODHD_API_KEY", "").strip()
+    )
     if not token:
         raise SystemExit("EODHD_API_TOKEN or EODHD_API_KEY is not configured")
 
