@@ -108,7 +108,9 @@ def main() -> int:
 
     if failure is not None:
         print("Stooq historical evidence paused after a provider failure.")
-        print(f"Completed cases: {payload['completed_case_count']} / {payload['expected_case_count']}")
+        print(
+            f"Completed cases: {payload['completed_case_count']} / {payload['expected_case_count']}"
+        )
         print(f"Failed case: {failure['case_id']}")
         print(f"Provider error: {failure['error']}")
         print("Rerun the identical command to resume without repeating completed cases.")
@@ -188,7 +190,9 @@ def _payload(
         raw_completed[case.case_id] for case in cases if case.case_id in raw_completed
     ]
     complete = len(ordered_results) == len(cases)
-    passed = complete and bool(ordered_results) and all(_case_passed(item) for item in ordered_results)
+    passed = (
+        complete and bool(ordered_results) and all(_case_passed(item) for item in ordered_results)
+    )
     return {
         "report_type": "stooq-historical-ohlcv-evidence-v0.1",
         "provider_id": "stooq",
