@@ -118,7 +118,9 @@ def main() -> int:
         if case.case_id in completed:
             continue
         try:
-            completed[case.case_id] = _run_case(case, eodhd=eodhd, tiingo=tiingo, tolerance=tolerance)
+            completed[case.case_id] = _run_case(
+                case, eodhd=eodhd, tiingo=tiingo, tolerance=tolerance
+            )
             checkpoint["last_failure"] = None
             _write_checkpoint(checkpoint_path, checkpoint)
         except (EodhdApiError, TiingoApiError, ValueError) as exc:
@@ -314,7 +316,9 @@ def _markdown(payload: dict[str, object]) -> str:
                     f"{case['comparable_count']} | {case['agreement_count']} | "
                     f"{case['unresolved_count']} | {case['not_comparable_count']} |"
                 )
-    lines.extend(["", "**Provider acceptance remains false.** " + str(payload["acceptance_note"]), ""])
+    lines.extend(
+        ["", "**Provider acceptance remains false.** " + str(payload["acceptance_note"]), ""]
+    )
     return "\n".join(lines)
 
 
