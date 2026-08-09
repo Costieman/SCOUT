@@ -91,6 +91,103 @@ def test_failed_historical_ohlcv_evidence_remains_partial(tmp_path: Path) -> Non
     assert assess_runtime_evidence(path).evidence.status is AcceptanceEvidenceStatus.PARTIAL
 
 
+def test_cross_provider_report_requires_explicit_representative_acceptance(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "cross-provider.json",
+        {
+            "evaluation_id": "alpha-tiingo-cross-validation-v0.1",
+            "expected_case_count": 3,
+            "completed_case_count": 3,
+            "complete": True,
+            "unresolved_discrepancy_count": 0,
+            "representative_sample_accepted": False,
+            "cases": [{}, {}, {}],
+        },
+    )
+
+    result = assess_runtime_evidence(path)
+
+    assert result.evidence.criterion is DataFoundationCriterion.CROSS_PROVIDER_VALIDATION
+    assert result.evidence.status is AcceptanceEvidenceStatus.PARTIAL
+
+
+def test_reviewed_cross_provider_report_can_demonstrate_validation(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "cross-provider.json",
+        {
+            "evaluation_id": "alpha-tiingo-cross-validation-v0.1",
+            "expected_case_count": 2,
+            "completed_case_count": 2,
+            "complete": True,
+            "unresolved_discrepancy_count": 0,
+            "representative_sample_accepted": True,
+            "cases": [{}, {}],
+        },
+    )
+
+    result = assess_runtime_evidence(path)
+
+    assert result.evidence.status is AcceptanceEvidenceStatus.DEMONSTRATED
+
+
+def test_cross_provider_report_with_unresolved_discrepancy_stays_partial(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "cross-provider.json",
+        {
+            "evaluation_id": "alpha-tiingo-cross-validation-v0.1",
+            "expected_case_count": 2,
+            "completed_case_count": 2,
+            "complete": True,
+            "unresolved_discrepancy_count": 1,
+            "representative_sample_accepted": True,
+            "cases": [{}, {}],
+        },
+    )
+
+    assert assess_runtime_evidence(path).evidence.status is AcceptanceEvidenceStatus.PARTIAL
+
+
+def test_storage_benchmark_requires_explicit_representative_acceptance(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "storage.json",
+        {
+            "dataset_version": "dataset-v1",
+            "record_count": 1000,
+            "unique_instrument_count": 5,
+            "first_trade_date": "2020-01-02",
+            "last_trade_date": "2022-12-30",
+            "parquet_bytes": 10000,
+            "filtered_query_count": 100,
+            "representative_sample_accepted": False,
+        },
+    )
+
+    result = assess_runtime_evidence(path)
+
+    assert result.evidence.criterion is DataFoundationCriterion.STORAGE_BENCHMARK
+    assert result.evidence.status is AcceptanceEvidenceStatus.PARTIAL
+
+
+def test_reviewed_storage_benchmark_can_demonstrate_criterion(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path / "storage.json",
+        {
+            "dataset_version": "dataset-v1",
+            "record_count": 1000,
+            "unique_instrument_count": 5,
+            "first_trade_date": "2020-01-02",
+            "last_trade_date": "2022-12-30",
+            "parquet_bytes": 10000,
+            "filtered_query_count": 100,
+            "representative_sample_accepted": True,
+        },
+    )
+
+    result = assess_runtime_evidence(path)
+
+    assert result.evidence.status is AcceptanceEvidenceStatus.DEMONSTRATED
+
+
 def test_unknown_report_is_rejected(tmp_path: Path) -> None:
     path = _write(tmp_path / "unknown.json", {"hello": "world"})
 
