@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from trade_scout.data.contracts import SecurityType
-from trade_scout.data.instrument_master import instrument_from_primary_provider, link_provider_identity
+from trade_scout.data.instrument_master import (
+    instrument_from_primary_provider,
+    link_provider_identity,
+)
 from trade_scout.data.provider import ProviderInstrument
 from trade_scout.data.sec_issuer_reference import project_reviewed_sec_issuer_references
 
