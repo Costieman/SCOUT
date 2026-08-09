@@ -39,10 +39,8 @@ def review_eodhd_campaign(output_root: Path) -> EodhdCampaignReview:
     summaries = tuple((output_root / "report").glob("*/campaign-summary.json"))
     if len(summaries) != 1:
         report_root = output_root / "report"
-        raise EodhdCampaignReviewError(
-            f"expected exactly one campaign summary under {report_root}; "
-            f"found {len(summaries)}"
-        )
+        message = f"expected one campaign summary in {report_root}; found {len(summaries)}"
+        raise EodhdCampaignReviewError(message)
     summary_path = summaries[0]
     summary = _read_object(summary_path)
     if summary.get("evaluation_id") != "eodhd-provider-evidence-campaign-v0.1":
@@ -153,10 +151,7 @@ def _derive_evidence(
                 else ProviderEvidenceStatus.PARTIAL
             ),
             evidence=(reference,),
-            note=(
-                "Completed cases retain immutable raw batch identities before canonical "
-                "promotion."
-            ),
+            note="Completed cases retain raw batch identities before canonical promotion.",
         ),
         ProviderAcceptanceEvidence(
             criterion=ProviderAcceptanceCriterion.IDENTIFIER_AND_SYMBOL_MAPPING,
