@@ -33,7 +33,10 @@ def assess_runtime_evidence(path: Path) -> RuntimeEvidenceAssessment:
     evaluation_id = payload.get("evaluation_id")
     if evaluation_id == "alpha-vantage-live-evaluation-v0.3":
         return _assess_listing_evaluation(path, payload)
-    if evaluation_id == "alpha-tiingo-cross-validation-v0.1":
+    if evaluation_id in {
+        "alpha-tiingo-cross-validation-v0.1",
+        "eodhd-tiingo-cross-validation-v0.1",
+    }:
         return _assess_cross_provider_validation(path, payload)
     if _looks_like_storage_benchmark(payload):
         return _assess_storage_benchmark(path, payload)
