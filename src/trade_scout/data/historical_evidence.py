@@ -92,7 +92,8 @@ def evaluate_historical_ohlcv(
 
     Each case is retrieved twice through the same provider-neutral request. Exact normalized-record
     equality is required between the two retrievals. Date-coverage tolerances are calendar-day
-    tolerances supplied by the caller; this function deliberately does not invent a trading calendar.
+    tolerances supplied by the caller; this function deliberately does not invent a trading
+    calendar.
     """
 
     if not cases:
