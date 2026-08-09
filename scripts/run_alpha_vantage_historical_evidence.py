@@ -119,7 +119,10 @@ def main() -> int:
 
     if failure is not None:
         print("Historical OHLCV evaluation paused after a provider failure.")
-        print(f"Completed cases: {payload['completed_case_count']} / {payload['expected_case_count']}")
+        print(
+            f"Completed cases: {payload['completed_case_count']} / "
+            f"{payload['expected_case_count']}"
+        )
         print(f"Failed case: {failure['case_id']}")
         print(f"Provider error: {failure['error']}")
         print("Rerun the identical command later to resume without repeating completed cases.")
@@ -224,7 +227,9 @@ def _payload(
     raw_completed = checkpoint.get("completed_cases")
     if not isinstance(raw_completed, dict):
         raise TypeError("historical evidence checkpoint completed_cases must be an object")
-    ordered_results = [raw_completed[case.case_id] for case in cases if case.case_id in raw_completed]
+    ordered_results = [
+        raw_completed[case.case_id] for case in cases if case.case_id in raw_completed
+    ]
     case_passes = [_case_passed(result) for result in ordered_results]
     complete = len(ordered_results) == len(cases)
     passed = complete and bool(ordered_results) and all(case_passes)
