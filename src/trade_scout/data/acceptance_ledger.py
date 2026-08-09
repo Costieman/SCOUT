@@ -67,7 +67,9 @@ def _evidence_from_payload(payload: object) -> AcceptanceEvidence:
         raise AcceptanceLedgerError(f"invalid status for {criterion.value}") from exc
 
     raw_evidence = payload.get("evidence")
-    if not isinstance(raw_evidence, list) or not all(isinstance(item, str) for item in raw_evidence):
+    if not isinstance(raw_evidence, list) or not all(
+        isinstance(item, str) for item in raw_evidence
+    ):
         raise AcceptanceLedgerError(f"evidence for {criterion.value} must be a string array")
     note = payload.get("note")
     if not isinstance(note, str):
