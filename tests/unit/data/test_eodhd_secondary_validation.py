@@ -22,7 +22,8 @@ def _payload() -> dict[str, object]:
         "cases": [
             {
                 "case_id": "aapl-2020",
-                "symbol": "AAPL.US",
+                "eodhd_symbol": "AAPL.US",
+                "tiingo_symbol": "AAPL",
                 "instrument_id": "instrument:aapl",
                 "eodhd_provider_instrument_id": "eodhd:isin:US0378331005",
                 "tiingo_provider_instrument_id": "tiingo:security:aapl",
@@ -38,6 +39,8 @@ def test_loads_strict_validation_plan(tmp_path: Path) -> None:
 
     assert plan.version == "eodhd-tiingo-secondary-validation-v0.1"
     assert len(plan.cases) == 1
+    assert plan.cases[0].eodhd_symbol == "AAPL.US"
+    assert plan.cases[0].tiingo_symbol == "AAPL"
     evidence = plan.cases[0].evidence_case()
     assert evidence.primary_provider_id == "eodhd"
     assert evidence.secondary_provider_id == "tiingo"
