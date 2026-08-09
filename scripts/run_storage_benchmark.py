@@ -64,7 +64,8 @@ def _payload(result: StorageBenchmarkResult, *, source_root: Path) -> dict[str, 
     payload["representative_sample_accepted"] = False
     payload["acceptance_note"] = (
         "Measurements alone do not establish that the source dataset is representative enough "
-        "to close the Phase 1 storage-benchmark criterion. Sample scope must be reviewed separately."
+        "to close the Phase 1 storage-benchmark criterion. Sample scope must be reviewed "
+        "separately."
     )
     return payload
 
