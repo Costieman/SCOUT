@@ -10,6 +10,7 @@ from trade_scout.data.provider_adjustments import (
     ProviderAdjustmentError,
     materialize_split_adjusted_bars,
 )
+from trade_scout.data.providers.eodhd import EodhdResponseError
 from trade_scout.data.providers.eodhd_adjustments import normalize_eodhd_adjustment_actions
 
 
@@ -134,7 +135,7 @@ def test_eodhd_dividend_value_becomes_explicit_event_date_cash() -> None:
 
 
 def test_invalid_eodhd_split_ratio_fails_visibly() -> None:
-    with pytest.raises(ValueError, match="invalid EODHD split ratio"):
+    with pytest.raises(EodhdResponseError, match="invalid EODHD split ratio"):
         normalize_eodhd_adjustment_actions(
             (_action(CorporateActionType.SPLIT, 31, {"split": "not-a-ratio"}),)
         )
