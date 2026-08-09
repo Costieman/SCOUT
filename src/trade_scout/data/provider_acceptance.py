@@ -120,7 +120,9 @@ def load_provider_acceptance(path: Path) -> ProviderAcceptanceReport:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except OSError as exc:
-        raise ProviderAcceptanceError(f"cannot read provider acceptance assessment: {path}") from exc
+        raise ProviderAcceptanceError(
+            f"cannot read provider acceptance assessment: {path}"
+        ) from exc
     except json.JSONDecodeError as exc:
         raise ProviderAcceptanceError("provider acceptance assessment is invalid JSON") from exc
     if not isinstance(payload, dict):
