@@ -123,10 +123,11 @@ def _parse_case(spec: str) -> tuple[str, str, date, float, date, date]:
 
 
 def _markdown(payload: dict[str, Any]) -> str:
+    consistency = payload["consistent_non_inconclusive_behavior"]
     lines = [
         "# Stooq split-semantics evidence",
         "",
-        f"Consistent non-inconclusive behavior: **{payload['consistent_non_inconclusive_behavior']}**",
+        f"Consistent non-inconclusive behavior: **{consistency}**",
         f"Candidate behavior: `{payload['candidate_behavior']}`",
         "",
         "| symbol | split date | ratio | pre close | post close | state |",
