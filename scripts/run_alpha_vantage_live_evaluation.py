@@ -117,7 +117,9 @@ def _snapshot_summary(as_of: date | None, instruments: tuple[Any, ...]) -> dict[
         ),
         "metadata_quality": {
             "missing_name_count": len(missing_name_symbols),
-            "missing_name_rate": len(missing_name_symbols) / len(instruments) if instruments else 0.0,
+            "missing_name_rate": len(missing_name_symbols) / len(instruments)
+            if instruments
+            else 0.0,
             "missing_name_examples": missing_name_symbols[:20],
             "warning_count": len(warning_symbols),
             "symbol_shape_review_count": len(suspicious_stock_symbols),
