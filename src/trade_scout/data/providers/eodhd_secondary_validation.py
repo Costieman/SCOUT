@@ -20,7 +20,8 @@ class EodhdSecondaryValidationCase:
     """One explicitly linked EODHD/Tiingo raw-OHLCV comparison case."""
 
     case_id: str
-    symbol: str
+    eodhd_symbol: str
+    tiingo_symbol: str
     instrument_id: InstrumentId
     eodhd_provider_instrument_id: str
     tiingo_provider_instrument_id: str
@@ -30,7 +31,8 @@ class EodhdSecondaryValidationCase:
     def __post_init__(self) -> None:
         for name, value in (
             ("case_id", self.case_id),
-            ("symbol", self.symbol),
+            ("eodhd_symbol", self.eodhd_symbol),
+            ("tiingo_symbol", self.tiingo_symbol),
             ("eodhd_provider_instrument_id", self.eodhd_provider_instrument_id),
             ("tiingo_provider_instrument_id", self.tiingo_provider_instrument_id),
         ):
@@ -100,7 +102,8 @@ def _parse_case(payload: object) -> EodhdSecondaryValidationCase:
         raise EodhdSecondaryValidationError("validation case must be an object")
     required = {
         "case_id",
-        "symbol",
+        "eodhd_symbol",
+        "tiingo_symbol",
         "instrument_id",
         "eodhd_provider_instrument_id",
         "tiingo_provider_instrument_id",
@@ -121,7 +124,8 @@ def _parse_case(payload: object) -> EodhdSecondaryValidationCase:
         raise EodhdSecondaryValidationError("validation case dates must use YYYY-MM-DD") from exc
     return EodhdSecondaryValidationCase(
         case_id=text_fields["case_id"],
-        symbol=text_fields["symbol"].upper(),
+        eodhd_symbol=text_fields["eodhd_symbol"].upper(),
+        tiingo_symbol=text_fields["tiingo_symbol"].upper(),
         instrument_id=InstrumentId(text_fields["instrument_id"]),
         eodhd_provider_instrument_id=text_fields["eodhd_provider_instrument_id"],
         tiingo_provider_instrument_id=text_fields["tiingo_provider_instrument_id"],
