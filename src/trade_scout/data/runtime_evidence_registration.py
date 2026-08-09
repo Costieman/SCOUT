@@ -85,7 +85,9 @@ def _load_existing(path: Path) -> tuple[RuntimeEvidenceArtifact, ...]:
     try:
         return load_runtime_evidence_manifest(path).artifacts
     except ValueError as exc:
-        raise RuntimeEvidenceRegistrationError("existing runtime evidence manifest is invalid") from exc
+        raise RuntimeEvidenceRegistrationError(
+            "existing runtime evidence manifest is invalid"
+        ) from exc
 
 
 def _serialize(artifact: RuntimeEvidenceArtifact) -> dict[str, object]:
