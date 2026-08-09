@@ -30,8 +30,13 @@ def assess_runtime_evidence(path: Path) -> RuntimeEvidenceAssessment:
     """Validate one known runtime report and derive evidence without optimistic inference."""
 
     payload = _read_json(path)
-    if payload.get("evaluation_id") == "alpha-vantage-live-evaluation-v0.3":
+    evaluation_id = payload.get("evaluation_id")
+    if evaluation_id == "alpha-vantage-live-evaluation-v0.3":
         return _assess_listing_evaluation(path, payload)
+    if evaluation_id == "alpha-tiingo-cross-validation-v0.1":
+        return _assess_cross_provider_validation(path, payload)
+    if _looks_like_storage_benchmark(payload):
+        return _assess_storage_benchmark(path, payload)
     if "cases" in payload and payload.get("provider_id"):
         return _assess_historical_ohlcv(path, payload)
     raise RuntimeEvidenceError(f"unsupported runtime evidence report: {path}")
@@ -99,6 +104,107 @@ def _assess_historical_ohlcv(path: Path, payload: dict[str, Any]) -> RuntimeEvid
         source_path=path,
         evidence=AcceptanceEvidence(
             criterion=DataFoundationCriterion.HISTORICAL_INGESTION,
+            status=status,
+            evidence=(str(path),),
+            note=note,
+        ),
+    )
+
+
+def _assess_cross_provider_validation(
+    path: Path,
+    payload: dict[str, Any],
+) -> RuntimeEvidenceAssessment:
+    cases = payload.get("cases")
+    if not isinstance(cases, list):
+        raise RuntimeEvidenceError("cross-provider report cases must be a list")
+    expected_count = payload.get("expected_case_count")
+    completed_count = payload.get("completed_case_count")
+    unresolved_count = payload.get("unresolved_discrepancy_count")
+    if not all(isinstance(value, int) for value in (expected_count, completed_count, unresolved_count)):
+        raise RuntimeEvidenceError("cross-provider report counts must be integers")
+    if expected_count < 1 or completed_count < 0 or completed_count > expected_count:
+        raise RuntimeEvidenceError("cross-provider report contains invalid case counts")
+    if unresolved_count < 0:
+        raise RuntimeEvidenceError("cross-provider unresolved count must be non-negative")
+
+    complete = payload.get("complete") is True and completed_count == expected_count
+    representative_accepted = payload.get("representative_sample_accepted") is True
+    no_unresolved = unresolved_count == 0
+    status = (
+        AcceptanceEvidenceStatus.DEMONSTRATED
+        if complete and representative_accepted and no_unresolved
+        else AcceptanceEvidenceStatus.PARTIAL
+    )
+    if not complete:
+        note = "Cross-provider evidence is incomplete; not all configured cases finished."
+    elif not no_unresolved:
+        note = "Cross-provider evidence contains unresolved provider discrepancies requiring review."
+    elif not representative_accepted:
+        note = (
+            "Cross-provider cases completed without unresolved discrepancies, but representative "
+            "sample acceptance has not been explicitly reviewed."
+        )
+    else:
+        note = (
+            "Representative cross-provider validation completed with no unresolved discrepancies."
+        )
+    return RuntimeEvidenceAssessment(
+        source_path=path,
+        evidence=AcceptanceEvidence(
+            criterion=DataFoundationCriterion.CROSS_PROVIDER_VALIDATION,
+            status=status,
+            evidence=(str(path),),
+            note=note,
+        ),
+    )
+
+
+def _looks_like_storage_benchmark(payload: dict[str, Any]) -> bool:
+    required = {
+        "dataset_version",
+        "record_count",
+        "unique_instrument_count",
+        "first_trade_date",
+        "last_trade_date",
+        "parquet_bytes",
+        "filtered_query_count",
+        "representative_sample_accepted",
+    }
+    return required <= set(payload)
+
+
+def _assess_storage_benchmark(path: Path, payload: dict[str, Any]) -> RuntimeEvidenceAssessment:
+    numeric_fields = (
+        "record_count",
+        "unique_instrument_count",
+        "parquet_bytes",
+        "filtered_query_count",
+    )
+    for field in numeric_fields:
+        value = payload.get(field)
+        if not isinstance(value, int) or value < 0:
+            raise RuntimeEvidenceError(f"storage benchmark {field} must be a non-negative integer")
+    has_sample = (
+        payload["record_count"] > 0
+        and payload["unique_instrument_count"] > 0
+        and payload["parquet_bytes"] > 0
+    )
+    representative_accepted = payload.get("representative_sample_accepted") is True
+    status = (
+        AcceptanceEvidenceStatus.DEMONSTRATED
+        if has_sample and representative_accepted
+        else AcceptanceEvidenceStatus.PARTIAL
+    )
+    note = (
+        "Representative Parquet/DuckDB sample was explicitly accepted and benchmarked."
+        if status is AcceptanceEvidenceStatus.DEMONSTRATED
+        else "Storage measurements exist, but representative-sample acceptance remains outstanding."
+    )
+    return RuntimeEvidenceAssessment(
+        source_path=path,
+        evidence=AcceptanceEvidence(
+            criterion=DataFoundationCriterion.STORAGE_BENCHMARK,
             status=status,
             evidence=(str(path),),
             note=note,
