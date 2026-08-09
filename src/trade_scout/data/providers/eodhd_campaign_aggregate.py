@@ -85,9 +85,7 @@ def aggregate_eodhd_campaign(
         case_bars = case_store.load(case_dataset_version)
         expected_count = result.get("canonical_record_count")
         if isinstance(expected_count, bool) or not isinstance(expected_count, int):
-            raise EodhdCampaignAggregateError(
-                f"case {case_id} canonical_record_count is invalid"
-            )
+            raise EodhdCampaignAggregateError(f"case {case_id} canonical_record_count is invalid")
         if len(case_bars) != expected_count:
             raise EodhdCampaignAggregateError(f"case {case_id} canonical record count changed")
 
