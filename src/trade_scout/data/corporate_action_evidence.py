@@ -83,7 +83,9 @@ def evaluate_corporate_action_evidence(
 
     action_records = tuple(actions)
     bar_records = tuple(bars)
-    wrong_provider_actions = tuple(item for item in action_records if item.provider_id != provider_id)
+    wrong_provider_actions = tuple(
+        item for item in action_records if item.provider_id != provider_id
+    )
     wrong_provider_bars = tuple(item for item in bar_records if item.provider_id != provider_id)
     out_of_range_actions = tuple(
         item for item in action_records if not start <= item.effective_date <= end
@@ -163,9 +165,7 @@ def _find_discontinuities(
                     nearby_action_types=nearby,
                 )
             )
-    return tuple(
-        sorted(result, key=lambda item: (item.provider_instrument_id, item.trade_date))
-    )
+    return tuple(sorted(result, key=lambda item: (item.provider_instrument_id, item.trade_date)))
 
 
 def _check(check_id: str, condition: bool, count: int) -> CorporateActionEvidenceCheck:
