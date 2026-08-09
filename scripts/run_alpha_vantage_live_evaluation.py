@@ -60,7 +60,7 @@ def main() -> int:
         }
 
     payload = {
-        "evaluation_id": "alpha-vantage-live-evaluation-v0.1",
+        "evaluation_id": "alpha-vantage-live-evaluation-v0.2",
         "provider_id": adapter.provider_id,
         "purpose": "Trade Scout Phase 1 provider evaluation",
         "request_budget": {
@@ -94,6 +94,18 @@ def _snapshot_summary(as_of: date | None, instruments: tuple[Any, ...]) -> dict[
     active = [instrument for instrument in instruments if instrument.active]
     delisted = [instrument for instrument in instruments if not instrument.active]
     symbols = {instrument.symbol for instrument in instruments}
+    missing_name_symbols = [instrument.symbol for instrument in instruments if not instrument.name]
+    warning_symbols = [
+        instrument.symbol
+        for instrument in instruments
+        if instrument.source_fields.get("metadata_quality") == "WARN"
+    ]
+    suspicious_stock_symbols = [
+        instrument.symbol
+        for instrument in instruments
+        if str(instrument.security_type) == "common_stock"
+        and any(token in instrument.symbol for token in ("-P-", "-CL", "-WT", ".W"))
+    ]
     return {
         "as_of": as_of.isoformat() if as_of is not None else "latest",
         "total": len(instruments),
@@ -103,6 +115,14 @@ def _snapshot_summary(as_of: date | None, instruments: tuple[Any, ...]) -> dict[
         "security_type_counts": dict(
             Counter(str(instrument.security_type) for instrument in instruments)
         ),
+        "metadata_quality": {
+            "missing_name_count": len(missing_name_symbols),
+            "missing_name_rate": len(missing_name_symbols) / len(instruments) if instruments else 0.0,
+            "missing_name_examples": missing_name_symbols[:20],
+            "warning_count": len(warning_symbols),
+            "symbol_shape_review_count": len(suspicious_stock_symbols),
+            "symbol_shape_review_examples": suspicious_stock_symbols[:20],
+        },
         "probe_symbols": {
             symbol: symbol in symbols for symbol in ("AAPL", "IBM", "FB", "META", "TWTR")
         },
@@ -142,16 +162,35 @@ def _markdown_report(payload: dict[str, Any]) -> str:
         "",
         "## Point-in-time listing snapshots",
         "",
-        "| as-of | total | active | delisted | AAPL | FB | META | TWTR |",
-        "|---|---:|---:|---:|---|---|---|---|",
+        "| as-of | total | active | delisted | missing names | review symbols | AAPL | FB | META | TWTR |",
+        "|---|---:|---:|---:|---:|---:|---|---|---|---|",
     ]
     for snapshot in payload["listing_snapshots"]:
         probes = snapshot["probe_symbols"]
+        quality = snapshot["metadata_quality"]
         lines.append(
             f"| {snapshot['as_of']} | {snapshot['total']} | {snapshot['active_count']} | "
-            f"{snapshot['delisted_count']} | {probes['AAPL']} | {probes['FB']} | "
+            f"{snapshot['delisted_count']} | {quality['missing_name_count']} | "
+            f"{quality['symbol_shape_review_count']} | {probes['AAPL']} | {probes['FB']} | "
             f"{probes['META']} | {probes['TWTR']} |"
         )
+
+    lines.extend(["", "## Listing metadata quality", ""])
+    for snapshot in payload["listing_snapshots"]:
+        quality = snapshot["metadata_quality"]
+        missing_rate = 100 * quality["missing_name_rate"]
+        lines.append(
+            f"- **{snapshot['as_of']}:** {quality['missing_name_count']} blank names "
+            f"({missing_rate:.3f}%); {quality['symbol_shape_review_count']} symbols flagged for "
+            "security-type review."
+        )
+        if quality["missing_name_examples"]:
+            examples = ", ".join(quality["missing_name_examples"][:10])
+            lines.append(f"  Missing-name examples: `{examples}`")
+        if quality["symbol_shape_review_examples"]:
+            examples = ", ".join(quality["symbol_shape_review_examples"][:10])
+            lines.append(f"  Symbol-shape review examples: `{examples}`")
+
     lines.extend(["", "## Recent daily-bar samples", ""])
     for symbol, sample in payload["recent_daily_bar_samples"].items():
         date_range = f"{sample['first_date']} to {sample['last_date']}"
@@ -162,6 +201,10 @@ def _markdown_report(payload: dict[str, Any]) -> str:
             "## Acceptance status",
             "",
             "**NOT ACCEPTED.** " + str(payload["acceptance_note"]),
+            "",
+            "Blank company names are treated as reference-metadata warnings rather than fatal "
+            "universe errors. Security-type labels remain provisional and must be reconciled before "
+            "eligibility filtering is trusted.",
             "",
             "The strongest question tested by this run is whether `LISTING_STATUS` can support a "
             "2010-present point-in-time universe layer. Permanent security identity, corporate "
