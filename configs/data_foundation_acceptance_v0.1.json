@@ -1,0 +1,114 @@
+{
+  "assessment_version": "data-foundation-acceptance-v0.1",
+  "criteria": [
+    {
+      "criterion": "stable_instrument_master_and_symbol_history",
+      "status": "PARTIAL",
+      "evidence": [
+        "src/trade_scout/data/instrument_master.py",
+        "src/trade_scout/data/instrument_storage.py",
+        "tests/integration/data/test_instrument_storage.py"
+      ],
+      "note": "Canonical identity, symbol-history normalization, and immutable snapshot storage are implemented and tested. Real accepted-provider identity/history evidence is still required before this criterion is declared demonstrated."
+    },
+    {
+      "criterion": "reproducible_historical_ohlcv_ingestion",
+      "status": "PARTIAL",
+      "evidence": [
+        "src/trade_scout/data/backfill.py",
+        "src/trade_scout/data/BACKFILL.md",
+        "scripts/run_alpha_vantage_live_evaluation.py"
+      ],
+      "note": "Deterministic planning, staging, checkpointing, and resume behavior exist. A complete accepted-provider historical backfill has not yet been demonstrated."
+    },
+    {
+      "criterion": "explicit_raw_vs_adjusted_price_handling",
+      "status": "DEMONSTRATED",
+      "evidence": [
+        "src/trade_scout/data/contracts.py",
+        "src/trade_scout/data/normalization.py",
+        "tests/contract/data/test_downstream_research_consumer.py"
+      ],
+      "note": "Raw and split-adjusted representations are explicit contracts; unavailable adjusted prices fail rather than silently changing basis."
+    },
+    {
+      "criterion": "historical_delisting_support",
+      "status": "PARTIAL",
+      "evidence": [
+        "src/trade_scout/data/providers/alpha_vantage.py",
+        "scripts/run_alpha_vantage_live_evaluation.py"
+      ],
+      "note": "Historical active/delisted listing retrieval is implemented and a 2014 delisted response was observed, but provider acceptance and broader historical characterization remain open."
+    },
+    {
+      "criterion": "point_in_time_universe_construction",
+      "status": "DEMONSTRATED",
+      "evidence": [
+        "src/trade_scout/universe/eligibility.py",
+        "src/trade_scout/universe/README.md"
+      ],
+      "note": "Eligibility is dated, versioned, deterministic, and rejects future measurements and mixed dataset versions."
+    },
+    {
+      "criterion": "automated_quality_and_quarantine",
+      "status": "DEMONSTRATED",
+      "evidence": [
+        "src/trade_scout/data/quality.py",
+        "src/trade_scout/data/context_quality.py",
+        "src/trade_scout/data/normalization.py"
+      ],
+      "note": "Structural, contextual, normalization, and quarantine states are explicit and fail visibly rather than repairing observations silently."
+    },
+    {
+      "criterion": "cross_provider_validation",
+      "status": "PARTIAL",
+      "evidence": [
+        "src/trade_scout/data/reconciliation.py",
+        "src/trade_scout/data/reference_reconciliation.py",
+        "src/trade_scout/data/identity_review.py"
+      ],
+      "note": "Cross-provider comparison and reviewed reference-link workflows are implemented. A representative live secondary-provider validation sample remains required."
+    },
+    {
+      "criterion": "immutable_dataset_versioning_and_provenance",
+      "status": "DEMONSTRATED",
+      "evidence": [
+        "src/trade_scout/data/raw_store.py",
+        "src/trade_scout/data/canonical_storage.py",
+        "src/trade_scout/data/instrument_storage.py",
+        "tests/integration/data/test_canonical_storage.py"
+      ],
+      "note": "Raw payload capture, immutable canonical versions, checksums, manifests, and provenance fields are enforced through storage gates."
+    },
+    {
+      "criterion": "representative_parquet_duckdb_benchmark",
+      "status": "PARTIAL",
+      "evidence": [
+        "src/trade_scout/data/storage_benchmark.py",
+        "scripts/run_storage_benchmark.py",
+        "tests/performance/data/test_storage_benchmark_harness.py"
+      ],
+      "note": "The benchmark and registered-dataset replay path are implemented. A documented representative multi-year real US-equity sample has not yet been benchmarked."
+    },
+    {
+      "criterion": "downstream_research_data_contract_consumption",
+      "status": "DEMONSTRATED",
+      "evidence": [
+        "src/trade_scout/data/serving.py",
+        "src/trade_scout/data/RESEARCH_DATA_CONTRACT.md",
+        "tests/contract/data/test_downstream_research_consumer.py"
+      ],
+      "note": "A downstream test consumer operates only on the vendor-independent ResearchBar/ResearchDataRequest contract."
+    },
+    {
+      "criterion": "deterministic_incremental_update_workflow",
+      "status": "DEMONSTRATED",
+      "evidence": [
+        "src/trade_scout/data/revisions.py",
+        "src/trade_scout/data/INCREMENTAL_UPDATES.md",
+        "tests/unit/data/test_revisions.py"
+      ],
+      "note": "Incremental revisions preserve the parent, apply bounded corrections explicitly, reject duplicate/conflicting updates, and deterministically produce a new candidate version."
+    }
+  ]
+}
