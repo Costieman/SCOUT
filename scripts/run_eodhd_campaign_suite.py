@@ -81,10 +81,22 @@ def main() -> int:
             universe_construction_version="bounded-provider-evidence-v1",
             quality_check_version="daily-bar-quality-v1",
         )
+        instrument = evidence.instrument
         return {
             "case_id": case.case_id,
             "symbol": evidence.symbol,
             "provider_instrument_id": evidence.provider_instrument_id,
+            "instrument_id": str(instrument.instrument_id),
+            "name": instrument.name,
+            "exchange": instrument.exchange,
+            "security_type": str(instrument.security_type),
+            "currency": instrument.currency,
+            "first_trade_date": (
+                instrument.first_trade_date.isoformat() if instrument.first_trade_date else None
+            ),
+            "delisting_date": (
+                instrument.delisting_date.isoformat() if instrument.delisting_date else None
+            ),
             "expected_state": "active" if case.expected_active else "delisted",
             "requested_start": case.start.isoformat(),
             "requested_end": case.end.isoformat(),
