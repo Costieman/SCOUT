@@ -11,8 +11,8 @@
     },
     {
       "criterion": "stooq_adjustment_semantics",
-      "status": "NOT_DEMONSTRATED",
-      "note": "Raw versus adjusted behavior must be characterized and versioned; no assumption is permitted."
+      "status": "PARTIAL",
+      "note": "A conservative split-event characterization path now compares Stooq close behavior with raw-like and split-adjusted-like hypotheses around externally verified split events. Multiple independently verified live cases are still required before price semantics can be accepted; dividend treatment remains separate."
     },
     {
       "criterion": "stooq_inactive_delisted_coverage",
