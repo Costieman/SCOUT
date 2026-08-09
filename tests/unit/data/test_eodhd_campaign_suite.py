@@ -35,6 +35,10 @@ def _cases() -> tuple[EodhdCampaignSuiteCase, ...]:
     )
 
 
+def _result_for_case(case: EodhdCampaignSuiteCase) -> dict[str, object]:
+    return {"case_id": case.case_id}
+
+
 def test_suite_runs_each_case_once_and_resumes_without_repeating(tmp_path: Path) -> None:
     calls: list[str] = []
 
@@ -73,8 +77,7 @@ def test_failure_preserves_prior_completed_case_and_resumes_from_failure(tmp_pat
 
 
 def test_changed_campaign_configuration_creates_distinct_campaign_identity(tmp_path: Path) -> None:
-    runner = lambda case: {"case_id": case.case_id}
-    first = run_eodhd_campaign_suite(_cases(), root=tmp_path, case_runner=runner)
+    first = run_eodhd_campaign_suite(_cases(), root=tmp_path, case_runner=_result_for_case)
     changed = list(_cases())
     changed[0] = EodhdCampaignSuiteCase(
         case_id="active-split",
@@ -85,7 +88,11 @@ def test_changed_campaign_configuration_creates_distinct_campaign_identity(tmp_p
         dataset_version=DatasetVersion("eodhd-active-split-v1"),
     )
 
-    second = run_eodhd_campaign_suite(tuple(changed), root=tmp_path, case_runner=runner)
+    second = run_eodhd_campaign_suite(
+        tuple(changed),
+        root=tmp_path,
+        case_runner=_result_for_case,
+    )
 
     assert first.campaign_id != second.campaign_id
 
@@ -97,7 +104,7 @@ def test_duplicate_case_or_dataset_identity_fails_closed(tmp_path: Path) -> None
         run_eodhd_campaign_suite(
             duplicate_case,
             root=tmp_path,
-            case_runner=lambda case: {"case_id": case.case_id},
+            case_runner=_result_for_case,
         )
 
     duplicate_dataset = (
@@ -115,7 +122,7 @@ def test_duplicate_case_or_dataset_identity_fails_closed(tmp_path: Path) -> None
         run_eodhd_campaign_suite(
             duplicate_dataset,
             root=tmp_path,
-            case_runner=lambda case: {"case_id": case.case_id},
+            case_runner=_result_for_case,
         )
 
 
@@ -124,7 +131,7 @@ def test_checkpoint_cannot_claim_missing_result(tmp_path: Path) -> None:
     result = run_eodhd_campaign_suite(
         cases,
         root=tmp_path,
-        case_runner=lambda case: {"case_id": case.case_id},
+        case_runner=_result_for_case,
     )
     result_path = tmp_path / result.campaign_id / "cases" / cases[0].case_id / "result.json"
     result_path.unlink()
@@ -133,5 +140,5 @@ def test_checkpoint_cannot_claim_missing_result(tmp_path: Path) -> None:
         run_eodhd_campaign_suite(
             cases,
             root=tmp_path,
-            case_runner=lambda case: {"case_id": case.case_id},
+            case_runner=_result_for_case,
         )
