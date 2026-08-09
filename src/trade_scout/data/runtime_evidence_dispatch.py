@@ -14,6 +14,8 @@ from trade_scout.data.acceptance import (
 from trade_scout.data.evidence_bridge import (
     RuntimeEvidenceAssessment,
     RuntimeEvidenceError,
+)
+from trade_scout.data.evidence_bridge import (
     assess_runtime_evidence as assess_generic_runtime_evidence,
 )
 
