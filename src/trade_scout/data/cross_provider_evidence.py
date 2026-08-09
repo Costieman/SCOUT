@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
+from trade_scout.data.contracts import InstrumentId
 from trade_scout.data.provider import ProviderDailyBar
+from trade_scout.data.raw_reconciliation import compare_raw_validation_bars
 from trade_scout.data.reconciliation import (
     ReconciliationResult,
     ReconciliationState,
     ReconciliationTolerance,
-    compare_primary_to_raw_validation,
     raw_validation_bar,
 )
 from trade_scout.data.reconciliation_evidence import (
@@ -67,7 +67,8 @@ def evaluate_cross_provider_bars(
     """Compare matching sessions through explicit permanent provider identities.
 
     Missing secondary sessions remain NOT_COMPARABLE. Extra secondary sessions are represented by
-    a NOT_COMPARABLE result rather than discarded. Provider values are never averaged or replaced.
+    a NOT_COMPARABLE result rather than discarded. Provider values are never averaged or replaced,
+    and adjustment metadata is irrelevant to this raw-to-raw comparison.
     """
 
     primary = _validated_bars(
@@ -109,7 +110,11 @@ def evaluate_cross_provider_bars(
                 )
             )
             continue
-        canonical_primary = _primary_bar(case.instrument_id, primary_bar)
+        raw_primary = raw_validation_bar(
+            primary_bar,
+            instrument_id=case.instrument_id,
+            expected_provider_instrument_id=case.primary_provider_instrument_id,
+        )
         raw_secondary = (
             raw_validation_bar(
                 secondary_bar,
@@ -120,8 +125,8 @@ def evaluate_cross_provider_bars(
             else None
         )
         results.append(
-            compare_primary_to_raw_validation(
-                canonical_primary,
+            compare_raw_validation_bars(
+                raw_primary,
                 raw_secondary,
                 tolerance=tolerance,
             )
@@ -151,29 +156,3 @@ def _validated_bars(
         if not start <= bar.trade_date <= end:
             raise ValueError("cross-provider evidence sample contains an out-of-scope date")
     return tuple(sorted(bars, key=lambda item: item.trade_date))
-
-
-def _primary_bar(instrument_id: InstrumentId, bar: ProviderDailyBar) -> DailyBar:
-    if bar.split_factor is None or bar.dividend_cash is None:
-        raise ValueError(
-            "primary cross-provider evidence requires explicit split_factor and dividend_cash; "
-            "missing values are not inferred"
-        )
-    return DailyBar(
-        instrument_id=instrument_id,
-        trade_date=bar.trade_date,
-        open_raw=bar.open,
-        high_raw=bar.high,
-        low_raw=bar.low,
-        close_raw=bar.close,
-        volume_raw=bar.volume,
-        split_factor=bar.split_factor,
-        dividend_cash=bar.dividend_cash,
-        open_split_adjusted=bar.adjusted_open,
-        high_split_adjusted=bar.adjusted_high,
-        low_split_adjusted=bar.adjusted_low,
-        close_split_adjusted=bar.adjusted_close,
-        provider_id=bar.provider_id,
-        dataset_version=DatasetVersion("cross-provider-evidence-runtime"),
-        quality_status=QualityStatus.PASS,
-    )
