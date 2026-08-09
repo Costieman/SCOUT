@@ -37,9 +37,7 @@ def test_live_overlap_can_demonstrate_incremental_update(tmp_path) -> None:
 
 
 def test_synthetic_or_append_only_evidence_remains_partial(tmp_path) -> None:
-    synthetic = assess_runtime_evidence(
-        _write(tmp_path, live_provider_observation=False)
-    )
+    synthetic = assess_runtime_evidence(_write(tmp_path, live_provider_observation=False))
     assert synthetic.evidence.status is AcceptanceEvidenceStatus.PARTIAL
 
     append_only = assess_runtime_evidence(
