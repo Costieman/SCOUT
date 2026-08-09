@@ -1,0 +1,45 @@
+{
+  "version": "eodhd-tiingo-secondary-validation-v0.1",
+  "cases": [
+    {
+      "case_id": "aapl-split-window-2020",
+      "eodhd_symbol": "AAPL.US",
+      "tiingo_symbol": "AAPL",
+      "instrument_id": "us:isin:US0378331005",
+      "eodhd_provider_instrument_id": "eodhd:isin:US0378331005",
+      "tiingo_provider_instrument_id": "tiingo:ticker:AAPL",
+      "start": "2020-07-01",
+      "end": "2020-10-30"
+    },
+    {
+      "case_id": "msft-ordinary-window-2019",
+      "eodhd_symbol": "MSFT.US",
+      "tiingo_symbol": "MSFT",
+      "instrument_id": "us:isin:US5949181045",
+      "eodhd_provider_instrument_id": "eodhd:isin:US5949181045",
+      "tiingo_provider_instrument_id": "tiingo:ticker:MSFT",
+      "start": "2019-03-01",
+      "end": "2019-06-28"
+    },
+    {
+      "case_id": "jpm-stress-window-2020",
+      "eodhd_symbol": "JPM.US",
+      "tiingo_symbol": "JPM",
+      "instrument_id": "us:isin:US46625H1005",
+      "eodhd_provider_instrument_id": "eodhd:isin:US46625H1005",
+      "tiingo_provider_instrument_id": "tiingo:ticker:JPM",
+      "start": "2020-02-03",
+      "end": "2020-05-29"
+    },
+    {
+      "case_id": "ibm-ordinary-window-2021",
+      "eodhd_symbol": "IBM.US",
+      "tiingo_symbol": "IBM",
+      "instrument_id": "us:isin:US4592001014",
+      "eodhd_provider_instrument_id": "eodhd:isin:US4592001014",
+      "tiingo_provider_instrument_id": "tiingo:ticker:IBM",
+      "start": "2021-08-02",
+      "end": "2021-11-30"
+    }
+  ]
+}
