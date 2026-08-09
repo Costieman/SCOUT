@@ -22,7 +22,10 @@ from trade_scout.data.raw_store import RawBatchStore
 
 
 class FixtureClient:
-    def __init__(self, responses: Mapping[tuple[str, tuple[tuple[str, object], ...]], object]) -> None:
+    def __init__(
+        self,
+        responses: Mapping[tuple[str, tuple[tuple[str, object], ...]], object],
+    ) -> None:
         self.responses = dict(responses)
 
     def get_json(self, endpoint: str, parameters: Mapping[str, object] | None = None) -> object:
@@ -121,9 +124,7 @@ def test_daily_bars_require_explicit_identity_and_remain_raw() -> None:
     )
     adapter = EodhdAdapter(
         client,
-        instrument_links=(
-            EodhdInstrumentLink("AAPL.US", "eodhd:isin:US0378331005"),
-        ),
+        instrument_links=(EodhdInstrumentLink("AAPL.US", "eodhd:isin:US0378331005"),),
     )
     request = DailyBarRequest(
         start=date(2026, 1, 2),
@@ -187,7 +188,9 @@ def test_splits_and_dividends_are_preserved_as_provider_actions() -> None:
         CorporateActionType.SPLIT,
         CorporateActionType.CASH_DIVIDEND,
     ]
-    assert all(action.provider_instrument_id == "eodhd:isin:US0378331005" for action in actions)
+    assert all(
+        action.provider_instrument_id == "eodhd:isin:US0378331005" for action in actions
+    )
 
 
 def test_capabilities_keep_symbol_history_unaccepted() -> None:
