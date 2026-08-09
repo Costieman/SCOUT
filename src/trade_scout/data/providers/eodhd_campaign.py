@@ -9,7 +9,12 @@ from pathlib import Path
 from uuid import uuid4
 
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore, CanonicalDatasetManifest
-from trade_scout.data.contracts import CorporateActionType, DatasetVersion, PriceRepresentation
+from trade_scout.data.contracts import (
+    CorporateActionType,
+    DatasetVersion,
+    InstrumentRecord,
+    PriceRepresentation,
+)
 from trade_scout.data.instrument_master import instrument_from_primary_provider
 from trade_scout.data.provider import CorporateActionRequest, DailyBarRequest, ProviderInstrument
 from trade_scout.data.provider_adjustments import materialize_split_adjusted_bars
@@ -56,6 +61,7 @@ class EodhdCanonicalCaseEvidence:
     symbol: str
     provider_instrument_id: str
     expected_active: bool
+    instrument: InstrumentRecord
     bar_count: int
     action_count: int
     split_count: int
@@ -196,6 +202,7 @@ def run_eodhd_canonical_case(
         symbol=instrument.symbol,
         provider_instrument_id=instrument.provider_instrument_id,
         expected_active=case.expected_active,
+        instrument=canonical_instrument,
         bar_count=len(adjusted_bars),
         action_count=len(actions),
         split_count=sum(action.action_type is CorporateActionType.SPLIT for action in actions),
