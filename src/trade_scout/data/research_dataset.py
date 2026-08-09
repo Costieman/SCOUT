@@ -49,13 +49,9 @@ class ResearchDatasetLoader:
         No provider-native object crosses this boundary.
         """
 
-        canonical_manifest = self._daily_bars.get_manifest(request.dataset_version)
-        if canonical_manifest is None:
-            # Preserve the canonical store's own not-found behavior and message.
-            bars = self._daily_bars.load(request.dataset_version)
-            raise AssertionError(f"unreachable after missing dataset load: {len(bars)}")
-
         bars = self._daily_bars.load(request.dataset_version)
+        canonical_manifest = self._daily_bars.get_manifest(request.dataset_version)
+        assert canonical_manifest is not None
         instrument_snapshot = self._instrument_master.load(instrument_snapshot_version)
 
         universe_history = build_universe_history(
