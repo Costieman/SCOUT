@@ -8,10 +8,10 @@ canonical provider.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
-from collections.abc import Sequence
 
 from trade_scout.data.provider import ProviderDailyBar
 
