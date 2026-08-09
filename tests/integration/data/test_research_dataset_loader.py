@@ -15,7 +15,10 @@ from trade_scout.data.contracts import (
     SecurityType,
     SymbolHistoryRecord,
 )
-from trade_scout.data.instrument_storage import InstrumentMasterPromotionRequest, InstrumentMasterStore
+from trade_scout.data.instrument_storage import (
+    InstrumentMasterPromotionRequest,
+    InstrumentMasterStore,
+)
 from trade_scout.data.research_dataset import ResearchDatasetLoader
 from trade_scout.data.serving import ResearchDataRequest
 from trade_scout.universe.construction import UniverseMeasurementPolicy
@@ -135,10 +138,7 @@ def test_loader_reconstructs_point_in_time_eligibility_from_verified_stores(tmp_
         ),
     )
 
-    eligibility = {
-        (str(row.instrument_id), row.trade_date): row.eligibility
-        for row in result.rows
-    }
+    eligibility = {(str(row.instrument_id), row.trade_date): row.eligibility for row in result.rows}
     assert eligibility[("tsi-live", date(2020, 1, 2))] is False
     assert eligibility[("tsi-live", date(2020, 1, 3))] is True
     assert eligibility[("tsi-old", date(2020, 1, 3))] is True
