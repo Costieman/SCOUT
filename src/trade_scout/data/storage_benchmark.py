@@ -10,7 +10,11 @@ from time import perf_counter
 
 import duckdb
 
-from trade_scout.data.canonical_storage import CanonicalDailyBarStore, DatasetPromotionRequest
+from trade_scout.data.canonical_storage import (
+    CanonicalDailyBarStore,
+    CanonicalDatasetNotFoundError,
+    DatasetPromotionRequest,
+)
 from trade_scout.data.contracts import DailyBar, DatasetVersion
 
 
@@ -98,4 +102,55 @@ def benchmark_canonical_storage(
         full_load_seconds=full_load_seconds,
         filtered_query_seconds=filtered_query_seconds,
         filtered_query_count=row[0],
+    )
+
+
+def benchmark_registered_dataset(
+    *,
+    source_root: Path,
+    dataset_version: DatasetVersion,
+    benchmark_root: Path,
+    query_start: date,
+    query_end: date,
+) -> StorageBenchmarkResult:
+    """Replay one registered canonical dataset through a fresh benchmark store.
+
+    The source dataset is checksum-verified by ``CanonicalDailyBarStore.load`` before replay. Its
+    immutable provenance fields are copied into a new ``DatasetPromotionRequest`` and the exact
+    canonical bars are promoted into a separate fresh root. This permits a representative real
+    dataset to be benchmarked without another provider download while still exercising the normal
+    promotion, Parquet, DuckDB, quality, and provenance path.
+
+    The benchmark root must be distinct from the source root. This function measures an existing
+    dataset; it does not decide whether that dataset is representative enough to satisfy Phase 1.
+    """
+
+    source_resolved = source_root.resolve()
+    benchmark_resolved = benchmark_root.resolve()
+    if source_resolved == benchmark_resolved:
+        raise ValueError("benchmark root must be distinct from the source canonical root")
+
+    source_store = CanonicalDailyBarStore(source_root)
+    manifest = source_store.get_manifest(dataset_version)
+    if manifest is None:
+        raise CanonicalDatasetNotFoundError(str(dataset_version))
+
+    bars = source_store.load(dataset_version)
+    promotion = DatasetPromotionRequest(
+        dataset_id=manifest.dataset_id,
+        dataset_version=manifest.dataset_version,
+        primary_provider_id=manifest.primary_provider_id,
+        created_at=manifest.created_at,
+        source_batch_ids=manifest.source_batch_ids,
+        transformation_version=manifest.transformation_version,
+        adjustment_policy_version=manifest.adjustment_policy_version,
+        universe_construction_version=manifest.universe_construction_version,
+        quality_check_version=manifest.quality_check_version,
+    )
+    return benchmark_canonical_storage(
+        bars,
+        promotion=promotion,
+        root=benchmark_root,
+        query_start=query_start,
+        query_end=query_end,
     )
