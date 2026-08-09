@@ -93,7 +93,9 @@ def build_universe_history(
 
     versions = {bar.dataset_version for bar in materialized}
     if len(versions) != 1:
-        raise MixedDatasetVersionError("universe construction cannot mix canonical dataset versions")
+        raise MixedDatasetVersionError(
+            "universe construction cannot mix canonical dataset versions"
+        )
     dataset_version = next(iter(versions))
 
     instrument_by_id = _instrument_index(instruments)
@@ -109,7 +111,9 @@ def build_universe_history(
         )
     )
     if not sessions:
-        raise UniverseConstructionError("requested universe-history range contains no canonical sessions")
+        raise UniverseConstructionError(
+            "requested universe-history range contains no canonical sessions"
+        )
 
     snapshots = tuple(
         build_universe_snapshot(
