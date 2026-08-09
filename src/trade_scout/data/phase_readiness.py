@@ -33,7 +33,8 @@ class Phase1ReadinessReport:
         """Return stable human-readable blocker identifiers without hiding either gate."""
 
         items = [
-            f"data:{item.criterion.value}:{item.status.value}" for item in self.data_report.unresolved
+            f"data:{item.criterion.value}:{item.status.value}"
+            for item in self.data_report.unresolved
         ]
         items.extend(
             f"provider:{item.criterion.value}:{item.status.value}"
