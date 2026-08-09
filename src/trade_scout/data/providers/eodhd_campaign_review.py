@@ -55,7 +55,9 @@ def review_eodhd_campaign(output_root: Path) -> EodhdCampaignReview:
     if len(completed_ids) > expected_case_count:
         raise EodhdCampaignReviewError("completed case count exceeds expected case count")
     if complete != (len(completed_ids) == expected_case_count):
-        raise EodhdCampaignReviewError("campaign completion flag conflicts with completed case count")
+        raise EodhdCampaignReviewError(
+            "campaign completion flag conflicts with completed case count"
+        )
 
     campaign_root = output_root / "campaign-state" / campaign_id
     spec = _read_object(campaign_root / "campaign.json")
@@ -154,7 +156,9 @@ def _derive_evidence(
         ProviderAcceptanceEvidence(
             criterion=ProviderAcceptanceCriterion.IDENTIFIER_AND_SYMBOL_MAPPING,
             status=(
-                ProviderEvidenceStatus.PARTIAL if all_have_identity else ProviderEvidenceStatus.NOT_DEMONSTRATED
+                ProviderEvidenceStatus.PARTIAL
+                if all_have_identity
+                else ProviderEvidenceStatus.NOT_DEMONSTRATED
             ),
             evidence=(reference,) if all_have_identity else (),
             note=(
@@ -165,18 +169,24 @@ def _derive_evidence(
         ProviderAcceptanceEvidence(
             criterion=ProviderAcceptanceCriterion.CORPORATE_ACTION_HANDLING,
             status=(
-                ProviderEvidenceStatus.PARTIAL if has_actions else ProviderEvidenceStatus.NOT_DEMONSTRATED
+                ProviderEvidenceStatus.PARTIAL
+                if has_actions
+                else ProviderEvidenceStatus.NOT_DEMONSTRATED
             ),
             evidence=(reference,) if has_actions else (),
             note=(
                 "At least one completed case exercised non-empty split/dividend handling through canonical "
-                "promotion." if has_actions else "No completed campaign case contains a corporate action yet."
+                "promotion."
+                if has_actions
+                else "No completed campaign case contains a corporate action yet."
             ),
         ),
         ProviderAcceptanceEvidence(
             criterion=ProviderAcceptanceCriterion.DELISTING_COVERAGE,
             status=(
-                ProviderEvidenceStatus.PARTIAL if has_delisted else ProviderEvidenceStatus.NOT_DEMONSTRATED
+                ProviderEvidenceStatus.PARTIAL
+                if has_delisted
+                else ProviderEvidenceStatus.NOT_DEMONSTRATED
             ),
             evidence=(reference,) if has_delisted else (),
             note=(
@@ -223,7 +233,9 @@ def _validate_case_result(
     if not _positive_int(result.get("bar_count")):
         raise EodhdCampaignReviewError(f"case {case_id} must contain historical bars")
     if result.get("canonical_record_count") != result.get("bar_count"):
-        raise EodhdCampaignReviewError(f"case {case_id} canonical record count does not match bar count")
+        raise EodhdCampaignReviewError(
+            f"case {case_id} canonical record count does not match bar count"
+        )
 
 
 def _read_object(path: Path) -> dict[str, object]:
@@ -248,7 +260,9 @@ def _required_text(payload: dict[str, object], field: str) -> str:
 def _required_int(payload: dict[str, object], field: str) -> int:
     value = payload.get(field)
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-        raise EodhdCampaignReviewError(f"campaign evidence field {field} must be a non-negative integer")
+        raise EodhdCampaignReviewError(
+            f"campaign evidence field {field} must be a non-negative integer"
+        )
     return value
 
 
