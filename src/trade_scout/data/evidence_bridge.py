@@ -200,7 +200,8 @@ def _assess_eodhd_campaign_storage_evidence(
     if not representative_accepted:
         if benchmark is not None:
             raise RuntimeEvidenceError(
-                "campaign storage benchmark must not run when representative-sample acceptance fails"
+                "campaign storage benchmark must not run when representative-sample "
+                "acceptance fails"
             )
         return RuntimeEvidenceAssessment(
             source_path=path,
