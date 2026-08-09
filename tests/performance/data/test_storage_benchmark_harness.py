@@ -2,9 +2,16 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from trade_scout.data.canonical_storage import DatasetPromotionRequest
+from trade_scout.data.canonical_storage import (
+    CanonicalDailyBarStore,
+    CanonicalDatasetNotFoundError,
+    DatasetPromotionRequest,
+)
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
-from trade_scout.data.storage_benchmark import benchmark_canonical_storage
+from trade_scout.data.storage_benchmark import (
+    benchmark_canonical_storage,
+    benchmark_registered_dataset,
+)
 
 VERSION = DatasetVersion("benchmark_equities_v0.1.0")
 
@@ -44,16 +51,18 @@ def _promotion() -> DatasetPromotionRequest:
     )
 
 
-def test_benchmark_harness_measures_storage_path_without_performance_claim(tmp_path) -> None:
-    bars = (
+def _bars() -> tuple[DailyBar, ...]:
+    return (
         _bar("tsi-1", date(2026, 8, 6), 100.0),
         _bar("tsi-1", date(2026, 8, 7), 101.0),
         _bar("tsi-2", date(2026, 8, 6), 50.0),
         _bar("tsi-2", date(2026, 8, 7), 51.0),
     )
 
+
+def test_benchmark_harness_measures_storage_path_without_performance_claim(tmp_path) -> None:
     result = benchmark_canonical_storage(
-        bars,
+        _bars(),
         promotion=_promotion(),
         root=tmp_path,
         query_start=date(2026, 8, 7),
@@ -102,4 +111,59 @@ def test_benchmark_root_must_be_fresh_for_requested_dataset_version(tmp_path) ->
             root=tmp_path,
             query_start=date(2026, 8, 6),
             query_end=date(2026, 8, 6),
+        )
+
+
+def test_registered_dataset_replay_preserves_source_and_provenance(tmp_path) -> None:
+    source_root = tmp_path / "source"
+    benchmark_root = tmp_path / "benchmark"
+    source_store = CanonicalDailyBarStore(source_root)
+    source_manifest = source_store.promote(_bars(), _promotion())
+    source_checksum = source_manifest.parquet_checksum_sha256
+
+    result = benchmark_registered_dataset(
+        source_root=source_root,
+        dataset_version=VERSION,
+        benchmark_root=benchmark_root,
+        query_start=date(2026, 8, 7),
+        query_end=date(2026, 8, 7),
+    )
+
+    assert result.record_count == 4
+    assert result.filtered_query_count == 2
+    assert source_store.get_manifest(VERSION) == source_manifest
+    assert source_store.get_manifest(VERSION).parquet_checksum_sha256 == source_checksum  # type: ignore[union-attr]
+
+    replay_manifest = CanonicalDailyBarStore(benchmark_root).get_manifest(VERSION)
+    assert replay_manifest is not None
+    assert replay_manifest.dataset_id == source_manifest.dataset_id
+    assert replay_manifest.primary_provider_id == source_manifest.primary_provider_id
+    assert replay_manifest.source_batch_ids == source_manifest.source_batch_ids
+    assert replay_manifest.transformation_version == source_manifest.transformation_version
+    assert replay_manifest.adjustment_policy_version == source_manifest.adjustment_policy_version
+    assert replay_manifest.universe_construction_version == source_manifest.universe_construction_version
+    assert replay_manifest.quality_check_version == source_manifest.quality_check_version
+
+
+def test_registered_dataset_replay_rejects_source_root_as_benchmark_root(tmp_path) -> None:
+    CanonicalDailyBarStore(tmp_path).promote(_bars(), _promotion())
+
+    with pytest.raises(ValueError, match="distinct"):
+        benchmark_registered_dataset(
+            source_root=tmp_path,
+            dataset_version=VERSION,
+            benchmark_root=tmp_path,
+            query_start=date(2026, 8, 6),
+            query_end=date(2026, 8, 7),
+        )
+
+
+def test_registered_dataset_replay_requires_registered_source_dataset(tmp_path) -> None:
+    with pytest.raises(CanonicalDatasetNotFoundError):
+        benchmark_registered_dataset(
+            source_root=tmp_path / "source",
+            dataset_version=VERSION,
+            benchmark_root=tmp_path / "benchmark",
+            query_start=date(2026, 8, 6),
+            query_end=date(2026, 8, 7),
         )
