@@ -53,11 +53,15 @@ class EodhdClassifyingUrllibTransport:
 
     def get(self, url: str, *, timeout: float) -> bytes:
         try:
-            with urlopen(Request(url, headers={"Accept": "application/json"}), timeout=timeout) as response:
+            with urlopen(
+                Request(url, headers={"Accept": "application/json"}), timeout=timeout
+            ) as response:
                 return bytes(response.read())
         except HTTPError as exc:
             if exc.code in {401, 403}:
-                raise EodhdAuthenticationError(f"EODHD authentication HTTP error {exc.code}") from exc
+                raise EodhdAuthenticationError(
+                    f"EODHD authentication HTTP error {exc.code}"
+                ) from exc
             if exc.code == 429:
                 raise EodhdRateLimitError(
                     "EODHD rate-limit HTTP error 429",
@@ -112,7 +116,9 @@ class EodhdRetryingBytesTransport:
         random_value = self._random_unit()
         if not 0 <= random_value <= 1:
             raise ValueError("EODHD retry random source must return a value between zero and one")
-        multiplier = 1 - self._policy.jitter_fraction + (2 * self._policy.jitter_fraction * random_value)
+        multiplier = (
+            1 - self._policy.jitter_fraction + (2 * self._policy.jitter_fraction * random_value)
+        )
         return min(base * multiplier, self._policy.max_delay_seconds + jitter_span)
 
 
