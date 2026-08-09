@@ -53,8 +53,7 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = _parser().parse_args()
     token = (
-        os.environ.get("EODHD_API_TOKEN", "").strip()
-        or os.environ.get("EODHD_API_KEY", "").strip()
+        os.environ.get("EODHD_API_TOKEN", "").strip() or os.environ.get("EODHD_API_KEY", "").strip()
     )
     if not token:
         raise SystemExit("EODHD_API_TOKEN or EODHD_API_KEY is not configured")
