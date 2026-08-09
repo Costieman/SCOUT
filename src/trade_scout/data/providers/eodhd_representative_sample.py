@@ -55,10 +55,11 @@ class EodhdRepresentativeSelection:
 def select_eodhd_representative_sample(
     instruments: tuple[ProviderInstrument, ...],
     *,
-    policy: EodhdRepresentativeSamplePolicy = EodhdRepresentativeSamplePolicy(),
+    policy: EodhdRepresentativeSamplePolicy | None = None,
 ) -> EodhdRepresentativeSelection:
     """Select a reproducible ISIN-backed common-stock sample without ticker-based identity."""
 
+    policy = policy or EodhdRepresentativeSamplePolicy()
     eligible = tuple(item for item in instruments if _eligible(item))
     active = tuple(item for item in eligible if item.active)
     delisted = tuple(item for item in eligible if not item.active)
@@ -160,9 +161,11 @@ def _select_with_exchange_floor(
     for item in ranked:
         by_exchange.setdefault(item.exchange, []).append(item)
     if len(by_exchange) < min_exchanges:
-        raise EodhdRepresentativeSampleError(
-            f"eligible active inventory spans {len(by_exchange)} exchanges; required {min_exchanges}"
+        message = (
+            f"eligible active inventory spans {len(by_exchange)} exchanges; "
+            f"required {min_exchanges}"
         )
+        raise EodhdRepresentativeSampleError(message)
 
     chosen: list[ProviderInstrument] = []
     chosen_ids: set[str] = set()
