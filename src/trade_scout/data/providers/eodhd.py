@@ -238,13 +238,17 @@ class EodhdAdapter:
             supports_symbol_history=False,
             timestamp_convention="EODHD EOD date interpreted as the market trading-session date",
             known_limitations=(
-                "exchange symbol lists are current/delisted inventories, not historical as-of snapshots",
-                "ISIN is used as provider identity where available; rows without ISIN remain provisional",
-                "the US symbol-change endpoint starts in 2022 and is not accepted as complete history",
-                "adjusted_close is not exposed as split-adjusted OHLC because the adapter lacks a complete "
-                "split-only OHLC representation",
+                "exchange symbol lists are current/delisted inventories, not historical as-of "
+                "snapshots",
+                "ISIN is used as provider identity where available; rows without ISIN remain "
+                "provisional",
+                "the US symbol-change endpoint starts in 2022 and is not accepted as complete "
+                "history",
+                "adjusted_close is not exposed as split-adjusted OHLC because the adapter lacks "
+                "a complete split-only OHLC representation",
                 "paid entitlement is required for the long history needed by Phase 1",
-                "personal-use storage rights end with the active subscription under current public terms",
+                "personal-use storage rights end with the active subscription under current "
+                "public terms",
             ),
         )
 
@@ -268,7 +272,8 @@ class EodhdAdapter:
     def get_instruments(self, *, as_of: date | None = None) -> Sequence[ProviderInstrument]:
         if as_of is not None:
             raise EodhdUnsupportedError(
-                "EODHD current/delisted symbol inventories must not be back-projected as historical as-of data"
+                "EODHD current/delisted symbol inventories must not be back-projected as "
+                "historical as-of data"
             )
         result = [
             self._to_instrument(row, active=True) for row in self._instrument_rows(delisted=False)
@@ -288,7 +293,8 @@ class EodhdAdapter:
     ) -> Sequence[ProviderSymbolHistory]:
         del provider_instrument_ids
         raise EodhdUnsupportedError(
-            "EODHD symbol-change coverage begins in 2022 and is not accepted as complete symbol history"
+            "EODHD symbol-change coverage begins in 2022 and is not accepted as complete symbol "
+            "history"
         )
 
     def get_daily_bars(self, request: DailyBarRequest) -> Sequence[ProviderDailyBar]:
