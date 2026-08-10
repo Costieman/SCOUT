@@ -20,7 +20,7 @@ def main() -> int:
     parser.add_argument(
         "--cases",
         type=Path,
-        default=Path("configs/tiingo_symbol_lineage_cases_v0.1.json"),
+        default=Path("configs/tiingo_symbol_lineage_cases_v0.2.json"),
     )
     args = parser.parse_args()
 
