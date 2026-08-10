@@ -1,0 +1,86 @@
+name: Alpha Vantage Stooq Cross Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: >-
+          Semicolon-separated ALPHA_SYMBOL,STOOQ_SYMBOL,CANONICAL_INSTRUMENT_ID,
+          STOOQ_LINK_ID,START,END cases
+        required: true
+        type: string
+      price_relative_tolerance:
+        description: Relative tolerance for OHLC comparisons
+        required: false
+        default: "0"
+        type: string
+      volume_relative_tolerance:
+        description: Relative tolerance for volume comparisons
+        required: false
+        default: "0"
+        type: string
+
+concurrency:
+  group: alpha-stooq-cross-validation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    env:
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      TRADE_SCOUT_OUTPUT_ROOT: runtime/alpha-stooq-cross-validation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+
+      - name: Sync locked environment
+        run: uv sync --locked --dev
+
+      - name: Confirm Alpha Vantage secret is configured
+        run: |
+          if [[ -z "$ALPHA_VANTAGE_API_KEY" ]]; then
+            echo "ALPHA_VANTAGE_API_KEY repository secret is not configured" >&2
+            exit 1
+          fi
+
+      - name: Run bounded cross-provider comparison
+        shell: bash
+        run: |
+          args=()
+          IFS=';' read -ra case_array <<< "${{ inputs.cases }}"
+          for case_spec in "${case_array[@]}"; do
+            [[ -z "$case_spec" ]] && continue
+            args+=(--case "$case_spec")
+          done
+          uv run --frozen python scripts/run_alpha_stooq_cross_validation.py \
+            "${args[@]}" \
+            --price-relative-tolerance "${{ inputs.price_relative_tolerance }}" \
+            --volume-relative-tolerance "${{ inputs.volume_relative_tolerance }}" \
+            --output-root "$TRADE_SCOUT_OUTPUT_ROOT"
+
+      - name: Publish evidence summary
+        if: always()
+        run: |
+          report="$TRADE_SCOUT_OUTPUT_ROOT/report/alpha-stooq-cross-provider-evidence.md"
+          if [[ -f "$report" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload reports only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha-stooq-cross-provider-report
+          path: runtime/alpha-stooq-cross-validation/report/
+          if-no-files-found: error
+          retention-days: 30
