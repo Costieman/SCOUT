@@ -1,0 +1,42 @@
+name: Alpha + Stooq composite evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: "Semicolon-separated ALPHA,STOOQ,CANONICAL_ID,STOOQ_LINK_ID,START,END cases"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run bounded A+B evidence
+        env:
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          CASES: ${{ inputs.cases }}
+        shell: bash
+        run: |
+          args=()
+          IFS=';' read -ra items <<< "$CASES"
+          for item in "${items[@]}"; do
+            args+=(--case "$item")
+          done
+          uv run python scripts/run_alpha_stooq_composite_evidence.py "${args[@]}"
+      - name: Upload evidence report only
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha-stooq-composite-evidence
+          path: runtime/alpha-stooq-composite-evidence/report/
+          if-no-files-found: error

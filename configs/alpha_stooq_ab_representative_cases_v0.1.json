@@ -1,0 +1,28 @@
+{
+  "evaluation_id": "alpha-stooq-ab-representative-cases-v0.1",
+  "purpose": "Bounded representative live evidence for the A+B free-data foundation",
+  "cases": [
+    {
+      "role": "active_liquid_control",
+      "alpha_symbol": "SPY",
+      "stooq_symbol": "SPY.US",
+      "canonical_instrument_id": "instrument:spy",
+      "stooq_link_id": "stooq:spy",
+      "start": "2026-01-02",
+      "end": "2026-03-31"
+    },
+    {
+      "role": "active_equity_control",
+      "alpha_symbol": "AAPL",
+      "stooq_symbol": "AAPL.US",
+      "canonical_instrument_id": "instrument:aapl",
+      "stooq_link_id": "stooq:aapl",
+      "start": "2026-01-02",
+      "end": "2026-03-31"
+    }
+  ],
+  "notes": [
+    "These are smoke/evidence cases, not a claim that the identities are sufficient for historical universe acceptance.",
+    "Split-period and inactive/delisted cases must be added only after their provider identities and bounded query periods are explicitly reviewed."
+  ]
+}
