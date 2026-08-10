@@ -129,7 +129,9 @@ def _deserialize_line(line: str) -> CompositeRowProvenance:
         evidence_state=CompositeCoverageState(str(payload["evidence_state"])),
         adjudication_state=CompositeAdjudicationState(str(payload["adjudication_state"])),
         review_note=_optional_str(payload.get("review_note")),
-        corroborating_provider_ids=tuple(str(item) for item in payload["corroborating_provider_ids"]),
+        corroborating_provider_ids=tuple(
+            str(item) for item in payload["corroborating_provider_ids"]
+        ),
     )
 
 
