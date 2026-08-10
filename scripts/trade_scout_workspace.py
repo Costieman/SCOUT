@@ -88,9 +88,7 @@ def _parser() -> argparse.ArgumentParser:
 
     identity = subparsers.add_parser(
         "build-tiingo-identity",
-        help=(
-            "Build a reviewed identity/symbol-history candidate from the local Tiingo lineage audit."
-        ),
+        help="Build a reviewed identity candidate from the local Tiingo lineage audit.",
     )
     identity.add_argument("--root", type=Path, required=True)
     identity.add_argument(
