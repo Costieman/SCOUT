@@ -38,7 +38,7 @@
     {
       "criterion": "rate_limit_behavior",
       "status": "OBSERVED_NOT_YET_ACCEPTED",
-      "note": "Repeated development-triggered evaluations produced HTTP 429, proving the free-tier throttle is active. Live evaluation was changed to manual-only to avoid consuming quota on code pushes. A paced/checkpointed backfill scheduler remains required."
+      "note": "Repeated development-triggered evaluations produced HTTP 429, proving the free-tier throttle is active. Quota-aware bounded execution, explicit rate-limit pause state, and resumable campaign control are now implemented, but the sustainable live operating envelope has not yet been demonstrated."
     },
     {
       "criterion": "split_only_canonical_normalization",
@@ -58,12 +58,12 @@
     {
       "criterion": "licensing_and_raw_preservation",
       "status": "PARTIAL",
-      "note": "Starter is internal-use-only. The evaluation deliberately uploads only derived diagnostics, not raw licensed rows. Any broader storage/redistribution design requires explicit licensing review."
+      "note": "Starter is internal-use-only. Exact-byte raw preservation, checksum-verified durable receipts, and safe metadata-only campaign state are implemented without publishing licensed rows. A real durable private raw-data location and explicit licensing review are still required for operational baseline acquisition."
     },
     {
       "criterion": "rate_retry_checkpoint_backfill",
-      "status": "NOT_DEMONSTRATED",
-      "note": "Primary acceptance requires paced requests, durable checkpoint/resume, explicit throttle state, and bounded retry behavior before an S&P 500 backfill."
+      "status": "IMPLEMENTED_PENDING_OPERATIONAL_DEMONSTRATION",
+      "note": "Quota-aware bounded backfill, monotonic persistent campaign state, durable raw receipts, and fail-closed completion checks are implemented. Representative multi-run S&P 500 acquisition on genuinely durable storage has not yet been demonstrated."
     },
     {
       "criterion": "secondary_source_validation",
@@ -73,7 +73,7 @@
     {
       "criterion": "primary_adapter_acceptance",
       "status": "BLOCKED",
-      "note": "Transport and historical depth are promising, but required identity, delisting, paced backfill/checkpoint, live normalization, licensing, and secondary-validation gates remain open."
+      "note": "Transport, historical depth, rate-aware execution, checkpointing, and raw-evidence durability machinery are promising, but stable identity/symbol history, systematic delisting characterization, live split-only confirmation, licensing, durable operational acquisition, and representative secondary validation remain open."
     }
   ]
 }
