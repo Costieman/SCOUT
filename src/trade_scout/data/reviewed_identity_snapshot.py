@@ -424,13 +424,9 @@ def _parse_seed(raw: Mapping[str, object], primary_provider_id: str) -> Reviewed
         )
 
     try:
-        security_type = SecurityType(
-            _required_text(raw.get("security_type"), "security_type")
-        )
+        security_type = SecurityType(_required_text(raw.get("security_type"), "security_type"))
     except ValueError as exc:
-        raise ReviewedIdentitySnapshotError(
-            f"seed {review_id} has invalid security_type"
-        ) from exc
+        raise ReviewedIdentitySnapshotError(f"seed {review_id} has invalid security_type") from exc
 
     first_trade = _optional_date(raw.get("first_trade_date"), "first_trade_date")
     delisting = _optional_date(raw.get("delisting_date"), "delisting_date")
@@ -581,9 +577,7 @@ def _index_audit_observations(
     for item in raw:
         symbol = _required_text(item.get("source_symbol"), "source_symbol")
         if symbol in result:
-            raise ReviewedIdentitySnapshotError(
-                f"duplicate lineage audit observation: {symbol}"
-            )
+            raise ReviewedIdentitySnapshotError(f"duplicate lineage audit observation: {symbol}")
         result[symbol] = item
     return result
 
@@ -634,9 +628,7 @@ def _candidate_payload(candidate: ReviewedIdentitySnapshotCandidate) -> dict[str
         "fully_covered_instrument_count": candidate.fully_covered_instrument_count,
         "instruments": [_instrument_payload(item) for item in candidate.instruments],
         "symbol_history": [_history_payload(item) for item in candidate.symbol_history],
-        "provider_series_links": [
-            _link_payload(item) for item in candidate.provider_series_links
-        ],
+        "provider_series_links": [_link_payload(item) for item in candidate.provider_series_links],
         "coverage_gaps": [_gap_payload(item) for item in candidate.coverage_gaps],
         "evidence_refs": list(candidate.evidence_refs),
     }
@@ -691,17 +683,13 @@ def _gap_payload(item: IdentityCoverageGap) -> dict[str, object]:
 
 def _instrument_from_payload(raw: Mapping[str, object]) -> InstrumentRecord:
     try:
-        security_type = SecurityType(
-            _required_text(raw.get("security_type"), "security_type")
-        )
+        security_type = SecurityType(_required_text(raw.get("security_type"), "security_type"))
     except ValueError as exc:
         raise ReviewedIdentitySnapshotError(
             "candidate instrument has invalid security_type"
         ) from exc
     return InstrumentRecord(
-        instrument_id=InstrumentId(
-            _required_text(raw.get("instrument_id"), "instrument_id")
-        ),
+        instrument_id=InstrumentId(_required_text(raw.get("instrument_id"), "instrument_id")),
         primary_symbol=_required_text(raw.get("primary_symbol"), "primary_symbol"),
         name=_required_text(raw.get("name"), "name"),
         exchange=_required_text(raw.get("exchange"), "exchange"),
@@ -709,17 +697,13 @@ def _instrument_from_payload(raw: Mapping[str, object]) -> InstrumentRecord:
         currency=_required_text(raw.get("currency"), "currency"),
         first_trade_date=_optional_date(raw.get("first_trade_date"), "first_trade_date"),
         delisting_date=_optional_date(raw.get("delisting_date"), "delisting_date"),
-        provider_ids=MappingProxyType(
-            _text_mapping(raw.get("provider_ids"), "provider_ids")
-        ),
+        provider_ids=MappingProxyType(_text_mapping(raw.get("provider_ids"), "provider_ids")),
     )
 
 
 def _history_from_payload(raw: Mapping[str, object]) -> SymbolHistoryRecord:
     return SymbolHistoryRecord(
-        instrument_id=InstrumentId(
-            _required_text(raw.get("instrument_id"), "instrument_id")
-        ),
+        instrument_id=InstrumentId(_required_text(raw.get("instrument_id"), "instrument_id")),
         symbol=_required_text(raw.get("symbol"), "symbol"),
         exchange=_required_text(raw.get("exchange"), "exchange"),
         effective_from=_required_date(raw.get("effective_from"), "effective_from"),
@@ -729,9 +713,7 @@ def _history_from_payload(raw: Mapping[str, object]) -> SymbolHistoryRecord:
 
 def _link_from_payload(raw: Mapping[str, object]) -> ProviderSeriesLink:
     return ProviderSeriesLink(
-        instrument_id=InstrumentId(
-            _required_text(raw.get("instrument_id"), "instrument_id")
-        ),
+        instrument_id=InstrumentId(_required_text(raw.get("instrument_id"), "instrument_id")),
         review_id=_required_text(raw.get("review_id"), "review_id"),
         provider_id=_required_text(raw.get("provider_id"), "provider_id"),
         provider_series_id=_required_text(
@@ -745,13 +727,9 @@ def _link_from_payload(raw: Mapping[str, object]) -> ProviderSeriesLink:
 def _gap_from_payload(raw: Mapping[str, object]) -> IdentityCoverageGap:
     raw_predecessor = raw.get("known_predecessor_symbol")
     if raw_predecessor is not None and not isinstance(raw_predecessor, str):
-        raise ReviewedIdentitySnapshotError(
-            "known_predecessor_symbol must be text or null"
-        )
+        raise ReviewedIdentitySnapshotError("known_predecessor_symbol must be text or null")
     return IdentityCoverageGap(
-        instrument_id=InstrumentId(
-            _required_text(raw.get("instrument_id"), "instrument_id")
-        ),
+        instrument_id=InstrumentId(_required_text(raw.get("instrument_id"), "instrument_id")),
         review_id=_required_text(raw.get("review_id"), "review_id"),
         provider_id=_required_text(raw.get("provider_id"), "provider_id"),
         query_symbol=_required_text(raw.get("query_symbol"), "query_symbol"),
@@ -853,9 +831,7 @@ def _text_tuple(
     allow_empty: bool = False,
 ) -> tuple[str, ...]:
     if not isinstance(value, list) or (not value and not allow_empty):
-        raise ReviewedIdentitySnapshotError(
-            f"{field} must be an array of evidence references"
-        )
+        raise ReviewedIdentitySnapshotError(f"{field} must be an array of evidence references")
     result = tuple(_required_text(item, field) for item in value)
     if len(set(result)) != len(result):
         raise ReviewedIdentitySnapshotError(f"{field} must not contain duplicates")
