@@ -46,6 +46,17 @@ def _parser() -> argparse.ArgumentParser:
     configure.add_argument("--canonical-dataset-version", default=None)
     configure.add_argument("--scanner-required-session", type=date.fromisoformat, default=None)
 
+    plan_tiingo = subparsers.add_parser(
+        "plan-tiingo",
+        help="Validate S&P source symbols against audited Tiingo query symbology.",
+    )
+    plan_tiingo.add_argument("--root", type=Path, required=True)
+    plan_tiingo.add_argument(
+        "--plan",
+        type=Path,
+        default=Path("configs/tiingo_sp500_campaign_v0.1.json"),
+    )
+
     acquire = subparsers.add_parser(
         "acquire-tiingo",
         help="Run a checksum-verified durable Tiingo acquisition slice.",
@@ -79,6 +90,8 @@ def main() -> int:
             return _verify(args)
         if args.command == "configure":
             return _configure(args)
+        if args.command == "plan-tiingo":
+            return _plan_tiingo(args)
         if args.command == "acquire-tiingo":
             return _acquire_tiingo(args)
         if args.command == "serve":
@@ -97,6 +110,11 @@ def _load_checked_workspace(root: Path) -> OperatorWorkspace:
     repository_root = _repository_root()
     validate_workspace_location(root, repository_root=repository_root)
     return load_operator_workspace(root)
+
+
+def _resolved_plan(path: Path) -> Path:
+    repository_root = _repository_root()
+    return path if path.is_absolute() else repository_root / path
 
 
 def _init(args: argparse.Namespace) -> int:
@@ -156,6 +174,25 @@ def _configure(args: argparse.Namespace) -> int:
     return 0
 
 
+def _plan_tiingo(args: argparse.Namespace) -> int:
+    workspace = _load_checked_workspace(args.root)
+    repository_root = _repository_root()
+    runner = repository_root / "scripts" / "plan_tiingo_sp500_symbology.py"
+    output = workspace.tiingo_root / "symbology-plan.json"
+    command = [
+        sys.executable,
+        str(runner),
+        "--plan",
+        str(_resolved_plan(args.plan)),
+        "--output",
+        str(output),
+    ]
+    completed = subprocess.run(command, cwd=repository_root, check=False)
+    if completed.returncode == 0:
+        print(output)
+    return completed.returncode
+
+
 def _acquire_tiingo(args: argparse.Namespace) -> int:
     workspace = _load_checked_workspace(args.root)
     if args.max_symbols < 1:
@@ -168,12 +205,11 @@ def _acquire_tiingo(args: argparse.Namespace) -> int:
 
     repository_root = _repository_root()
     runner = repository_root / "scripts" / "run_tiingo_sp500_durable_slice.py"
-    plan = args.plan if args.plan.is_absolute() else repository_root / args.plan
     command = [
         sys.executable,
         str(runner),
         "--plan",
-        str(plan),
+        str(_resolved_plan(args.plan)),
         "--durable-root",
         str(workspace.tiingo_root),
         "--storage-namespace",
