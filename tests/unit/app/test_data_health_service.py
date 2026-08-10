@@ -143,4 +143,6 @@ def test_missing_canonical_selection_never_looks_fresh(tmp_path: Path) -> None:
     assert health.scanner_freshness_gate is HealthState.BLOCKED
     assert health.latest_canonical_session is None
     assert any("No canonical Phase 1 dataset" in item for item in health.phase_blockers)
-    assert any("reconciliation evidence has not been supplied" in item for item in health.phase_blockers)
+    assert any(
+        "reconciliation evidence has not been supplied" in item for item in health.phase_blockers
+    )
