@@ -175,7 +175,9 @@ def _handler_for(config: LocalConsoleConfig) -> type[BaseHTTPRequestHandler]:
         def _respond(self, *, head_only: bool) -> None:
             try:
                 response = build_console_response(self.path, config)
-            except Exception as exc:  # boundary: convert application errors into a safe local response
+            except (
+                Exception
+            ) as exc:  # boundary: convert application errors into a safe local response
                 response = _json_response(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                     {
