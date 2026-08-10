@@ -22,6 +22,7 @@ After initialization the root has this shape:
       raw/
       receipts/
       safe-state.json          # appears after campaign state is created
+      symbology-plan.json      # appears after provider-symbol preflight
   evidence/
     composite/
     corporate-actions/
@@ -67,6 +68,23 @@ Verification fails when a campaign-state completion lacks a verified receipt, a 
 represented in safe state, or a receipt/raw batch is missing or checksum-invalid. Acquisition is
 blocked while this consistency gate is failing.
 
+## Preflight Tiingo provider symbology
+
+Run the provider-symbol preflight before a serious S&P 500 acquisition:
+
+```bash
+uv run python scripts/trade_scout_workspace.py plan-tiingo --root "$WORKSPACE"
+```
+
+This fetches and validates the configured universe snapshot but makes **zero Tiingo API calls**. It
+writes `providers/tiingo/symbology-plan.json` with source/query counts and only the symbols that need
+an audited provider translation. Source-universe symbols remain unchanged in checkpoints, receipts,
+and campaign status.
+
+The current audited class-share translations are `BRK.B -> BRK-B` and `BF.B -> BF-B`. Unknown dotted
+symbols fail closed rather than being changed by a generic punctuation rule. The whole translated
+query set is collision-checked before any provider request is allowed.
+
 ## Acquire a bounded Tiingo slice
 
 The token is read from the process environment only. Do not put it in `workspace.json`, command-line
@@ -82,11 +100,12 @@ uv run python scripts/trade_scout_workspace.py acquire-tiingo \
 
 The command reuses the existing durable Tiingo slice runner. Each successful symbol must pass:
 
-1. exact raw-response persistence;
-2. raw manifest/checksum validation;
-3. metadata-only durable receipt creation;
-4. receipt re-verification; and
-5. safe campaign-state advancement.
+1. audited source-symbol to Tiingo query-symbol resolution;
+2. exact raw-response persistence;
+3. raw manifest/checksum validation;
+4. metadata-only durable receipt creation;
+5. receipt re-verification; and
+6. safe campaign-state advancement under the original source symbol.
 
 HTTP 429 remains a provider throttle event and is not converted into a market-data gap. The next
 run resumes from safe durable state.

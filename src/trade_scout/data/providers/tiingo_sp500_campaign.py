@@ -19,6 +19,7 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 
 from trade_scout.data.providers.tiingo import TiingoJsonClient
+from trade_scout.data.providers.tiingo_symbology import build_tiingo_query_symbol_links
 
 
 class TiingoSp500CampaignError(RuntimeError):
@@ -173,6 +174,7 @@ def run_tiingo_sp500_campaign(
     budget = max_symbols_this_run or plan.max_symbols_per_run
     if budget < 1:
         raise ValueError("max_symbols_this_run must be positive")
+    symbol_links = build_tiingo_query_symbol_links(snapshot.symbols)
     completed = _load_completed(state_path, plan, snapshot)
     executed = 0
     rows_acquired = 0
@@ -180,14 +182,15 @@ def run_tiingo_sp500_campaign(
     failed_symbol: str | None = None
     failure_type: str | None = None
 
-    for symbol in snapshot.symbols:
-        if symbol in completed:
+    for link in symbol_links:
+        source_symbol = link.source_symbol
+        if source_symbol in completed:
             continue
         if executed >= budget:
             break
         try:
             response = client.get_json(
-                f"/tiingo/daily/{quote(symbol, safe='')}/prices",
+                f"/tiingo/daily/{quote(link.query_symbol, safe='')}/prices",
                 {
                     "startDate": plan.history_start.isoformat(),
                     "endDate": plan.history_end.isoformat(),
@@ -196,16 +199,16 @@ def run_tiingo_sp500_campaign(
             )
         except Exception as exc:
             if _is_http_429(exc):
-                rate_limited_symbol = symbol
+                rate_limited_symbol = source_symbol
             else:
-                failed_symbol = symbol
+                failed_symbol = source_symbol
                 failure_type = type(exc).__name__
             break
         if not isinstance(response, list) or not all(isinstance(item, dict) for item in response):
-            failed_symbol = symbol
+            failed_symbol = source_symbol
             failure_type = "TiingoResponseShapeError"
             break
-        completed.add(symbol)
+        completed.add(source_symbol)
         executed += 1
         rows_acquired += len(response)
         _persist_completed(state_path, plan, snapshot, completed)

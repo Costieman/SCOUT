@@ -46,9 +46,14 @@
       "note": "An explicit provider-specific transform now derives cumulative split-only multipliers from Tiingo split events and is covered by synthetic unit tests. A live AAPL known-split probe is prepared but was deferred after the 429 throttle was observed."
     },
     {
+      "criterion": "current_sp500_provider_symbology",
+      "status": "IMPLEMENTED_PENDING_OPERATIONAL_DEMONSTRATION",
+      "note": "The current S&P 500 acquisition path now preserves source symbols while using explicit audited Tiingo transport mappings for BRK.B -> BRK-B and BF.B -> BF-B. Unknown dotted symbols fail closed and the full provider query-symbol set is collision-checked before any provider request. The current external 503-name snapshot still needs an operator preflight run."
+    },
+    {
       "criterion": "stable_identifier_and_symbol_history",
       "status": "BLOCKED",
-      "note": "The accepted adapter still requires explicit identity links and does not yet provide validated dated symbol-history reconstruction suitable for a primary historical universe."
+      "note": "Current-universe transport symbology is now explicit and separated from source identity, but the adapter still does not provide validated dated symbol-history reconstruction or permanent historical identity resolution suitable for a primary historical universe."
     },
     {
       "criterion": "delisting_survivor_bias_characterization",
@@ -73,7 +78,7 @@
     {
       "criterion": "primary_adapter_acceptance",
       "status": "BLOCKED",
-      "note": "Transport, historical depth, rate-aware execution, checkpointing, and raw-evidence durability machinery are promising, but stable identity/symbol history, systematic delisting characterization, live split-only confirmation, licensing, durable operational acquisition, and representative secondary validation remain open."
+      "note": "Transport, historical depth, current-universe transport symbology, rate-aware execution, checkpointing, and raw-evidence durability machinery are promising, but historical identity/symbol history, systematic delisting characterization, live split-only confirmation, licensing, durable operational acquisition, and representative secondary validation remain open."
     }
   ]
 }
