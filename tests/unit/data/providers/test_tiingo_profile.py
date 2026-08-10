@@ -68,15 +68,17 @@ def _persist_receipt(
     *,
     subject: str = "AAPL",
     batch_id: str = "batch-aapl",
+    retrieval_time: datetime | None = None,
 ) -> tuple[Path, Path]:
     raw_root = tmp_path / "raw"
     receipt_root = tmp_path / "receipts"
+    observed_at = retrieval_time or datetime(2026, 8, 10, 6, 0, tzinfo=UTC)
     record = RawBatchStore(raw_root).persist(
         json.dumps(_rows()).encode(),
         batch_id=batch_id,
         provider_id="tiingo",
         endpoint=f"/tiingo/daily/{subject}/prices",
-        retrieval_time=datetime(2026, 8, 10, 6, 0, tzinfo=UTC),
+        retrieval_time=observed_at,
         request_parameters={
             "startDate": "1996-01-02",
             "endDate": "2026-08-07",
@@ -129,12 +131,11 @@ def test_profile_emits_only_derived_diagnostics(tmp_path: Path) -> None:
 
 def test_profile_fails_closed_on_multiple_receipts_for_one_subject(tmp_path: Path) -> None:
     raw_root, receipt_root = _persist_receipt(tmp_path)
-    other = tmp_path / "other"
-    other_raw, other_receipts = _persist_receipt(other, batch_id="batch-aapl-2")
-    del other_raw
-    second_receipt = next(other_receipts.rglob("*.json"))
-    target = receipt_root / "AAPL" / "duplicate.json"
-    target.write_bytes(second_receipt.read_bytes())
+    _persist_receipt(
+        tmp_path,
+        batch_id="batch-aapl-2",
+        retrieval_time=datetime(2026, 8, 10, 6, 1, tzinfo=UTC),
+    )
 
     with pytest.raises(TiingoProfileError, match="multiple durable receipts"):
         profile_durable_tiingo(
