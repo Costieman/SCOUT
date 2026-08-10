@@ -69,6 +69,18 @@ class ProviderHealthSummary:
     state: HealthState
     latest_successful_session: date | None
     message: str
+    progress_current: int | None = None
+    progress_total: int | None = None
+    progress_label: str | None = None
+
+    def __post_init__(self) -> None:
+        if (self.progress_current is None) != (self.progress_total is None):
+            raise ValueError("provider progress current and total must be supplied together")
+        if self.progress_current is not None and self.progress_total is not None:
+            if self.progress_current < 0 or self.progress_total < 0:
+                raise ValueError("provider progress counts cannot be negative")
+            if self.progress_current > self.progress_total:
+                raise ValueError("provider progress current cannot exceed total")
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,10 +104,10 @@ class DataHealthSummary:
     dataset_version: str | None
     latest_canonical_session: date | None
     quality_counts: QualityCounts
-    missing_data_anomaly_count: int
-    cross_provider_discrepancy_count: int
-    corporate_action_anomaly_count: int
-    failed_ingestion_job_count: int
+    missing_data_anomaly_count: int | None
+    cross_provider_discrepancy_count: int | None
+    corporate_action_anomaly_count: int | None
+    failed_ingestion_job_count: int | None
     scanner_freshness_gate: HealthState
     providers: tuple[ProviderHealthSummary, ...]
     message: str
@@ -108,7 +120,7 @@ class DataHealthSummary:
             self.corporate_action_anomaly_count,
             self.failed_ingestion_job_count,
         )
-        if min(counts) < 0:
+        if any(value is not None and value < 0 for value in counts):
             raise ValueError("data-health anomaly counts cannot be negative")
 
 
