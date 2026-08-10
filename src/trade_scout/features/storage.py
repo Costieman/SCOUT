@@ -391,14 +391,13 @@ def _feature_value_from_row(row: tuple[object, ...]) -> FeatureValue:
                 "feature parameters payload contains invalid values"
             )
         parameters[key] = value
-    value = None if row[5] is None else float(row[5])
     return FeatureValue(
         instrument_id=InstrumentId(str(row[0])),
         trade_date=_require_date(row[1]),
         feature_name=str(row[2]),
         feature_version=str(row[3]),
         resolved_parameters=MappingProxyType(parameters),
-        value=value,
+        value=_optional_float(row[5]),
         units=str(row[6]),
         availability_status=FeatureAvailabilityStatus(str(row[7])),
         dataset_version=DatasetVersion(str(row[8])),
@@ -452,10 +451,10 @@ def _manifest_from_row(row: tuple[object, ...]) -> FeatureSnapshotManifest:
         created_at=_require_datetime(str(row[2])),
         source_canonical_content_sha256=str(row[3]),
         feature_definition_sha256=str(row[4]),
-        record_count=int(row[5]),
-        available_count=int(row[6]),
-        warmup_count=int(row[7]),
-        input_unavailable_count=int(row[8]),
+        record_count=_require_int(row[5]),
+        available_count=_require_int(row[6]),
+        warmup_count=_require_int(row[7]),
+        input_unavailable_count=_require_int(row[8]),
         first_trade_date=_require_date(row[9]),
         last_trade_date=_require_date(row[10]),
         content_checksum_sha256=str(row[11]),
@@ -472,7 +471,7 @@ def _verify_parquet_row_count(path: Path, *, expected: int) -> None:
         ).fetchone()
     finally:
         connection.close()
-    if row is None or int(row[0]) != expected:
+    if row is None or _require_int(row[0]) != expected:
         raise FeatureSnapshotIntegrityError("feature Parquet row-count verification failed")
 
 
@@ -512,6 +511,23 @@ def _require_datetime(value: str) -> datetime:
     if result.tzinfo is None or result.utcoffset() is None:
         raise FeatureSnapshotIntegrityError("feature manifest created_at is not timezone-aware")
     return result
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise FeatureSnapshotIntegrityError("feature snapshot contains invalid numeric value")
+    result = float(value)
+    if not math.isfinite(result):
+        raise FeatureSnapshotIntegrityError("feature snapshot contains non-finite numeric value")
+    return result
+
+
+def _require_int(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise FeatureSnapshotIntegrityError("feature manifest contains invalid integer count")
+    return value
 
 
 __all__ = [
