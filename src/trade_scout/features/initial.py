@@ -216,9 +216,7 @@ def compute_incremental_initial_feature_frame(
 
     all_values = compute_initial_feature_frame((*history, *new), feature_set=feature_set)
     return tuple(
-        item
-        for item in all_values
-        if (str(item.instrument_id), item.trade_date) in new_keys
+        item for item in all_values if (str(item.instrument_id), item.trade_date) in new_keys
     )
 
 
