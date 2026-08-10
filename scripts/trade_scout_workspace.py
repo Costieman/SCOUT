@@ -12,10 +12,12 @@ from pathlib import Path
 
 from trade_scout.app.local_console import LocalConsoleConfig, serve_local_console
 from trade_scout.app.operator_workspace import (
+    OperatorWorkspace,
     OperatorWorkspaceError,
     configure_operator_workspace,
     initialize_operator_workspace,
     load_operator_workspace,
+    validate_workspace_location,
     verify_operator_workspace,
     workspace_status_payload,
 )
@@ -89,7 +91,18 @@ def main() -> int:
     raise AssertionError("unreachable workspace command")
 
 
+def _repository_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def _load_checked_workspace(root: Path) -> OperatorWorkspace:
+    repository_root = _repository_root()
+    validate_workspace_location(root, repository_root=repository_root)
+    return load_operator_workspace(root)
+
+
 def _init(args: argparse.Namespace) -> int:
+    validate_workspace_location(args.root, repository_root=_repository_root())
     workspace = initialize_operator_workspace(
         args.root,
         storage_namespace=args.storage_namespace,
@@ -101,13 +114,13 @@ def _init(args: argparse.Namespace) -> int:
 
 
 def _status(args: argparse.Namespace) -> int:
-    workspace = load_operator_workspace(args.root)
+    workspace = _load_checked_workspace(args.root)
     print(json.dumps(workspace_status_payload(workspace), indent=2, sort_keys=True))
     return 0
 
 
 def _verify(args: argparse.Namespace) -> int:
-    workspace = load_operator_workspace(args.root)
+    workspace = _load_checked_workspace(args.root)
     report = verify_operator_workspace(workspace)
     payload = {
         "workspace_id": report.workspace_id,
@@ -125,7 +138,7 @@ def _verify(args: argparse.Namespace) -> int:
 
 
 def _configure(args: argparse.Namespace) -> int:
-    workspace = load_operator_workspace(args.root)
+    workspace = _load_checked_workspace(args.root)
     canonical = (
         args.canonical_dataset_version
         if args.canonical_dataset_version is not None
@@ -146,7 +159,7 @@ def _configure(args: argparse.Namespace) -> int:
 
 
 def _acquire_tiingo(args: argparse.Namespace) -> int:
-    workspace = load_operator_workspace(args.root)
+    workspace = _load_checked_workspace(args.root)
     if args.max_symbols < 1:
         raise OperatorWorkspaceError("--max-symbols must be positive")
     before = verify_operator_workspace(workspace)
@@ -155,7 +168,7 @@ def _acquire_tiingo(args: argparse.Namespace) -> int:
             "durable evidence is inconsistent; run the verify command before further acquisition"
         )
 
-    repository_root = Path(__file__).resolve().parents[1]
+    repository_root = _repository_root()
     runner = repository_root / "scripts" / "run_tiingo_sp500_durable_slice.py"
     plan = args.plan if args.plan.is_absolute() else repository_root / args.plan
     command = [
@@ -183,8 +196,8 @@ def _acquire_tiingo(args: argparse.Namespace) -> int:
 
 
 def _serve(args: argparse.Namespace) -> int:
-    workspace = load_operator_workspace(args.root)
-    repository_root = Path(__file__).resolve().parents[1]
+    workspace = _load_checked_workspace(args.root)
+    repository_root = _repository_root()
     sources = workspace.data_health_sources(repository_root=repository_root)
     config = LocalConsoleConfig(
         sources=sources,
