@@ -53,9 +53,7 @@ def main() -> int:
             )
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
         dataset_version = (
-            _V04_DATASET_VERSION
-            if candidate.snapshot_version == _V04_IDENTITY_SNAPSHOT
-            else None
+            _V04_DATASET_VERSION if candidate.snapshot_version == _V04_IDENTITY_SNAPSHOT else None
         )
 
         result = promote_reviewed_tiingo_prices(
