@@ -79,9 +79,7 @@ def load_lineage_cases(path: Path) -> tuple[LineageCase, ...]:
                     "current_symbol_effective_date",
                 ),
                 regular_way_start=_optional_date(raw.get("regular_way_start"), "regular_way_start"),
-                when_issued_start=_optional_date(
-                    raw.get("when_issued_start"), "when_issued_start"
-                ),
+                when_issued_start=_optional_date(raw.get("when_issued_start"), "when_issued_start"),
                 lineage_events=events,
             )
         )
