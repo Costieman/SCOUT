@@ -231,7 +231,10 @@ def test_expanded_identity_snapshot_maps_to_new_immutable_dataset_version(tmp_pa
 def test_unknown_identity_snapshot_requires_explicit_dataset_version(tmp_path: Path) -> None:
     inputs = _workspace_inputs(tmp_path, candidate=_candidate(), rows=_rows())
 
-    with pytest.raises(TiingoCanonicalPromotionError, match="no approved canonical dataset version"):
+    with pytest.raises(
+        TiingoCanonicalPromotionError,
+        match="no approved canonical dataset version",
+    ):
         promote_reviewed_tiingo_prices(
             receipt_root=inputs[0],
             raw_root=inputs[1],
