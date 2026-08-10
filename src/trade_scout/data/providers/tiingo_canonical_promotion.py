@@ -205,7 +205,9 @@ def _build_reviewed_slice(
 
     links = tuple(item for item in candidate.provider_series_links if item.provider_id == "tiingo")
     if not links:
-        raise TiingoCanonicalPromotionError("reviewed candidate contains no Tiingo provider-series links")
+        raise TiingoCanonicalPromotionError(
+            "reviewed candidate contains no Tiingo provider-series links"
+        )
     link_by_symbol = _links_by_query_symbol(links)
     receipts = _receipts_by_subject(receipt_root, frozenset(link_by_symbol))
 
@@ -327,7 +329,9 @@ def _read_raw_rows(path: Path, symbol: str) -> list[dict[str, Any]]:
             f"verified Tiingo payload is unreadable for {symbol}"
         ) from exc
     if not isinstance(raw, list) or not all(isinstance(item, dict) for item in raw):
-        raise TiingoCanonicalPromotionError(f"verified Tiingo payload shape is invalid for {symbol}")
+        raise TiingoCanonicalPromotionError(
+            f"verified Tiingo payload shape is invalid for {symbol}"
+        )
     return raw
 
 
