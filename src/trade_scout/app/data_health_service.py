@@ -16,8 +16,8 @@ from pathlib import Path
 from trade_scout.api.dashboard_contracts import (
     DataHealthSummary,
     HealthState,
-    ProviderHealthSummary,
     ProvenanceSummary,
+    ProviderHealthSummary,
     QualityCounts,
 )
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore, CanonicalDatasetManifest
