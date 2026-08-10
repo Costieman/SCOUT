@@ -37,10 +37,7 @@ def main() -> int:
             )
 
         candidate_path = (
-            workspace.root
-            / "evidence"
-            / "instrument-identity"
-            / "tiingo-reviewed-candidate.json"
+            workspace.root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
         )
         if not candidate_path.is_file():
             raise OperatorWorkspaceError(
@@ -55,10 +52,7 @@ def main() -> int:
             canonical_root=workspace.canonical_root,
         )
         output = (
-            workspace.root
-            / "evidence"
-            / "split-normalization"
-            / "tiingo-reviewed-preview.json"
+            workspace.root / "evidence" / "split-normalization" / "tiingo-reviewed-preview.json"
         )
         persist_tiingo_split_only_preview(output, preview)
     except (OperatorWorkspaceError, TiingoSplitPreviewError) as exc:
