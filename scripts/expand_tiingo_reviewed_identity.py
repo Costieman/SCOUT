@@ -53,7 +53,8 @@ def main() -> int:
         verification = verify_operator_workspace(workspace)
         if not verification.is_consistent:
             raise OperatorWorkspaceError(
-                "durable evidence is inconsistent; reviewed identity expansion is blocked fail-closed"
+                "durable evidence is inconsistent; reviewed identity expansion is blocked "
+                "fail-closed"
             )
 
         profile_path = workspace.root / "evidence" / "tiingo-profile" / "profile.json"
