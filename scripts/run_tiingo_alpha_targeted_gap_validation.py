@@ -22,7 +22,7 @@ from trade_scout.app.operator_workspace import (
 )
 from trade_scout.data.contracts import PriceRepresentation
 from trade_scout.data.provider import DailyBarRequest
-from trade_scout.data.providers.alpha_vantage import AlphaVantageApiError, AlphaVantageAdapter
+from trade_scout.data.providers.alpha_vantage import AlphaVantageAdapter, AlphaVantageApiError
 from trade_scout.data.providers.tiingo_profile import TiingoProfileError, profile_durable_tiingo
 from trade_scout.data.targeted_gap_validation import (
     TargetedGapCase,
