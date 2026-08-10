@@ -111,7 +111,9 @@ class FeatureSnapshotStore:
         existing = self.get_manifest(request.dataset_version, request.feature_set_version)
         if existing is not None:
             if not target.exists():
-                raise FeatureSnapshotIntegrityError("registered feature snapshot directory is missing")
+                raise FeatureSnapshotIntegrityError(
+                    "registered feature snapshot directory is missing"
+                )
             self._verify_parquet(existing)
             if _same_promotion(existing, request, content_checksum):
                 return existing
@@ -119,7 +121,9 @@ class FeatureSnapshotStore:
                 "feature snapshot identity already exists with different content or provenance"
             )
         if target.exists():
-            raise FeatureSnapshotConflictError("unregistered feature snapshot directory already exists")
+            raise FeatureSnapshotConflictError(
+                "unregistered feature snapshot directory already exists"
+            )
 
         target.parent.mkdir(parents=True, exist_ok=True)
         temporary = Path(
@@ -383,7 +387,9 @@ def _feature_value_from_row(row: tuple[object, ...]) -> FeatureValue:
     parameters: dict[str, FeatureParameter] = {}
     for key, value in raw_parameters.items():
         if not isinstance(key, str) or not isinstance(value, str | int | float | bool):
-            raise FeatureSnapshotIntegrityError("feature parameters payload contains invalid values")
+            raise FeatureSnapshotIntegrityError(
+                "feature parameters payload contains invalid values"
+            )
         parameters[key] = value
     value = None if row[5] is None else float(row[5])
     return FeatureValue(
@@ -488,9 +494,7 @@ def _validate_version(value: str, field: str) -> None:
 
 
 def _validate_hash(value: str, field: str) -> None:
-    if len(value) != 64 or any(
-        character not in "0123456789abcdef" for character in value.lower()
-    ):
+    if len(value) != 64 or any(character not in "0123456789abcdef" for character in value.lower()):
         raise ValueError(f"{field} must be a SHA-256 hex digest")
 
 
