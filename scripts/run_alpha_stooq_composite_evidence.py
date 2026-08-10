@@ -44,8 +44,7 @@ def main() -> int:
         raise SystemExit("ALPHA_VANTAGE_API_KEY is not configured")
     cases = tuple(_parse_case(value) for value in args.case)
     links = tuple(
-        StooqInstrumentLink(query_symbol=item[1], provider_instrument_id=item[3])
-        for item in cases
+        StooqInstrumentLink(query_symbol=item[1], provider_instrument_id=item[3]) for item in cases
     )
     alpha = AlphaVantageAdapter.from_api_key(
         api_key,
