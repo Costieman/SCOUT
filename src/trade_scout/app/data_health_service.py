@@ -20,7 +20,7 @@ from trade_scout.api.dashboard_contracts import (
     ProvenanceSummary,
     QualityCounts,
 )
-from trade_scout.data.canonical_storage import CanonicalDailyBarStore
+from trade_scout.data.canonical_storage import CanonicalDailyBarStore, CanonicalDatasetManifest
 from trade_scout.data.contracts import DatasetVersion
 from trade_scout.data.providers.tiingo_campaign_state import (
     TiingoSafeCampaignState,
@@ -86,8 +86,7 @@ def build_data_health_summary(sources: DataHealthSourcePaths) -> DataHealthSumma
             passed=manifest.quality_summary.pass_count,
             warned=manifest.quality_summary.warn_count,
             quarantined=(
-                manifest.quality_summary.quarantine_count
-                + manifest.quality_summary.reject_count
+                manifest.quality_summary.quarantine_count + manifest.quality_summary.reject_count
             ),
         )
         dataset_version = str(manifest.dataset_version)
@@ -101,7 +100,9 @@ def build_data_health_summary(sources: DataHealthSourcePaths) -> DataHealthSumma
             quality_counts=quality_counts,
             discrepancy_count=discrepancy_count,
         )
-        message = "Canonical dataset is registered; downstream use remains subject to visible gates."
+        message = (
+            "Canonical dataset is registered; downstream use remains subject to visible gates."
+        )
         provenance = ProvenanceSummary(
             dataset_version=dataset_version,
             strategy_version=None,
@@ -141,10 +142,7 @@ def _tiingo_provider_summary(
     else:
         current = state.durable_completed_symbol_count
         total = state.total_symbol_count
-        message = (
-            f"{decision}; durable campaign {current}/{total}; "
-            f"last status {state.last_status}."
-        )
+        message = f"{decision}; durable campaign {current}/{total}; last status {state.last_status}."
         if state.last_status == "FAILED":
             acceptance_state = HealthState.WARN
     return ProviderHealthSummary(
@@ -190,7 +188,7 @@ def _load_tiingo_state(path: Path | None) -> TiingoSafeCampaignState | None:
     return load_tiingo_safe_campaign_state(path)
 
 
-def _canonical_summary(sources: DataHealthSourcePaths):
+def _canonical_summary(sources: DataHealthSourcePaths) -> CanonicalDatasetManifest | None:
     if sources.canonical_root is None or sources.canonical_dataset_version is None:
         return None
     store = CanonicalDailyBarStore(sources.canonical_root)
