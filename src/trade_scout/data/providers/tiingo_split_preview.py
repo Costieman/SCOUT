@@ -324,9 +324,7 @@ def preview_durable_tiingo_split_only(
         )
 
     frozen = tuple(sorted(symbol_previews, key=lambda item: item.query_symbol))
-    cross_check_mismatches = sum(
-        item.tiingo_adjusted_cross_check_mismatch_count for item in frozen
-    )
+    cross_check_mismatches = sum(item.tiingo_adjusted_cross_check_mismatch_count for item in frozen)
     normalization_issues = sum(item.normalization_issue_count for item in frozen)
     quality_issues = sum(item.quality_issue_count for item in frozen)
     all_rows_normalized = all(item.normalized_bar_count == item.row_count for item in frozen)
