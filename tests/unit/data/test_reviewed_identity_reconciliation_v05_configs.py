@@ -79,11 +79,16 @@ def test_v05_reconciles_live_profile_without_absorbing_align_gap(tmp_path: Path)
     amp = next(item for item in candidate.instruments if item.primary_symbol == "AMP")
     assert amp.first_trade_date is None
     amp_history = [
-        item
-        for item in candidate.symbol_history
-        if item.instrument_id == amp.instrument_id
+        item for item in candidate.symbol_history if item.instrument_id == amp.instrument_id
     ]
-    assert [(item.symbol, item.effective_from.isoformat(), item.effective_to.isoformat() if item.effective_to else None) for item in amp_history] == [
+    assert [
+        (
+            item.symbol,
+            item.effective_from.isoformat(),
+            item.effective_to.isoformat() if item.effective_to else None,
+        )
+        for item in amp_history
+    ] == [
         ("AMP WI", "2005-09-15", "2005-10-02"),
         ("AMP", "2005-10-03", None),
     ]
