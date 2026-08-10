@@ -208,7 +208,9 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
                 _analytical_control("strategy-family", "Strategy family", "config.patterns.family"),
                 _analytical_control("dataset-version", "Dataset", "config.data.dataset_version"),
                 _analytical_control("universe", "Universe", "config.universe"),
-                _analytical_control("outcome-horizons", "Outcome horizons", "config.outcomes.horizons"),
+                _analytical_control(
+                    "outcome-horizons", "Outcome horizons", "config.outcomes.horizons"
+                ),
                 _analytical_control("risk-policy", "Risk policy", "config.risk.policy"),
                 _analytical_control("validation-design", "Validation design", "config.validation"),
             ),
@@ -228,7 +230,12 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
                     title="Outcome evidence by horizon",
                     kind=ChartKind.HORIZON_SERIES,
                     source_contract="ExperimentResultsView",
-                    required_fields=("horizon", "mean_return", "median_return", "positive_fraction"),
+                    required_fields=(
+                        "horizon",
+                        "mean_return",
+                        "median_return",
+                        "positive_fraction",
+                    ),
                     x_semantics="forward trading-session horizon",
                     y_semantics="already-computed outcome statistic",
                     empty_state_message="No horizon summary has been computed for this experiment.",
@@ -268,7 +275,9 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
             ),
             required_contracts=("ScannerSummary", "ScannerCandidateSummary", "ProvenanceSummary"),
             controls=(
-                _display_control("candidate-state", "Candidate state", "ui.scanner.candidate_state"),
+                _display_control(
+                    "candidate-state", "Candidate state", "ui.scanner.candidate_state"
+                ),
                 _display_control("scanner-sort", "Sort candidates", "ui.scanner.sort"),
                 _display_control("scanner-search", "Search", "ui.scanner.search"),
             ),
@@ -361,7 +370,9 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
                 "ProvenanceSummary",
             ),
             controls=(
-                _display_control("experiment-search", "Search experiments", "ui.experiments.search"),
+                _display_control(
+                    "experiment-search", "Search experiments", "ui.experiments.search"
+                ),
                 _display_control("experiment-status", "Research status", "ui.experiments.status"),
             ),
             charts=(
@@ -390,7 +401,9 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
             ),
             required_contracts=("DataHealthSummary", "ProviderHealthSummary", "ProvenanceSummary"),
             controls=(
-                _display_control("quality-status", "Quality status", "ui.data_health.quality_status"),
+                _display_control(
+                    "quality-status", "Quality status", "ui.data_health.quality_status"
+                ),
                 _display_control("provider-filter", "Provider", "ui.data_health.provider"),
             ),
             charts=(
