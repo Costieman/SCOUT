@@ -50,7 +50,8 @@ def main() -> int:
         verification = verify_operator_workspace(workspace)
         if not verification.is_consistent:
             raise OperatorWorkspaceError(
-                "durable evidence is inconsistent; session completeness audit is blocked fail-closed"
+                "durable evidence is inconsistent; session completeness audit is "
+                "blocked fail-closed"
             )
 
         canonical_store = CanonicalDailyBarStore(workspace.canonical_root)
