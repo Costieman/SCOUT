@@ -240,10 +240,10 @@ def _combined_payload(
         "provider_accepted": False,
         "canonical_fill_allowed": False,
         "interpretation": (
-            "This run identifies agreement, disagreement, and one-sided session coverage between "
-            "Alpha Vantage and Stooq. It does not average feeds, synthesize missing bars, or decide "
-            "that either provider is canonical. Stooq adjustment semantics and identity links remain "
-            "separate acceptance gates."
+            "This run identifies agreement, disagreement, and one-sided session coverage "
+            "between Alpha Vantage and Stooq. It does not average feeds, synthesize missing "
+            "bars, or decide that either provider is canonical. Stooq adjustment semantics "
+            "and identity links remain separate acceptance gates."
         ),
     }
 
