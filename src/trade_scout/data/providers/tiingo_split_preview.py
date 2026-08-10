@@ -17,6 +17,7 @@ from typing import Any
 
 from trade_scout.data.contracts import DatasetVersion, InstrumentId, QualityStatus
 from trade_scout.data.durable_raw_receipt import (
+    DurableRawReceipt,
     load_durable_raw_receipt,
     verify_durable_raw_receipt,
 )
@@ -25,7 +26,6 @@ from trade_scout.data.normalization import normalize_provider_daily_bars_identit
 from trade_scout.data.provider import ProviderDailyBar
 from trade_scout.data.reviewed_identity_snapshot import (
     ProviderSeriesLink,
-    ReviewedIdentitySnapshotCandidate,
     load_reviewed_identity_snapshot_candidate,
 )
 
@@ -210,7 +210,9 @@ def build_tiingo_split_only_provider_bars(
             )
             future_split_product *= row.split_ratio
             if not future_split_product.is_finite() or future_split_product <= 0:
-                raise TiingoSplitPreviewError("Tiingo split ratios produce an invalid cumulative product")
+                raise TiingoSplitPreviewError(
+                    "Tiingo split ratios produce an invalid cumulative product"
+                )
 
     multipliers = tuple(reverse_multipliers)
     return TiingoSplitTransform(
@@ -247,14 +249,15 @@ def preview_durable_tiingo_split_only(
     if not candidate.promotion_ready:
         raise TiingoSplitPreviewError("reviewed identity candidate still has coverage gaps")
     snapshot = InstrumentMasterStore(canonical_root).load(candidate.snapshot_version)
-    if snapshot.instruments != candidate.instruments or snapshot.symbol_history != candidate.symbol_history:
+    if (
+        snapshot.instruments != candidate.instruments
+        or snapshot.symbol_history != candidate.symbol_history
+    ):
         raise TiingoSplitPreviewError(
             "promoted instrument master does not exactly match the reviewed identity candidate"
         )
 
-    links = tuple(
-        item for item in candidate.provider_series_links if item.provider_id == "tiingo"
-    )
+    links = tuple(item for item in candidate.provider_series_links if item.provider_id == "tiingo")
     if not links:
         raise TiingoSplitPreviewError("reviewed candidate contains no Tiingo provider-series links")
     link_by_symbol = _links_by_query_symbol(links)
@@ -450,8 +453,11 @@ def _links_by_query_symbol(
     return result
 
 
-def _receipts_by_subject(receipt_root: Path, targets: frozenset[str]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
+def _receipts_by_subject(
+    receipt_root: Path,
+    targets: frozenset[str],
+) -> dict[str, DurableRawReceipt]:
+    result: dict[str, DurableRawReceipt] = {}
     paths = tuple(sorted(receipt_root.rglob("*.json"))) if receipt_root.exists() else ()
     for path in paths:
         receipt = load_durable_raw_receipt(path)
@@ -469,7 +475,9 @@ def _read_raw_rows(path: Path, symbol: str) -> list[dict[str, Any]]:
     try:
         raw: object = json.loads(path.read_bytes())
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise TiingoSplitPreviewError(f"verified Tiingo payload is unreadable for {symbol}") from exc
+        raise TiingoSplitPreviewError(
+            f"verified Tiingo payload is unreadable for {symbol}"
+        ) from exc
     if not isinstance(raw, list) or not all(isinstance(item, dict) for item in raw):
         raise TiingoSplitPreviewError(f"verified Tiingo payload shape is invalid for {symbol}")
     return raw
