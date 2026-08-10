@@ -150,12 +150,8 @@ def advance_tiingo_safe_campaign_state(
         total_symbol_count=previous.total_symbol_count,
         durable_completed_symbols=proposed,
         run_count=previous.run_count + 1,
-        observed_row_count_total=(
-            previous.observed_row_count_total + run.acquired_row_count
-        ),
-        durable_row_count_total=(
-            previous.durable_row_count_total + durable_row_count_this_run
-        ),
+        observed_row_count_total=(previous.observed_row_count_total + run.acquired_row_count),
+        durable_row_count_total=(previous.durable_row_count_total + durable_row_count_this_run),
         quota_pause_count=quota_pause_count,
         failure_count=failure_count,
         last_run_at=observed_at.astimezone(UTC),
@@ -210,7 +206,9 @@ def load_tiingo_safe_campaign_state(path: Path) -> TiingoSafeCampaignState:
     last_run_at = payload["last_run_at"]
     try:
         parsed_last_run = datetime.fromisoformat(last_run_at) if last_run_at is not None else None
-        snapshot_date = date.fromisoformat(_required_text(payload["snapshot_date"], "snapshot_date"))
+        snapshot_date = date.fromisoformat(
+            _required_text(payload["snapshot_date"], "snapshot_date")
+        )
     except ValueError as exc:
         raise TiingoCampaignStateError("campaign state contains invalid date/time fields") from exc
     if parsed_last_run is not None:
