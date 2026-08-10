@@ -1,0 +1,79 @@
+{
+  "assessment_version": "tiingo-provider-v0.1",
+  "provider_id": "tiingo",
+  "intended_role": "primary_baseline_candidate",
+  "decision": "CANDIDATE_NOT_ACCEPTED",
+  "evidence_run": "tiingo-manifesto-evaluation-v0.1",
+  "criteria": [
+    {
+      "criterion": "authentication_and_connectivity",
+      "status": "DEMONSTRATED",
+      "note": "Credential-backed GitHub Actions run succeeded with TIINGO_API_TOKEN supplied only through the secret environment and Authorization header."
+    },
+    {
+      "criterion": "historical_depth",
+      "status": "DEMONSTRATED",
+      "note": "Live evaluation retrieved January 1996 daily rows for AAPL, MSFT, and JPM; metadata reported still earlier start dates for long-lived names."
+    },
+    {
+      "criterion": "daily_ohlcv_field_contract",
+      "status": "DEMONSTRATED",
+      "note": "Five current large-cap symbols returned daily raw OHLCV plus Tiingo adjustment/corporate-action fields over the July-August 2026 probe window."
+    },
+    {
+      "criterion": "corporate_action_evidence",
+      "status": "DEMONSTRATED_BOUNDED",
+      "note": "AAPL's 2020-08-31 four-for-one split and four 2024 cash-dividend dates were observed in live EOD responses. Broader event completeness remains to be measured."
+    },
+    {
+      "criterion": "repeat_request_determinism",
+      "status": "DEMONSTRATED_BOUNDED",
+      "note": "Two identical AAPL bounded requests returned identical deterministic response hashes during the first live evaluation."
+    },
+    {
+      "criterion": "inactive_delisted_retrievability",
+      "status": "DEMONSTRATED_BOUNDED",
+      "note": "TWTR metadata remained retrievable with an end date of 2022-10-28. Systematic inactive/delisted universe characterization is still required."
+    },
+    {
+      "criterion": "rate_limit_behavior",
+      "status": "OBSERVED_NOT_YET_ACCEPTED",
+      "note": "Repeated development-triggered evaluations produced HTTP 429, proving the free-tier throttle is active. Live evaluation was changed to manual-only to avoid consuming quota on code pushes. A paced/checkpointed backfill scheduler remains required."
+    },
+    {
+      "criterion": "split_only_canonical_normalization",
+      "status": "IMPLEMENTED_PENDING_LIVE_CONFIRMATION",
+      "note": "An explicit provider-specific transform now derives cumulative split-only multipliers from Tiingo split events and is covered by synthetic unit tests. A live AAPL known-split probe is prepared but was deferred after the 429 throttle was observed."
+    },
+    {
+      "criterion": "stable_identifier_and_symbol_history",
+      "status": "BLOCKED",
+      "note": "The accepted adapter still requires explicit identity links and does not yet provide validated dated symbol-history reconstruction suitable for a primary historical universe."
+    },
+    {
+      "criterion": "delisting_survivor_bias_characterization",
+      "status": "PARTIAL",
+      "note": "One delisted ticker is insufficient to establish complete inactive/delisted coverage or terminal-return treatment."
+    },
+    {
+      "criterion": "licensing_and_raw_preservation",
+      "status": "PARTIAL",
+      "note": "Starter is internal-use-only. The evaluation deliberately uploads only derived diagnostics, not raw licensed rows. Any broader storage/redistribution design requires explicit licensing review."
+    },
+    {
+      "criterion": "rate_retry_checkpoint_backfill",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Primary acceptance requires paced requests, durable checkpoint/resume, explicit throttle state, and bounded retry behavior before an S&P 500 backfill."
+    },
+    {
+      "criterion": "secondary_source_validation",
+      "status": "NOT_DEMONSTRATED",
+      "note": "Tiingo has not yet been reconciled at representative scale against Alpha Vantage or another independent programmatic provider."
+    },
+    {
+      "criterion": "primary_adapter_acceptance",
+      "status": "BLOCKED",
+      "note": "Transport and historical depth are promising, but required identity, delisting, paced backfill/checkpoint, live normalization, licensing, and secondary-validation gates remain open."
+    }
+  ]
+}
