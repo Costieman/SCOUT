@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Low-fidelity, dependency-free Trade Scout dashboard prototype.
 
 The renderer accepts presentation-ready API contracts and only formats them. It deliberately
