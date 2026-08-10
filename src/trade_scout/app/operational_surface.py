@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Operational presentation layer for the Phase 1 Data Health console.
 
 This module only formats already-classified application state. It adds campaign progress,
