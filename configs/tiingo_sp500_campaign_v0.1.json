@@ -1,0 +1,10 @@
+{
+  "schema_version": "tiingo-sp500-campaign-v0.1",
+  "plan_version": "tiingo-sp500-2026-08-10-v0.1",
+  "universe_source_url": "https://raw.githubusercontent.com/chinobing/historical_sp500_constituents/main/sp500_constituents.csv",
+  "expected_snapshot_date": "2026-08-10",
+  "expected_constituent_count": 503,
+  "history_start": "1996-01-02",
+  "history_end": "2026-08-07",
+  "max_symbols_per_run": 3
+}
