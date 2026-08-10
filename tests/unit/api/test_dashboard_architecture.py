@@ -49,7 +49,9 @@ def test_scanner_controls_are_display_only() -> None:
 
 def test_candidate_price_chart_requires_canonical_price_basis() -> None:
     candidate = default_dashboard_blueprint().workspace(WorkspaceId.CANDIDATE)
-    price_chart = next(item for item in candidate.charts if item.chart_id == "candidate-price-context")
+    price_chart = next(
+        item for item in candidate.charts if item.chart_id == "candidate-price-context"
+    )
 
     assert price_chart.kind is ChartKind.CANDLESTICK
     assert price_chart.canonical_price_basis_required is True
