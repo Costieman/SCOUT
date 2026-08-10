@@ -97,7 +97,9 @@ class OperatorWorkspace:
         )
         selected = self.manifest.canonical_dataset_version
         return DataHealthSourcePaths(
-            tiingo_acceptance_path=repository / "configs" / "provider_acceptance_tiingo_v0.1.json",
+            tiingo_acceptance_path=repository
+            / "configs"
+            / "provider_acceptance_tiingo_v0.1.json",
             free_stack_acceptance_path=(
                 repository / "configs" / "provider_acceptance_free_stack_v0.1.json"
             ),
@@ -132,6 +134,17 @@ class WorkspaceVerification:
             self.missing_receipt_symbols
             or self.receipt_subjects_not_in_state
             or self.invalid_receipt_paths
+        )
+
+
+def validate_workspace_location(root: Path, *, repository_root: Path) -> None:
+    """Refuse to place licensed/private runtime state inside the Git repository tree."""
+
+    resolved = root.expanduser().resolve()
+    repository = repository_root.resolve()
+    if resolved == repository or repository in resolved.parents:
+        raise OperatorWorkspaceError(
+            "private operator workspace must live outside the Git repository tree"
         )
 
 
@@ -208,7 +221,9 @@ def load_operator_workspace(root: Path) -> OperatorWorkspace:
             else None
         )
     except ValueError as exc:
-        raise OperatorWorkspaceError("operator workspace contains invalid date/time fields") from exc
+        raise OperatorWorkspaceError(
+            "operator workspace contains invalid date/time fields"
+        ) from exc
     _validate_aware_datetime(created_at)
     canonical = _optional_text(payload["canonical_dataset_version"], "canonical_dataset_version")
     manifest = OperatorWorkspaceManifest(
@@ -339,12 +354,14 @@ def workspace_status_payload(workspace: OperatorWorkspace) -> dict[str, object]:
             "invalid_receipt_paths": list(verification.invalid_receipt_paths),
         },
         "evidence": {
-            "composite_report_count": len(tuple(self_path for self_path in workspace.composite_evidence_root.glob("*.json"))),
-            "corporate_action_report_count": len(
-                tuple(workspace.corporate_action_evidence_root.glob("*.json"))
+            "composite_report_count": sum(
+                1 for _ in workspace.composite_evidence_root.glob("*.json")
             ),
-            "failed_ingestion_marker_count": len(
-                tuple(path for path in workspace.failed_ingestion_root.iterdir() if path.is_file())
+            "corporate_action_report_count": sum(
+                1 for _ in workspace.corporate_action_evidence_root.glob("*.json")
+            ),
+            "failed_ingestion_marker_count": sum(
+                1 for path in workspace.failed_ingestion_root.iterdir() if path.is_file()
             ),
         },
     }
