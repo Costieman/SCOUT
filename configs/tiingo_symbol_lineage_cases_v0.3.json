@@ -1,0 +1,102 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "A",
+      "current_symbol_effective_date": "1999-11-18",
+      "regular_way_start": "1999-11-18",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1999-11-18", "from_symbol": null, "to_symbol": "A", "event_type": "IPO_LISTING", "source_title": "Agilent first trading day", "source_url": "https://www.sec.gov/Archives/edgar/data/1090872/000089161803000070/f86148dedef14a.htm"}]
+    },
+    {
+      "source_symbol": "ABNB",
+      "current_symbol_effective_date": "2020-12-10",
+      "regular_way_start": "2020-12-10",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2020-12-10", "from_symbol": null, "to_symbol": "ABNB", "event_type": "IPO_LISTING", "source_title": "Airbnb Announces Pricing of Initial Public Offering", "source_url": "https://investors.airbnb.com/press-releases/news-details/2020/Airbnb-Announces-Pricing-of-Initial-Public-Offering/default.aspx"}]
+    },
+    {
+      "source_symbol": "AIZ",
+      "current_symbol_effective_date": "2004-02-05",
+      "regular_way_start": "2004-02-05",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2004-02-05", "from_symbol": null, "to_symbol": "AIZ", "event_type": "IPO_LISTING", "source_title": "Assurant 2003 Form 10-K", "source_url": "https://www.sec.gov/Archives/edgar/data/1267238/000095012304003991/y95546e10vk.htm"}]
+    },
+    {
+      "source_symbol": "AKAM",
+      "current_symbol_effective_date": "1999-10-29",
+      "regular_way_start": "1999-10-29",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1999-10-29", "from_symbol": null, "to_symbol": "AKAM", "event_type": "IPO_LISTING", "source_title": "Akamai Technologies Form 10-K", "source_url": "https://www.sec.gov/Archives/edgar/data/1086222/000095013504001174/b48973ate10vk.htm"}]
+    },
+    {
+      "source_symbol": "ALGN",
+      "current_symbol_effective_date": "2001-01-26",
+      "regular_way_start": "2001-01-26",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2001-01-26", "from_symbol": null, "to_symbol": "ALGN", "event_type": "IPO_LISTING", "source_title": "Align Technology 2001 Form 10-K", "source_url": "https://www.sec.gov/Archives/edgar/data/1097149/000109714902000007/align_10k.htm"}]
+    },
+    {
+      "source_symbol": "ALLE",
+      "current_symbol_effective_date": "2013-12-02",
+      "regular_way_start": "2013-12-02",
+      "when_issued_start": "2013-11-18",
+      "lineage_events": [
+        {"effective_date": "2013-11-18", "from_symbol": null, "to_symbol": "ALLE WI", "event_type": "WHEN_ISSUED_TRADING_EXPECTED", "source_title": "Ingersoll Rand Announces Record and Distribution Dates for Spin-Off of Allegion", "source_url": "https://www.allegion.com/corp/en/news/year/2013/record-distribution-dates-allegion.html"},
+        {"effective_date": "2013-12-02", "from_symbol": "ALLE WI", "to_symbol": "ALLE", "event_type": "REGULAR_WAY_TRADING_EXPECTED", "source_title": "Ingersoll Rand Announces Record and Distribution Dates for Spin-Off of Allegion", "source_url": "https://www.allegion.com/corp/en/news/year/2013/record-distribution-dates-allegion.html"}
+      ]
+    },
+    {
+      "source_symbol": "AMP",
+      "current_symbol_effective_date": "2005-10-03",
+      "regular_way_start": "2005-10-03",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2005-10-03", "from_symbol": null, "to_symbol": "AMP", "event_type": "SPINOFF_PUBLIC_LISTING", "source_title": "Ameriprise Financial Lists on New York Stock Exchange", "source_url": "https://www.sec.gov/Archives/edgar/data/52428/000090342305000749/exhibit-99.htm"}]
+    },
+    {
+      "source_symbol": "AMZN",
+      "current_symbol_effective_date": "1997-05-15",
+      "regular_way_start": "1997-05-15",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1997-05-15", "from_symbol": null, "to_symbol": "AMZN", "event_type": "IPO_LISTING", "source_title": "Amazon Investor Relations IPO FAQ", "source_url": "https://ir.aboutamazon.com/faqs/default.aspx/1000/"}]
+    },
+    {
+      "source_symbol": "ANET",
+      "current_symbol_effective_date": "2014-06-06",
+      "regular_way_start": "2014-06-06",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2014-06-06", "from_symbol": null, "to_symbol": "ANET", "event_type": "IPO_LISTING", "source_title": "Arista Announces Pricing of Initial Public Offering", "source_url": "https://investors.arista.com/Communications/Press-Releases-and-Events/Press-Release-Detail/2014/Arista-Announces-Pricing-of-Initial-Public-Offering-662014/default.aspx"}]
+    },
+    {
+      "source_symbol": "APP",
+      "current_symbol_effective_date": "2021-04-15",
+      "regular_way_start": "2021-04-15",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2021-04-15", "from_symbol": null, "to_symbol": "APP", "event_type": "IPO_LISTING", "source_title": "AppLovin Investor FAQs", "source_url": "https://investors.applovin.com/resources/investor-faqs/default.aspx"}]
+    },
+    {
+      "source_symbol": "APTV",
+      "current_symbol_effective_date": "2017-12-05",
+      "regular_way_start": "2017-12-05",
+      "when_issued_start": "2017-11-21",
+      "lineage_events": [{"effective_date": "2017-12-05", "from_symbol": "DLPH", "to_symbol": "APTV", "event_type": "TICKER_CHANGE_AFTER_SPINOFF", "source_title": "Delphi Board of Directors Approves Delphi Technologies Spin-off", "source_url": "https://ir.aptiv.com/news/news-details/2017/Delphi-Board-of-Directors-Approves-Delphi-Technologies-Spin-off/default.aspx"}]
+    },
+    {
+      "source_symbol": "AWK",
+      "current_symbol_effective_date": "2008-04-23",
+      "regular_way_start": "2008-04-23",
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "2008-04-23", "from_symbol": null, "to_symbol": "AWK", "event_type": "PUBLIC_RELISTING", "source_title": "American Water Works Company, Inc. 2008 Form 10-K", "source_url": "https://www.sec.gov/Archives/edgar/data/1410636/000119312509040650/d10k.htm"}]
+    },
+    {
+      "source_symbol": "AXON",
+      "current_symbol_effective_date": "2021-01-26",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {"effective_date": "2017-04-06", "from_symbol": "TASR", "to_symbol": "AAXN", "event_type": "CORPORATE_NAME_AND_TICKER_CHANGE", "source_title": "Axon Offers Free Body Cameras for Every Police Officer in the U.S.", "source_url": "https://investor.axon.com/2017-04-05-Axon-Offers-Free-Body-Cameras-for-Every-Police-Officer-in-the-U-S"},
+        {"effective_date": "2021-01-26", "from_symbol": "AAXN", "to_symbol": "AXON", "event_type": "TICKER_CHANGE", "source_title": "Axon Enterprise To Change Nasdaq Symbol to AXON", "source_url": "https://investor.axon.com/2021-01-25-Axon-Enterprise-To-Change-Nasdaq-Symbol-to-AXON"}
+      ]
+    }
+  ]
+}
