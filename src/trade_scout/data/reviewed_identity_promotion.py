@@ -14,7 +14,6 @@ from trade_scout.data.instrument_storage import (
 )
 from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotCandidate,
-    ReviewedIdentitySnapshotError,
     build_reviewed_identity_snapshot_candidate,
     load_reviewed_identity_seed_set,
     load_reviewed_identity_snapshot_candidate,
@@ -59,7 +58,8 @@ def promote_reviewed_identity_candidate(
 
     if persisted != rebuilt:
         raise ReviewedIdentityPromotionError(
-            "persisted identity candidate does not exactly match a rebuild from current seed/audit evidence"
+            "persisted identity candidate does not exactly match a rebuild from current "
+            "seed/audit evidence"
         )
     if not rebuilt.promotion_ready:
         raise ReviewedIdentityPromotionError(
@@ -80,9 +80,13 @@ def promote_reviewed_identity_candidate(
     if existing is not None:
         _verify_existing_manifest(existing, rebuilt, source_batch_ids)
         loaded = store.load(rebuilt.snapshot_version)
-        if loaded.instruments != rebuilt.instruments or loaded.symbol_history != rebuilt.symbol_history:
+        if (
+            loaded.instruments != rebuilt.instruments
+            or loaded.symbol_history != rebuilt.symbol_history
+        ):
             raise ReviewedIdentityPromotionError(
-                "registered instrument master does not exactly match the reviewed identity candidate"
+                "registered instrument master does not exactly match the reviewed identity "
+                "candidate"
             )
         return ReviewedIdentityPromotionResult(
             manifest=existing,
