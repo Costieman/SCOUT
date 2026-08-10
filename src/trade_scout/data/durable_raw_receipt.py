@@ -115,16 +115,19 @@ def verify_durable_raw_receipt(
     _assert_manifest_matches_receipt(manifest, receipt)
     if hashlib.sha256(payload).hexdigest() != receipt.payload_checksum_sha256:
         raise DurableRawReceiptError("durable raw payload checksum no longer matches receipt")
-    expected_id = "raw-receipt-" + _sha256_json(
-        {
-            "storage_namespace": receipt.storage_namespace,
-            "provider_id": receipt.provider_id,
-            "subject_key": receipt.subject_key,
-            "batch_id": receipt.batch_id,
-            "request_fingerprint_sha256": receipt.request_fingerprint_sha256,
-            "payload_checksum_sha256": receipt.payload_checksum_sha256,
-        }
-    )[:24]
+    expected_id = (
+        "raw-receipt-"
+        + _sha256_json(
+            {
+                "storage_namespace": receipt.storage_namespace,
+                "provider_id": receipt.provider_id,
+                "subject_key": receipt.subject_key,
+                "batch_id": receipt.batch_id,
+                "request_fingerprint_sha256": receipt.request_fingerprint_sha256,
+                "payload_checksum_sha256": receipt.payload_checksum_sha256,
+            }
+        )[:24]
+    )
     if receipt.receipt_id != expected_id:
         raise DurableRawReceiptError("durable raw receipt ID is not deterministic for its content")
     return RawBatchRecord(
@@ -181,7 +184,11 @@ def load_durable_raw_receipt(path: Path) -> DurableRawReceipt:
     if retrieval_time.tzinfo is None or retrieval_time.utcoffset() is None:
         raise DurableRawReceiptError("durable raw receipt retrieval_time must be timezone-aware")
     content_length = payload["content_length"]
-    if not isinstance(content_length, int) or isinstance(content_length, bool) or content_length < 0:
+    if (
+        not isinstance(content_length, int)
+        or isinstance(content_length, bool)
+        or content_length < 0
+    ):
         raise DurableRawReceiptError("durable raw receipt content_length is invalid")
     media_type = payload["media_type"]
     if media_type is not None and (not isinstance(media_type, str) or not media_type.strip()):
