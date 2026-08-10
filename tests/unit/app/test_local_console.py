@@ -75,7 +75,10 @@ def test_index_is_evidence_backed_and_auto_refreshes(tmp_path: Path) -> None:
     assert response.content_type == "text/html; charset=utf-8"
     assert '<meta http-equiv="refresh" content="9">' in html
     assert "Data Health" in html
+    assert "Phase 1 control plane" in html
+    assert "What is blocking the data foundation?" in html
     assert "CANDIDATE_NOT_ACCEPTED" in html
+    assert "Cross-provider reconciliation evidence has not been supplied." in html
     assert "No explicitly selected canonical Phase 1 dataset is available." in html
     assert ("Cache-Control", "no-store") in response.headers
     assert any(name == "Content-Security-Policy" for name, _ in response.headers)
@@ -93,8 +96,11 @@ def test_data_health_json_preserves_unknown_metrics_as_null(tmp_path: Path) -> N
     assert payload["state"] == "BLOCKED"
     assert payload["missing_data_anomaly_count"] is None
     assert payload["cross_provider_discrepancy_count"] is None
+    assert payload["review_work_item_count"] is None
     assert payload["failed_ingestion_job_count"] is None
     assert payload["providers"][0]["provider_id"] == "tiingo"
+    assert payload["providers"][0]["operational_status"] == "STATE_NOT_SUPPLIED"
+    assert payload["phase_blockers"]
 
 
 def test_snapshot_api_exposes_gates_without_candidates(tmp_path: Path) -> None:
@@ -125,6 +131,8 @@ def test_healthz_reports_application_gate_not_provider_connectivity(tmp_path: Pa
         "data_health_state": "BLOCKED",
         "dataset_version": None,
         "generated_at": "2026-08-10T05:00:00+00:00",
+        "phase_blocker_count": 5,
+        "review_work_item_count": None,
         "scanner_freshness_gate": "BLOCKED",
         "service": "trade-scout-local-console",
         "status": "ok",
