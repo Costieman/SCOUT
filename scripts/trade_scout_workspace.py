@@ -26,6 +26,12 @@ from trade_scout.data.providers.tiingo_profile import (
     persist_tiingo_durable_profile,
     profile_durable_tiingo,
 )
+from trade_scout.data.reviewed_identity_snapshot import (
+    ReviewedIdentitySnapshotError,
+    build_reviewed_identity_snapshot_candidate,
+    load_reviewed_identity_seed_set,
+    persist_reviewed_identity_snapshot_candidate,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -80,6 +86,17 @@ def _parser() -> argparse.ArgumentParser:
     )
     profile.add_argument("--root", type=Path, required=True)
 
+    identity = subparsers.add_parser(
+        "build-tiingo-identity",
+        help="Build a reviewed identity candidate from the local Tiingo lineage audit.",
+    )
+    identity.add_argument("--root", type=Path, required=True)
+    identity.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/tiingo_reviewed_identity_seeds_v0.1.json"),
+    )
+
     serve = subparsers.add_parser("serve", help="Open the read-only console for this workspace.")
     serve.add_argument("--root", type=Path, required=True)
     serve.add_argument("--host", default="127.0.0.1")
@@ -107,9 +124,11 @@ def main() -> int:
             return _acquire_tiingo(args)
         if args.command == "profile-tiingo":
             return _profile_tiingo(args)
+        if args.command == "build-tiingo-identity":
+            return _build_tiingo_identity(args)
         if args.command == "serve":
             return _serve(args)
-    except (OperatorWorkspaceError, TiingoProfileError) as exc:
+    except (OperatorWorkspaceError, TiingoProfileError, ReviewedIdentitySnapshotError) as exc:
         print(f"operator workspace error: {exc}", file=sys.stderr)
         return 2
     raise AssertionError("unreachable workspace command")
@@ -126,6 +145,11 @@ def _load_checked_workspace(root: Path) -> OperatorWorkspace:
 
 
 def _resolved_plan(path: Path) -> Path:
+    repository_root = _repository_root()
+    return path if path.is_absolute() else repository_root / path
+
+
+def _resolved_repository_path(path: Path) -> Path:
     repository_root = _repository_root()
     return path if path.is_absolute() else repository_root / path
 
@@ -284,6 +308,54 @@ def _profile_tiingo(args: argparse.Namespace) -> int:
         "split_event_count": profile.split_event_count,
         "dividend_event_count": profile.dividend_event_count,
         "long_calendar_gap_count": profile.long_calendar_gap_count,
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def _build_tiingo_identity(args: argparse.Namespace) -> int:
+    workspace = _load_checked_workspace(args.root)
+    verification = verify_operator_workspace(workspace)
+    if not verification.is_consistent:
+        raise OperatorWorkspaceError(
+            "durable evidence is inconsistent; identity candidate generation is blocked fail-closed"
+        )
+
+    audit_path = workspace.root / "evidence" / "tiingo-lineage" / "audit.json"
+    profile_path = workspace.root / "evidence" / "tiingo-profile" / "profile.json"
+    if not profile_path.is_file():
+        raise OperatorWorkspaceError("Tiingo profile is missing; run profile-tiingo first")
+    if not audit_path.is_file():
+        raise OperatorWorkspaceError(
+            "Tiingo lineage audit is missing; run audit_tiingo_symbol_lineage.py first"
+        )
+
+    seed_set = load_reviewed_identity_seed_set(_resolved_repository_path(args.config))
+    candidate = build_reviewed_identity_snapshot_candidate(
+        seed_set=seed_set,
+        lineage_audit_path=audit_path,
+    )
+    output = workspace.root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
+    persist_reviewed_identity_snapshot_candidate(output, candidate)
+    summary = {
+        "candidate_path": str(output),
+        "snapshot_version": candidate.snapshot_version,
+        "instrument_count": len(candidate.instruments),
+        "symbol_history_count": len(candidate.symbol_history),
+        "provider_series_link_count": len(candidate.provider_series_links),
+        "coverage_gap_count": len(candidate.coverage_gaps),
+        "fully_covered_instrument_count": candidate.fully_covered_instrument_count,
+        "promotion_ready": candidate.promotion_ready,
+        "coverage_gaps": [
+            {
+                "query_symbol": item.query_symbol,
+                "gap_start": item.gap_start.isoformat(),
+                "gap_end": item.gap_end.isoformat(),
+                "reason": item.reason,
+                "known_predecessor_symbol": item.known_predecessor_symbol,
+            }
+            for item in candidate.coverage_gaps
+        ],
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
