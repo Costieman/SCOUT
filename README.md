@@ -6,7 +6,7 @@ Trade Scout is a modular quantitative research and market-screening platform. It
 
 The repository has completed **Phase 0B — Repository Bootstrap** and is now in **Phase 1 — Data Foundation**. The active implementation is limited to provider isolation, canonical market-data contracts, immutable/provenance-aware ingestion, data quality, storage, and point-in-time universe construction.
 
-No feature calculations, pattern detection, backtesting, scanner logic, ranking logic, dashboard logic, or alerts belong in this milestone.
+No feature calculations, pattern detection, backtesting, scanner logic, ranking logic, dashboard analytical logic, or alerts belong in this milestone. A read-only Data Health presentation shell is permitted only to expose Phase 1 evidence and blocking state; it must not become an analytical implementation.
 
 ## Toolchain
 
@@ -26,6 +26,14 @@ uv run ruff check .
 uv run mypy src/trade_scout
 uv run pytest
 ```
+
+To view the current evidence-backed Phase 1 interface locally:
+
+```bash
+uv run python scripts/serve_trade_scout.py --open-browser
+```
+
+This serves `http://127.0.0.1:8765/` by default. The surface is read-only, reloads persisted Data Health evidence, and contains no market-data-provider calls or trade controls. See [`docs/ui/local_console_v0.1.md`](docs/ui/local_console_v0.1.md).
 
 ## Repository map
 
