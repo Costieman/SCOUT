@@ -24,8 +24,10 @@ from trade_scout.data.reviewed_identity_snapshot import (
     load_reviewed_identity_snapshot_candidate,
 )
 
-_V04_IDENTITY_SNAPSHOT = "tiingo-reviewed-identity-candidate-v0.4"
-_V04_DATASET_VERSION = DatasetVersion("tiingo-reviewed-split-only-v0.3")
+_OPERATOR_DATASET_VERSION_BY_IDENTITY = {
+    "tiingo-reviewed-identity-candidate-v0.4": DatasetVersion("tiingo-reviewed-split-only-v0.3"),
+    "tiingo-reviewed-identity-candidate-v0.5": DatasetVersion("tiingo-reviewed-split-only-v0.4"),
+}
 
 
 def main() -> int:
@@ -52,9 +54,7 @@ def main() -> int:
                 "reviewed Tiingo identity candidate is missing; build and promote identity first"
             )
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
-        dataset_version = (
-            _V04_DATASET_VERSION if candidate.snapshot_version == _V04_IDENTITY_SNAPSHOT else None
-        )
+        dataset_version = _OPERATOR_DATASET_VERSION_BY_IDENTITY.get(candidate.snapshot_version)
 
         result = promote_reviewed_tiingo_prices(
             receipt_root=workspace.tiingo_receipts_root,

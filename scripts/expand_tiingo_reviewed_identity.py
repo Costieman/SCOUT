@@ -31,9 +31,8 @@ _EXPECTED_CLASSIFICATIONS = {
     "ABNB": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AIZ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AKAM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
-    "ALGN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ALLE": "WHEN_ISSUED_START_MATCH",
-    "AMP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AMP": "WHEN_ISSUED_START_MATCH",
     "AMZN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ANET": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
@@ -41,7 +40,13 @@ _EXPECTED_CLASSIFICATIONS = {
     "AWK": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AXON": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
 }
-_NEW_REVIEWED_SYMBOLS = frozenset({"A", "AIZ", "AKAM", "ALGN", "AMP", "AMZN"})
+_NEW_REVIEWED_SYMBOLS = frozenset({"A", "AIZ", "AKAM", "AMP", "AMZN"})
+_DEFERRED_REASONS = {
+    "ALGN": (
+        "Tiingo begins 2001-01-30 after the sourced public-trading start 2001-01-26; "
+        "canonical promotion remains blocked until the missing sessions are independently resolved."
+    )
+}
 
 
 def main() -> int:
@@ -51,8 +56,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.3.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.4.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.4.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.5.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)
@@ -126,6 +131,8 @@ def main() -> int:
                 "promotion_ready": candidate.promotion_ready,
                 "reviewed_symbols": sorted(classifications),
                 "new_reviewed_symbols": sorted(_NEW_REVIEWED_SYMBOLS),
+                "deferred_symbols": sorted(_DEFERRED_REASONS),
+                "deferred_reasons": _DEFERRED_REASONS,
                 "classification_counts": {
                     classification: sum(
                         value == classification for value in classifications.values()
