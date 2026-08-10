@@ -4,6 +4,7 @@ import pytest
 
 from trade_scout.data.contracts import (
     DatasetVersion,
+    InstrumentRecord,
     QualityStatus,
     SecurityType,
     SymbolHistoryRecord,
@@ -76,14 +77,13 @@ def _bar(
 
 def _history(
     canonical_symbol: str,
-    canonical_instrument: object,
+    canonical_instrument: InstrumentRecord,
     *,
     effective_from: date,
     effective_to: date | None,
 ) -> SymbolHistoryRecord:
-    instrument_id = getattr(canonical_instrument, "instrument_id")
     return SymbolHistoryRecord(
-        instrument_id=instrument_id,
+        instrument_id=canonical_instrument.instrument_id,
         symbol=canonical_symbol,
         exchange="XNAS",
         effective_from=effective_from,
@@ -251,9 +251,7 @@ def test_identity_aware_normalization_quarantines_missing_historical_symbol_cove
     canonical = instrument_from_primary_provider(
         _instrument(provider_instrument_id="asset-axon", symbol="AXON")
     )
-    history = [
-        _history("AXON", canonical, effective_from=date(2021, 1, 26), effective_to=None)
-    ]
+    history = [_history("AXON", canonical, effective_from=date(2021, 1, 26), effective_to=None)]
 
     result = normalize_provider_daily_bars_identity_aware(
         [
@@ -271,10 +269,7 @@ def test_identity_aware_normalization_quarantines_missing_historical_symbol_cove
     assert result.bars == ()
     assert result.status is QualityStatus.QUARANTINE
     assert len(result.normalization_issues) == 1
-    assert (
-        result.normalization_issues[0].rule
-        is NormalizationRule.UNRESOLVED_SYMBOL_HISTORY
-    )
+    assert result.normalization_issues[0].rule is NormalizationRule.UNRESOLVED_SYMBOL_HISTORY
 
 
 def test_identity_aware_normalization_propagates_overlapping_symbol_history_conflict() -> None:
