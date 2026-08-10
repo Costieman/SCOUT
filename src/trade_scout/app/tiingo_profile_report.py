@@ -113,9 +113,13 @@ def load_tiingo_profile_view(path: Path) -> TiingoProfileView:
     if total_row_count != sum(item.row_count for item in rows):
         raise TiingoProfileReportError("Tiingo profile total_row_count does not match symbol rows")
     if split_event_count != sum(item.split_event_count for item in rows):
-        raise TiingoProfileReportError("Tiingo profile split_event_count does not match symbol rows")
+        raise TiingoProfileReportError(
+            "Tiingo profile split_event_count does not match symbol rows"
+        )
     if dividend_event_count != sum(item.dividend_event_count for item in rows):
-        raise TiingoProfileReportError("Tiingo profile dividend_event_count does not match symbol rows")
+        raise TiingoProfileReportError(
+            "Tiingo profile dividend_event_count does not match symbol rows"
+        )
 
     return TiingoProfileView(
         generated_at=generated_at,
@@ -131,7 +135,9 @@ def load_tiingo_profile_view(path: Path) -> TiingoProfileView:
 def render_tiingo_profile_html(view: TiingoProfileView) -> str:
     """Render a dependency-free private report from derived profile diagnostics."""
 
-    shortest = tuple(sorted(view.symbols, key=lambda item: (item.row_count, item.source_symbol))[:15])
+    shortest = tuple(
+        sorted(view.symbols, key=lambda item: (item.row_count, item.source_symbol))[:15]
+    )
     structural_rows = "".join(
         f"<tr><td>{escape(_label(field))}</td><td>{count}</td></tr>"
         for field, count in view.aggregate_structural_counts
