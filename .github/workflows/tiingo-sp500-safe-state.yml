@@ -1,0 +1,98 @@
+name: Tiingo S&P 500 safe campaign state
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_symbols:
+        description: Maximum Tiingo symbols to probe in this hosted run
+        required: true
+        default: "1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tiingo-sp500-safe-campaign-state
+  cancel-in-progress: false
+
+jobs:
+  campaign:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Restore prior safe state
+        shell: bash
+        run: |
+          mkdir -p runtime/tiingo-sp500-campaign
+          if git fetch origin campaign-state/tiingo-sp500; then
+            git show origin/campaign-state/tiingo-sp500:tiingo-sp500-state.json \
+              > runtime/tiingo-sp500-campaign/previous-safe-state.json
+          else
+            echo "No prior safe-state branch; starting a new ledger."
+          fi
+      - name: Run one ephemeral hosted campaign slice
+        env:
+          TIINGO_API_TOKEN: ${{ secrets.TIINGO_API_TOKEN }}
+        run: |
+          uv run python scripts/run_tiingo_sp500_campaign.py \
+            --runtime-root runtime/tiingo-sp500-campaign \
+            --max-symbols "${{ inputs.max_symbols }}"
+      - name: Advance safe state without claiming durable raw storage
+        shell: bash
+        run: |
+          previous=()
+          if [[ -f runtime/tiingo-sp500-campaign/previous-safe-state.json ]]; then
+            previous=(--previous-state runtime/tiingo-sp500-campaign/previous-safe-state.json)
+          fi
+          uv run python scripts/update_tiingo_sp500_safe_state.py \
+            --report runtime/tiingo-sp500-campaign/report.json \
+            --storage-class ephemeral \
+            --output runtime/tiingo-sp500-campaign/safe-state.json \
+            "${previous[@]}"
+      - name: Persist safe metadata on dedicated state branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_file="$RUNNER_TEMP/tiingo-sp500-state.json"
+          cp runtime/tiingo-sp500-campaign/safe-state.json "$state_file"
+
+          if git show-ref --verify --quiet refs/remotes/origin/campaign-state/tiingo-sp500; then
+            git worktree add "$RUNNER_TEMP/campaign-state" \
+              refs/remotes/origin/campaign-state/tiingo-sp500
+            cd "$RUNNER_TEMP/campaign-state"
+            git switch -C campaign-state/tiingo-sp500 origin/campaign-state/tiingo-sp500
+          else
+            git worktree add --detach "$RUNNER_TEMP/campaign-state" HEAD
+            cd "$RUNNER_TEMP/campaign-state"
+            git switch --orphan campaign-state/tiingo-sp500
+            git rm -rf .
+          fi
+
+          cp "$state_file" tiingo-sp500-state.json
+          git add tiingo-sp500-state.json
+          if git diff --cached --quiet; then
+            echo "Safe campaign state did not change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update Tiingo S&P 500 safe campaign state"
+          git push origin HEAD:refs/heads/campaign-state/tiingo-sp500
+      - name: Upload derived run report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiingo-sp500-safe-campaign-report
+          path: |
+            runtime/tiingo-sp500-campaign/report.json
+            runtime/tiingo-sp500-campaign/safe-state.json
+          if-no-files-found: warn
+          retention-days: 14
