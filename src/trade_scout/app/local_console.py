@@ -158,13 +158,13 @@ def _handler_for(config: LocalConsoleConfig) -> type[BaseHTTPRequestHandler]:
     class LocalConsoleHandler(BaseHTTPRequestHandler):
         server_version = "TradeScoutLocalConsole/0.1"
 
-        def do_GET(self) -> None:  # noqa: N802
+        def do_GET(self) -> None:
             self._respond(head_only=False)
 
-        def do_HEAD(self) -> None:  # noqa: N802
+        def do_HEAD(self) -> None:
             self._respond(head_only=True)
 
-        def do_POST(self) -> None:  # noqa: N802
+        def do_POST(self) -> None:
             response = _json_response(
                 HTTPStatus.METHOD_NOT_ALLOWED,
                 {"error": "method_not_allowed", "allowed": ["GET", "HEAD"]},
