@@ -28,10 +28,16 @@ Adjudication does not bypass canonical normalization. The selected provider obse
 
 ## Immutability
 
-Row provenance is stored as deterministic JSONL under `metadata/composite_row_provenance/<dataset_version>.jsonl`. The store computes a SHA-256 checksum, verifies it on load, permits idempotent re-registration of identical content, and rejects reuse of a dataset version with different provenance.
+Row provenance is stored as deterministic JSONL under `metadata/composite_row_provenance/<dataset_version>.jsonl`, with a persisted checksum manifest beside it. The store verifies SHA-256 and record counts on load, permits idempotent re-registration of identical content, and rejects reuse of a dataset version with different provenance.
 
 ## Canonical storage compatibility
 
 The existing `CanonicalDailyBarStore` requires one `primary_provider_id` per dataset version. Composite rows therefore carry `provider_id=trade_scout_composite`; the external source is intentionally retained in the row-provenance sidecar rather than overloading `DailyBar.provider_id` with mixed external providers.
 
-This preserves the current immutable Parquet/DuckDB storage contract while making the A+B source selection reconstructible. The next integration step is a composite promotion service that commits the canonical dataset and its provenance manifest as one controlled operation and refuses to expose a composite dataset if either half is missing or inconsistent.
+## Controlled promotion
+
+`CompositeDatasetStore` is the fail-closed boundary for publishing an A+B canonical dataset. It requires every accepted canonical row to have exactly one included provenance record with the same instrument/date key and a non-null selected source provider and provider instrument ID. Unresolved normalization issues block promotion.
+
+Provenance is registered before canonical Parquet. This ordering is deliberate: if canonical promotion fails, the remaining provenance sidecar is not research-visible and an identical retry is idempotent. The reverse ordering could expose a canonical composite dataset without its source-row provenance. Loading through the composite store refuses any dataset where either canonical state or provenance is missing or where their row keys disagree.
+
+This preserves the existing immutable Parquet/DuckDB contract while making every accepted A+B observation reconstructible from its reviewed source evidence.
