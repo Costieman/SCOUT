@@ -6,6 +6,7 @@ from types import MappingProxyType
 import pytest
 
 from trade_scout.data.contracts import (
+    DatasetVersion,
     InstrumentId,
     InstrumentRecord,
     SecurityType,
@@ -31,8 +32,14 @@ from trade_scout.data.reviewed_identity_snapshot import (
     persist_reviewed_identity_snapshot_candidate,
 )
 
+_SYNTHETIC_DATASET_VERSION = DatasetVersion("synthetic-reviewed-prices-v0.1")
 
-def _candidate(*, history_start: date = date(2020, 1, 1)) -> ReviewedIdentitySnapshotCandidate:
+
+def _candidate(
+    *,
+    history_start: date = date(2020, 1, 1),
+    snapshot_version: str = "synthetic-reviewed-identity-v0.1",
+) -> ReviewedIdentitySnapshotCandidate:
     instrument_id = InstrumentId("tsi_test_reviewed_001")
     instrument = InstrumentRecord(
         instrument_id=instrument_id,
@@ -66,7 +73,7 @@ def _candidate(*, history_start: date = date(2020, 1, 1)) -> ReviewedIdentitySna
     )
     return ReviewedIdentitySnapshotCandidate(
         schema_version="reviewed-identity-candidate-v0.1",
-        snapshot_version="synthetic-reviewed-identity-v0.1",
+        snapshot_version=snapshot_version,
         primary_provider_id="trade_scout_review",
         identity_definition_version="reviewed-permanent-identity-v0.1",
         symbol_history_definition_version="explicit-dated-symbol-history-v0.1",
@@ -168,6 +175,7 @@ def test_promotes_reviewed_split_only_slice_and_is_idempotent(tmp_path: Path) ->
         storage_namespace="test-private-v1",
         candidate_path=inputs[2],
         canonical_root=inputs[3],
+        dataset_version=_SYNTHETIC_DATASET_VERSION,
         promoted_at=datetime(2026, 8, 10, 9, 2, tzinfo=UTC),
     )
     second = promote_reviewed_tiingo_prices(
@@ -176,6 +184,7 @@ def test_promotes_reviewed_split_only_slice_and_is_idempotent(tmp_path: Path) ->
         storage_namespace="test-private-v1",
         candidate_path=inputs[2],
         canonical_root=inputs[3],
+        dataset_version=_SYNTHETIC_DATASET_VERSION,
     )
 
     assert first.already_registered is False
@@ -203,6 +212,35 @@ def test_promotes_reviewed_split_only_slice_and_is_idempotent(tmp_path: Path) ->
     assert "close_split_adjusted" not in report_text
 
 
+def test_expanded_identity_snapshot_maps_to_new_immutable_dataset_version(tmp_path: Path) -> None:
+    candidate = _candidate(snapshot_version="tiingo-reviewed-identity-candidate-v0.3")
+    inputs = _workspace_inputs(tmp_path, candidate=candidate, rows=_rows())
+
+    result = promote_reviewed_tiingo_prices(
+        receipt_root=inputs[0],
+        raw_root=inputs[1],
+        storage_namespace="test-private-v1",
+        candidate_path=inputs[2],
+        canonical_root=inputs[3],
+    )
+
+    assert str(result.manifest.dataset_version) == "tiingo-reviewed-split-only-v0.2"
+    assert result.identity_snapshot_version == "tiingo-reviewed-identity-candidate-v0.3"
+
+
+def test_unknown_identity_snapshot_requires_explicit_dataset_version(tmp_path: Path) -> None:
+    inputs = _workspace_inputs(tmp_path, candidate=_candidate(), rows=_rows())
+
+    with pytest.raises(TiingoCanonicalPromotionError, match="no approved canonical dataset version"):
+        promote_reviewed_tiingo_prices(
+            receipt_root=inputs[0],
+            raw_root=inputs[1],
+            storage_namespace="test-private-v1",
+            candidate_path=inputs[2],
+            canonical_root=inputs[3],
+        )
+
+
 def test_adjusted_cross_check_mismatch_blocks_promotion(tmp_path: Path) -> None:
     inputs = _workspace_inputs(
         tmp_path,
@@ -217,6 +255,7 @@ def test_adjusted_cross_check_mismatch_blocks_promotion(tmp_path: Path) -> None:
             storage_namespace="test-private-v1",
             candidate_path=inputs[2],
             canonical_root=inputs[3],
+            dataset_version=_SYNTHETIC_DATASET_VERSION,
         )
 
 
@@ -234,4 +273,5 @@ def test_missing_dated_symbol_coverage_blocks_promotion(tmp_path: Path) -> None:
             storage_namespace="test-private-v1",
             candidate_path=inputs[2],
             canonical_root=inputs[3],
+            dataset_version=_SYNTHETIC_DATASET_VERSION,
         )
