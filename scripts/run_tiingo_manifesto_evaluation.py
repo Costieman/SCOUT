@@ -247,12 +247,7 @@ def _static_gates() -> list[dict[str, object]]:
         _criterion(
             "delisting_survivor_bias_characterization",
             "PARTIAL",
-            {
-                "reason": (
-                    "one delisted-ticker probe cannot establish systematic inactive "
-                    "coverage"
-                )
-            },
+            {"reason": ("one delisted-ticker probe cannot establish systematic inactive coverage")},
         ),
         _criterion(
             "rate_retry_checkpoint_backfill_behavior",
@@ -305,9 +300,7 @@ def main() -> int:
         "daily_ohlcv_adjustment_field_contract",
     }
     failed_transport = any(
-        item["status"] == "FAIL"
-        for item in criteria
-        if item["criterion"] in transport_gates
+        item["status"] == "FAIL" for item in criteria if item["criterion"] in transport_gates
     )
     report = {
         "evaluation_id": "tiingo-manifesto-evaluation-v0.1",
