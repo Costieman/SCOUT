@@ -90,7 +90,7 @@ class FeatureSnapshotStore:
         values: Iterable[FeatureValue],
         request: FeatureSnapshotPromotionRequest,
     ) -> FeatureSnapshotManifest:
-        """Atomically register a deterministic feature snapshot or return its identical prior copy."""
+        """Register a deterministic feature snapshot or return its identical prior copy."""
 
         materialized = tuple(
             sorted(
