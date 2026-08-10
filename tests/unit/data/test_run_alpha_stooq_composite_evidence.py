@@ -1,7 +1,6 @@
 from datetime import date
 
 import pytest
-
 from scripts.run_alpha_stooq_composite_evidence import _parse_case
 
 
