@@ -129,9 +129,7 @@ def record_composite_review(
             review_note=note,
         )
 
-    raise InvalidCompositeAdjudicationError(
-        f"review cannot transition {decision.state} to {state}"
-    )
+    raise InvalidCompositeAdjudicationError(f"review cannot transition {decision.state} to {state}")
 
 
 def selected_provider_bar(
@@ -144,9 +142,15 @@ def selected_provider_bar(
             f"composite decision {decision.state} has no promotable provider observation"
         )
     evidence = decision.evidence
-    if decision.selected_provider_id == evidence.provider_a_id and evidence.provider_a_bar is not None:
+    if (
+        decision.selected_provider_id == evidence.provider_a_id
+        and evidence.provider_a_bar is not None
+    ):
         return evidence.provider_a_bar
-    if decision.selected_provider_id == evidence.provider_b_id and evidence.provider_b_bar is not None:
+    if (
+        decision.selected_provider_id == evidence.provider_b_id
+        and evidence.provider_b_bar is not None
+    ):
         return evidence.provider_b_bar
     raise InvalidCompositeAdjudicationError(
         "selected provider is inconsistent with the preserved A+B evidence"
