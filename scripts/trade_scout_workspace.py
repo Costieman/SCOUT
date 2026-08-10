@@ -407,7 +407,7 @@ def _promote_tiingo_identity(args: argparse.Namespace) -> int:
         candidate_path=candidate_path,
         seed_path=_resolved_repository_path(args.config),
         lineage_audit_path=audit_path,
-        store_root=workspace.canonical_store_root,
+        store_root=workspace.canonical_root,
     )
     manifest = result.manifest
     summary = {
@@ -421,10 +421,10 @@ def _promote_tiingo_identity(args: argparse.Namespace) -> int:
         "instrument_parquet_sha256": manifest.instrument_parquet_sha256,
         "symbol_history_parquet_sha256": manifest.symbol_history_parquet_sha256,
         "instrument_parquet_path": str(
-            workspace.canonical_store_root / manifest.instrument_parquet_relative_path
+            workspace.canonical_root / manifest.instrument_parquet_relative_path
         ),
         "symbol_history_parquet_path": str(
-            workspace.canonical_store_root / manifest.symbol_history_parquet_relative_path
+            workspace.canonical_root / manifest.symbol_history_parquet_relative_path
         ),
         "price_rows_promoted": 0,
     }
