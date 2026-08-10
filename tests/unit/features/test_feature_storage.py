@@ -78,11 +78,7 @@ def test_feature_snapshot_is_immutable_reloadable_and_idempotent(tmp_path: Path)
     assert store.load(_DATASET, INITIAL_FEATURE_SET.feature_set_version) == values
 
     snapshot_dir = (
-        tmp_path
-        / "derived"
-        / "features"
-        / str(_DATASET)
-        / INITIAL_FEATURE_SET.feature_set_version
+        tmp_path / "derived" / "features" / str(_DATASET) / INITIAL_FEATURE_SET.feature_set_version
     )
     assert {item.name for item in snapshot_dir.iterdir()} == {"features.parquet"}
 
