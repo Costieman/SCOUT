@@ -184,9 +184,9 @@ def compute_incremental_initial_feature_frame(
 ) -> tuple[FeatureValue, ...]:
     """Compute new-session features with full trailing state and batch-equivalent semantics.
 
-    This first implementation deliberately favors correctness over optimization: it recomputes the bounded
-    history plus new rows, then returns only feature observations for the new canonical keys. Later cache or
-    columnar optimizations must reproduce this result exactly within declared tolerance.
+    This first implementation deliberately favors correctness over optimization. It recomputes the
+    bounded history plus new rows, then returns only feature observations for the new canonical keys.
+    Later cache or columnar optimizations must reproduce this result within declared tolerance.
     """
 
     history = tuple(history_bars)
@@ -303,9 +303,9 @@ def _require_optional_values(values: Sequence[float | None]) -> tuple[float, ...
 
 
 __all__ = [
-    "FeatureInputError",
     "INITIAL_FEATURE_SET",
     "INITIAL_FEATURE_SET_VERSION",
+    "FeatureInputError",
     "compute_incremental_initial_feature_frame",
     "compute_initial_feature_frame",
     "initial_feature_definition_sha256",
