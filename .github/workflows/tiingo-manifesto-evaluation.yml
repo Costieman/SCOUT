@@ -1,9 +1,6 @@
 name: Tiingo manifesto evaluation
 
 on:
-  push:
-    branches:
-      - phase1/tiingo-manifesto-evaluation
   workflow_dispatch:
 
 permissions:
