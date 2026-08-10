@@ -60,9 +60,7 @@ def test_agreement_is_corroborated_and_selects_primary() -> None:
 
 def test_one_sided_observation_requires_review_before_selection() -> None:
     alpha = _bar("alpha_vantage", "alpha_vantage:symbol:SPY", "SPY")
-    proposed = propose_composite_adjudication(
-        _row(CompositeCoverageState.A_ONLY, a=alpha, b=None)
-    )
+    proposed = propose_composite_adjudication(_row(CompositeCoverageState.A_ONLY, a=alpha, b=None))
     assert proposed.state is CompositeAdjudicationState.GAP_REVIEW_REQUIRED
     assert not proposed.is_promotable
     with pytest.raises(InvalidCompositeAdjudicationError):
@@ -78,9 +76,7 @@ def test_one_sided_observation_requires_review_before_selection() -> None:
 
 def test_secondary_only_can_be_selected_only_by_explicit_review() -> None:
     stooq = _bar("stooq", "stooq:spy", "SPY.US")
-    proposed = propose_composite_adjudication(
-        _row(CompositeCoverageState.B_ONLY, a=None, b=stooq)
-    )
+    proposed = propose_composite_adjudication(_row(CompositeCoverageState.B_ONLY, a=None, b=stooq))
     with pytest.raises(InvalidCompositeAdjudicationError):
         record_composite_review(
             proposed,
