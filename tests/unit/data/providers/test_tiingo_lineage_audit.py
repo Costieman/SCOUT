@@ -26,7 +26,7 @@ def _write_cases(path: Path) -> None:
                 "source_symbol": "APTV",
                 "current_symbol_effective_date": "2017-12-05",
                 "regular_way_start": "2017-12-05",
-                "when_issued_start": null,
+                "when_issued_start": None,
                 "lineage_events": [
                     {
                         "effective_date": "2017-12-05",
@@ -34,9 +34,9 @@ def _write_cases(path: Path) -> None:
                         "to_symbol": "APTV",
                         "event_type": "TICKER_CHANGE",
                         "source_title": "source",
-                        "source_url": "https://example.invalid/aptv"
+                        "source_url": "https://example.invalid/aptv",
                     }
-                ]
+                ],
             },
             {
                 "source_symbol": "ALLE",
@@ -46,19 +46,19 @@ def _write_cases(path: Path) -> None:
                 "lineage_events": [
                     {
                         "effective_date": "2013-11-18",
-                        "from_symbol": null,
+                        "from_symbol": None,
                         "to_symbol": "ALLE WI",
                         "event_type": "WHEN_ISSUED",
                         "source_title": "source",
-                        "source_url": "https://example.invalid/alle"
+                        "source_url": "https://example.invalid/alle",
                     }
-                ]
+                ],
             },
             {
                 "source_symbol": "AXON",
                 "current_symbol_effective_date": "2021-01-26",
-                "regular_way_start": null,
-                "when_issued_start": null,
+                "regular_way_start": None,
+                "when_issued_start": None,
                 "lineage_events": [
                     {
                         "effective_date": "2021-01-26",
@@ -66,14 +66,13 @@ def _write_cases(path: Path) -> None:
                         "to_symbol": "AXON",
                         "event_type": "TICKER_CHANGE",
                         "source_title": "source",
-                        "source_url": "https://example.invalid/axon"
+                        "source_url": "https://example.invalid/axon",
                     }
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     }
-    text = json.dumps(payload).replace("null", "null")
-    path.write_text(text, encoding="utf-8")
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def test_audit_classifies_predecessor_and_when_issued_history(tmp_path: Path) -> None:
