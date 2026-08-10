@@ -62,6 +62,15 @@ def _csv(snapshot_date: str = "2026-08-10") -> bytes:
     ).encode()
 
 
+def _share_class_csv() -> bytes:
+    return (
+        "symbol,date,gics sector,cik\n"
+        "BRK.B,2026-08-10,Financials,1067983\n"
+        "AAPL,2026-08-10,Information Technology,320193\n"
+        "JPM,2026-08-10,Financials,19617\n"
+    ).encode()
+
+
 def test_universe_snapshot_is_sorted_and_hashed() -> None:
     snapshot = parse_tiingo_sp500_universe(_csv(), _plan())
     assert snapshot.symbols == ("AAPL", "JPM", "MSFT")
@@ -91,6 +100,34 @@ def test_campaign_budgets_and_resumes_from_checkpoint(tmp_path: Path) -> None:
     assert second.completed_symbol_count == 3
     assert second.pending_symbol_count == 0
     assert second_client.calls == ["MSFT"]
+
+
+def test_campaign_queries_provider_symbol_but_tracks_source_symbol(tmp_path: Path) -> None:
+    plan = _plan()
+    snapshot = parse_tiingo_sp500_universe(_share_class_csv(), plan)
+    state = tmp_path / "checkpoint.json"
+
+    first_client = FakeClient()
+    first = run_tiingo_sp500_campaign(
+        first_client,
+        plan,
+        snapshot,
+        state,
+        max_symbols_this_run=2,
+    )
+    assert first_client.calls == ["AAPL", "BRK-B"]
+    assert first.completed_symbol_count == 2
+
+    second_client = FakeClient()
+    second = run_tiingo_sp500_campaign(
+        second_client,
+        plan,
+        snapshot,
+        state,
+        max_symbols_this_run=2,
+    )
+    assert second_client.calls == ["JPM"]
+    assert second.completed_symbol_count == 3
 
 
 def test_rate_limit_leaves_current_symbol_pending(tmp_path: Path) -> None:
