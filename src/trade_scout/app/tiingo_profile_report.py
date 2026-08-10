@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Render private-workspace Tiingo profile evidence without raw market-data values."""
 
 from __future__ import annotations
