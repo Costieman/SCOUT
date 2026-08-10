@@ -1,0 +1,19 @@
+{
+  "schema_version": "tiingo-alpha-targeted-gap-cases-v0.1",
+  "cases": [
+    {
+      "case_id": "algn-tiingo-initial-coverage-gap-v0.1",
+      "symbol": "ALGN",
+      "exchange": "XNAS",
+      "lifecycle_start_date": "2001-01-26",
+      "observed_provider_id": "tiingo",
+      "observed_first_date": "2001-01-30",
+      "validator_provider_id": "alpha_vantage",
+      "validator_symbol": "ALGN",
+      "anchor_date": "2001-01-30",
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1097149/000109714902000007/align_10k.htm"
+      ]
+    }
+  ]
+}
