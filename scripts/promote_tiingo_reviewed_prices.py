@@ -13,11 +13,19 @@ from trade_scout.app.operator_workspace import (
     validate_workspace_location,
     verify_operator_workspace,
 )
+from trade_scout.data.contracts import DatasetVersion
 from trade_scout.data.providers.tiingo_canonical_promotion import (
     TiingoCanonicalPromotionError,
     persist_tiingo_canonical_promotion_report,
     promote_reviewed_tiingo_prices,
 )
+from trade_scout.data.reviewed_identity_snapshot import (
+    ReviewedIdentitySnapshotError,
+    load_reviewed_identity_snapshot_candidate,
+)
+
+_V04_IDENTITY_SNAPSHOT = "tiingo-reviewed-identity-candidate-v0.4"
+_V04_DATASET_VERSION = DatasetVersion("tiingo-reviewed-split-only-v0.3")
 
 
 def main() -> int:
@@ -43,6 +51,12 @@ def main() -> int:
             raise OperatorWorkspaceError(
                 "reviewed Tiingo identity candidate is missing; build and promote identity first"
             )
+        candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
+        dataset_version = (
+            _V04_DATASET_VERSION
+            if candidate.snapshot_version == _V04_IDENTITY_SNAPSHOT
+            else None
+        )
 
         result = promote_reviewed_tiingo_prices(
             receipt_root=workspace.tiingo_receipts_root,
@@ -50,6 +64,7 @@ def main() -> int:
             storage_namespace=workspace.manifest.storage_namespace,
             candidate_path=candidate_path,
             canonical_root=workspace.canonical_root,
+            dataset_version=dataset_version,
         )
         output = (
             workspace.root
@@ -58,7 +73,11 @@ def main() -> int:
             / f"{result.manifest.dataset_version}.json"
         )
         persist_tiingo_canonical_promotion_report(output, result)
-    except (OperatorWorkspaceError, TiingoCanonicalPromotionError) as exc:
+    except (
+        OperatorWorkspaceError,
+        ReviewedIdentitySnapshotError,
+        TiingoCanonicalPromotionError,
+    ) as exc:
         print(f"Tiingo canonical price promotion error: {exc}", file=sys.stderr)
         return 2
 
