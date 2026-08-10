@@ -67,9 +67,7 @@ def apply_tiingo_split_adjustments(
                 adjusted_close=bar.close * factor,
             )
         )
-    return tuple(
-        sorted(result, key=lambda bar: (bar.provider_instrument_id, bar.trade_date))
-    )
+    return tuple(sorted(result, key=lambda bar: (bar.provider_instrument_id, bar.trade_date)))
 
 
 def _split_ratio(action: ProviderCorporateAction) -> float:
