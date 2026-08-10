@@ -286,7 +286,9 @@ def _phase_blockers(
     if review_count is None:
         blockers.append("Cross-provider reconciliation evidence has not been supplied.")
     elif review_count:
-        blockers.append(f"Cross-provider reconciliation has {review_count} review items outstanding.")
+        blockers.append(
+            f"Cross-provider reconciliation has {review_count} review items outstanding."
+        )
     if corporate_action_count is None:
         blockers.append("Corporate-action anomaly evidence has not been supplied to Data Health.")
     elif corporate_action_count:
