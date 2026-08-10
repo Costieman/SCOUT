@@ -90,9 +90,7 @@ def test_workspace_discovers_only_explicit_evidence_locations(tmp_path: Path) ->
     (workspace.composite_evidence_root / "b.json").write_text("{}", encoding="utf-8")
     (workspace.composite_evidence_root / "a.json").write_text("{}", encoding="utf-8")
     (workspace.composite_evidence_root / "ignore.txt").write_text("x", encoding="utf-8")
-    (workspace.corporate_action_evidence_root / "actions.json").write_text(
-        "{}", encoding="utf-8"
-    )
+    (workspace.corporate_action_evidence_root / "actions.json").write_text("{}", encoding="utf-8")
     (workspace.failed_ingestion_root / "job.failed").write_text("x", encoding="utf-8")
 
     sources = workspace.data_health_sources(repository_root=repository)
