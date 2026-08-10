@@ -140,7 +140,9 @@ def _compare(
     max_relative: dict[str, float] = {}
     mismatch_count: dict[str, int] = {}
     for field in ("open", "high", "low", "close", "volume"):
-        differences = [_relative_difference(tiingo[item][field], alpha[item][field]) for item in common]
+        differences = [
+            _relative_difference(tiingo[item][field], alpha[item][field]) for item in common
+        ]
         max_relative[field] = max(differences, default=0.0)
         tolerance = VOLUME_REL_TOLERANCE if field == "volume" else PRICE_REL_TOLERANCE
         mismatch_count[field] = sum(value > tolerance for value in differences)
