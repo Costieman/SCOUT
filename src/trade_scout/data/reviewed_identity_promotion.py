@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from trade_scout.data.instrument_storage import (
@@ -94,7 +94,7 @@ def promote_reviewed_identity_candidate(
             already_registered=True,
         )
 
-    created_at = promoted_at or datetime.now(timezone.utc)
+    created_at = promoted_at or datetime.now(UTC)
     if created_at.tzinfo is None or created_at.utcoffset() is None:
         raise ReviewedIdentityPromotionError("promoted_at must be timezone-aware")
 
