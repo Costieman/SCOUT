@@ -456,12 +456,12 @@ def _date_text(value: date | None) -> str | None:
 
 
 __all__ = [
+    "US_EQUITY_SESSION_CALENDAR_VERSION",
     "DatasetSessionCompletenessAudit",
-    "ExchangeSessionCalendar",
     "ExceptionalClosure",
+    "ExchangeSessionCalendar",
     "InstrumentSessionCompleteness",
     "SessionCompletenessError",
-    "US_EQUITY_SESSION_CALENDAR_VERSION",
     "audit_daily_bar_session_completeness",
     "default_us_equity_session_calendar",
     "expected_exchange_sessions",
