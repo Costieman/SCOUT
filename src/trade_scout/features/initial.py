@@ -196,10 +196,10 @@ def compute_incremental_initial_feature_frame(
 
     history_latest: dict[str, date] = {}
     for bar in history:
-        key = str(bar.instrument_id)
-        latest = history_latest.get(key)
+        instrument_key = str(bar.instrument_id)
+        latest = history_latest.get(instrument_key)
         if latest is None or bar.trade_date > latest:
-            history_latest[key] = bar.trade_date
+            history_latest[instrument_key] = bar.trade_date
     new_keys: set[tuple[str, date]] = set()
     for bar in new:
         instrument = str(bar.instrument_id)
@@ -209,10 +209,10 @@ def compute_incremental_initial_feature_frame(
                 "incremental feature rows must be strictly later than supplied history "
                 f"for {instrument}"
             )
-        key = (instrument, bar.trade_date)
-        if key in new_keys:
-            raise FeatureInputError(f"duplicate incremental instrument/date: {key}")
-        new_keys.add(key)
+        row_key = (instrument, bar.trade_date)
+        if row_key in new_keys:
+            raise FeatureInputError(f"duplicate incremental instrument/date: {row_key}")
+        new_keys.add(row_key)
 
     all_values = compute_initial_feature_frame((*history, *new), feature_set=feature_set)
     return tuple(
