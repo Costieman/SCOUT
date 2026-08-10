@@ -150,7 +150,9 @@ def main() -> int:
                     "observed_profile_receipt_id": symbol_profile.receipt_id,
                     "observed_profile_payload_sha256": symbol_profile.payload_checksum_sha256,
                     "calendar_definition_version": result.calendar_definition_version,
-                    "expected_gap_sessions": [day.isoformat() for day in result.expected_gap_sessions],
+                    "expected_gap_sessions": [
+                        day.isoformat() for day in result.expected_gap_sessions
+                    ],
                     "validator_provider_id": case.validator_provider_id,
                     "validator_symbol": case.validator_symbol,
                     "validator_request_start": case.lifecycle_start_date.isoformat(),
@@ -250,9 +252,13 @@ def _load_cases(path: Path) -> tuple[TargetedGapCase, ...]:
             case_id=_text(raw["case_id"], "case_id"),
             symbol=_text(raw["symbol"], "symbol"),
             exchange=_text(raw["exchange"], "exchange"),
-            lifecycle_start_date=date.fromisoformat(_text(raw["lifecycle_start_date"], "lifecycle_start_date")),
+            lifecycle_start_date=date.fromisoformat(
+                _text(raw["lifecycle_start_date"], "lifecycle_start_date")
+            ),
             observed_provider_id=_text(raw["observed_provider_id"], "observed_provider_id"),
-            observed_first_date=date.fromisoformat(_text(raw["observed_first_date"], "observed_first_date")),
+            observed_first_date=date.fromisoformat(
+                _text(raw["observed_first_date"], "observed_first_date")
+            ),
             validator_provider_id=_text(raw["validator_provider_id"], "validator_provider_id"),
             validator_symbol=_text(raw["validator_symbol"], "validator_symbol"),
             anchor_date=date.fromisoformat(_text(raw["anchor_date"], "anchor_date")),
