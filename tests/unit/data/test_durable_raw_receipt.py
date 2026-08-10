@@ -10,7 +10,7 @@ from trade_scout.data.durable_raw_receipt import (
     persist_durable_raw_receipt,
     verify_durable_raw_receipt,
 )
-from trade_scout.data.raw_store import RawBatchStore
+from trade_scout.data.raw_store import RawBatchIntegrityError, RawBatchStore
 
 
 def _record(root: Path):
@@ -77,7 +77,7 @@ def test_receipt_rejects_payload_tampering(tmp_path: Path) -> None:
     )
     record.payload_path.write_bytes(b"tampered")
 
-    with pytest.raises(Exception):
+    with pytest.raises(RawBatchIntegrityError):
         verify_durable_raw_receipt(
             receipt,
             durable_root=raw_root,
