@@ -32,17 +32,23 @@ from trade_scout.features.storage import (
     FeatureSnapshotStore,
 )
 
-_SOURCE_DATASET_VERSION = DatasetVersion("tiingo-reviewed-split-only-v0.1")
+_DEFAULT_SOURCE_DATASET_VERSION = "tiingo-reviewed-split-only-v0.2"
 _RESEARCH_SCOPE = "reviewed_seed_set_only"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument(
+        "--dataset-version",
+        default=_DEFAULT_SOURCE_DATASET_VERSION,
+        help="Immutable canonical dataset version to measure.",
+    )
     args = parser.parse_args()
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
+    source_dataset_version = DatasetVersion(args.dataset_version)
     try:
         validate_workspace_location(root, repository_root=repository_root)
         workspace = load_operator_workspace(root)
@@ -53,10 +59,11 @@ def main() -> int:
             )
 
         canonical_store = CanonicalDailyBarStore(workspace.canonical_root)
-        source_manifest = canonical_store.get_manifest(_SOURCE_DATASET_VERSION)
+        source_manifest = canonical_store.get_manifest(source_dataset_version)
         if source_manifest is None:
             raise OperatorWorkspaceError(
-                "reviewed canonical price slice is missing; promote reviewed prices first"
+                f"canonical price slice {source_dataset_version} is missing; "
+                "promote reviewed prices first"
             )
         if (
             source_manifest.quality_summary.warn_count
@@ -67,16 +74,16 @@ def main() -> int:
                 "reviewed canonical price slice contains non-PASS quality states"
             )
 
-        bars = canonical_store.load(_SOURCE_DATASET_VERSION)
+        bars = canonical_store.load(source_dataset_version)
         values = compute_initial_feature_frame(bars)
         feature_store = FeatureSnapshotStore(workspace.canonical_root)
         existing = feature_store.get_manifest(
-            _SOURCE_DATASET_VERSION,
+            source_dataset_version,
             INITIAL_FEATURE_SET.feature_set_version,
         )
         created_at = existing.created_at if existing is not None else datetime.now(UTC)
         request = FeatureSnapshotPromotionRequest(
-            dataset_version=_SOURCE_DATASET_VERSION,
+            dataset_version=source_dataset_version,
             feature_set_version=INITIAL_FEATURE_SET.feature_set_version,
             created_at=created_at,
             source_canonical_content_sha256=source_manifest.content_checksum_sha256,
@@ -84,7 +91,7 @@ def main() -> int:
         )
         manifest = feature_store.promote(values, request)
         loaded = feature_store.load(
-            _SOURCE_DATASET_VERSION,
+            source_dataset_version,
             INITIAL_FEATURE_SET.feature_set_version,
         )
         if loaded != values:
@@ -96,7 +103,7 @@ def main() -> int:
             workspace.root
             / "evidence"
             / "feature-foundation"
-            / f"{INITIAL_FEATURE_SET.feature_set_version}.json"
+            / f"{source_dataset_version}__{INITIAL_FEATURE_SET.feature_set_version}.json"
         )
         _persist_report(report_path, manifest, already_registered=existing is not None)
     except (
@@ -124,7 +131,7 @@ def main() -> int:
                 "research_scope": _RESEARCH_SCOPE,
                 "already_registered": existing is not None,
                 "feature_definition_sha256": manifest.feature_definition_sha256,
-                "source_canonical_content_sha256": (manifest.source_canonical_content_sha256),
+                "source_canonical_content_sha256": manifest.source_canonical_content_sha256,
                 "record_count": manifest.record_count,
                 "available_count": manifest.available_count,
                 "warmup_count": manifest.warmup_count,

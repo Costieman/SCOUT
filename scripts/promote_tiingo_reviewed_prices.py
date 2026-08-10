@@ -55,7 +55,7 @@ def main() -> int:
             workspace.root
             / "evidence"
             / "canonical-promotion"
-            / "tiingo-reviewed-split-only-v0.1.json"
+            / f"{result.manifest.dataset_version}.json"
         )
         persist_tiingo_canonical_promotion_report(output, result)
     except (OperatorWorkspaceError, TiingoCanonicalPromotionError) as exc:

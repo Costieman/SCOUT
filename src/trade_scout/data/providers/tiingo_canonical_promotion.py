@@ -27,15 +27,19 @@ from trade_scout.data.providers.tiingo_split_preview import (
 )
 from trade_scout.data.reviewed_identity_snapshot import (
     ProviderSeriesLink,
+    ReviewedIdentitySnapshotCandidate,
     load_reviewed_identity_snapshot_candidate,
 )
 
 _DATASET_ID = "equities_daily_reviewed_tiingo_slice"
-_DATASET_VERSION = DatasetVersion("tiingo-reviewed-split-only-v0.1")
 _TRANSFORMATION_VERSION = "tiingo-reviewed-split-only-normalization-v0.1"
 _ADJUSTMENT_POLICY_VERSION = "raw-plus-split-only-v0.1"
 _QUALITY_CHECK_VERSION = "canonical-daily-bar-quality-v0.1"
 _PROMOTION_SCOPE = "reviewed_seed_set_only"
+_DATASET_VERSION_BY_IDENTITY_SNAPSHOT = {
+    "tiingo-reviewed-identity-candidate-v0.2": DatasetVersion("tiingo-reviewed-split-only-v0.1"),
+    "tiingo-reviewed-identity-candidate-v0.3": DatasetVersion("tiingo-reviewed-split-only-v0.2"),
+}
 
 
 class TiingoCanonicalPromotionError(RuntimeError):
@@ -80,6 +84,7 @@ def promote_reviewed_tiingo_prices(
     storage_namespace: str,
     candidate_path: Path,
     canonical_root: Path,
+    dataset_version: DatasetVersion | None = None,
     promoted_at: datetime | None = None,
 ) -> TiingoCanonicalPromotionResult:
     """Rebuild and promote the reviewed Tiingo price slice with no silent repair.
@@ -88,24 +93,35 @@ def promote_reviewed_tiingo_prices(
     Tiingo OHLC plus event-date ``splitFactor``, resolves permanent identity plus dated symbol
     history, requires strictly PASS quality, and only then writes an immutable canonical Parquet
     dataset. Tiingo's dividend-adjusted ``adj*`` values are never used as canonical prices.
+
+    Known reviewed identity snapshots map to explicit immutable canonical dataset versions. Callers
+    may provide ``dataset_version`` for synthetic/test candidates, but production expansion remains
+    fail-closed when an identity snapshot has no reviewed dataset-version mapping.
     """
 
+    candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
+    target_dataset_version = (
+        dataset_version
+        if dataset_version is not None
+        else _dataset_version_for_identity_snapshot(candidate.snapshot_version)
+    )
     built = _build_reviewed_slice(
         receipt_root=receipt_root,
         raw_root=raw_root,
         storage_namespace=storage_namespace,
-        candidate_path=candidate_path,
+        candidate=candidate,
         canonical_root=canonical_root,
+        dataset_version=target_dataset_version,
     )
     store = CanonicalDailyBarStore(canonical_root)
-    existing = store.get_manifest(_DATASET_VERSION)
+    existing = store.get_manifest(target_dataset_version)
     created_at = existing.created_at if existing is not None else (promoted_at or datetime.now(UTC))
     if created_at.tzinfo is None or created_at.utcoffset() is None:
         raise TiingoCanonicalPromotionError("promoted_at must be timezone-aware")
 
     request = DatasetPromotionRequest(
         dataset_id=_DATASET_ID,
-        dataset_version=_DATASET_VERSION,
+        dataset_version=target_dataset_version,
         primary_provider_id="tiingo",
         created_at=created_at,
         source_batch_ids=built.source_batch_ids,
@@ -115,7 +131,7 @@ def promote_reviewed_tiingo_prices(
         quality_check_version=_QUALITY_CHECK_VERSION,
     )
     manifest = store.promote(built.bars, request)
-    loaded = store.load(_DATASET_VERSION)
+    loaded = store.load(target_dataset_version)
     if loaded != built.bars:
         raise TiingoCanonicalPromotionError(
             "post-promotion canonical reload does not exactly match rebuilt reviewed Tiingo bars"
@@ -182,15 +198,25 @@ def persist_tiingo_canonical_promotion_report(
     temporary.replace(path)
 
 
+def _dataset_version_for_identity_snapshot(snapshot_version: str) -> DatasetVersion:
+    try:
+        return _DATASET_VERSION_BY_IDENTITY_SNAPSHOT[snapshot_version]
+    except KeyError as exc:
+        raise TiingoCanonicalPromotionError(
+            f"reviewed identity snapshot {snapshot_version} has no approved canonical "
+            "dataset version"
+        ) from exc
+
+
 def _build_reviewed_slice(
     *,
     receipt_root: Path,
     raw_root: Path,
     storage_namespace: str,
-    candidate_path: Path,
+    candidate: ReviewedIdentitySnapshotCandidate,
     canonical_root: Path,
+    dataset_version: DatasetVersion,
 ) -> _BuiltCanonicalSlice:
-    candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
     if not candidate.promotion_ready:
         raise TiingoCanonicalPromotionError("reviewed identity candidate still has coverage gaps")
 
@@ -244,7 +270,7 @@ def _build_reviewed_slice(
             transform.bars,
             instruments=snapshot.instruments,
             symbol_history=snapshot.symbol_history,
-            dataset_version=_DATASET_VERSION,
+            dataset_version=dataset_version,
         )
         if normalized.status is not QualityStatus.PASS:
             raise TiingoCanonicalPromotionError(
