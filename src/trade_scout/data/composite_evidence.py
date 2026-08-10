@@ -13,9 +13,8 @@ from enum import StrEnum
 
 from trade_scout.data.contracts import InstrumentId
 from trade_scout.data.provider import ProviderDailyBar
-from trade_scout.data.reconciliation import ReconciliationTolerance
 from trade_scout.data.raw_reconciliation import compare_raw_validation_bars
-from trade_scout.data.reconciliation import raw_validation_bar
+from trade_scout.data.reconciliation import ReconciliationTolerance, raw_validation_bar
 
 
 class CompositeCoverageState(StrEnum):
