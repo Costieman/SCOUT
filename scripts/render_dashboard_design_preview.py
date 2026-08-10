@@ -9,7 +9,9 @@ from trade_scout.app.dashboard_design_preview import render_dashboard_design_pre
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render the synthetic Trade Scout dashboard blueprint.")
+    parser = argparse.ArgumentParser(
+        description="Render the synthetic Trade Scout dashboard blueprint."
+    )
     parser.add_argument(
         "--output",
         type=Path,
