@@ -97,9 +97,7 @@ class OperatorWorkspace:
         )
         selected = self.manifest.canonical_dataset_version
         return DataHealthSourcePaths(
-            tiingo_acceptance_path=repository
-            / "configs"
-            / "provider_acceptance_tiingo_v0.1.json",
+            tiingo_acceptance_path=repository / "configs" / "provider_acceptance_tiingo_v0.1.json",
             free_stack_acceptance_path=(
                 repository / "configs" / "provider_acceptance_free_stack_v0.1.json"
             ),
