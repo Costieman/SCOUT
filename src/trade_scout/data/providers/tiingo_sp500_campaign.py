@@ -139,7 +139,9 @@ def parse_tiingo_sp500_universe(
         try:
             observed_dates.add(date.fromisoformat(raw_date))
         except ValueError as exc:
-            raise TiingoSp500CampaignError("S&P 500 universe contains invalid snapshot date") from exc
+            raise TiingoSp500CampaignError(
+                "S&P 500 universe contains invalid snapshot date"
+            ) from exc
         symbols.append(raw_symbol.upper())
     if observed_dates != {plan.expected_snapshot_date}:
         raise TiingoSp500CampaignError(
@@ -241,7 +243,9 @@ def _load_completed(
     if payload.get("universe_sha256") != snapshot.sha256:
         raise TiingoSp500CampaignError("Tiingo checkpoint belongs to another universe snapshot")
     raw_completed = payload.get("completed_symbols")
-    if not isinstance(raw_completed, list) or not all(isinstance(item, str) for item in raw_completed):
+    if not isinstance(raw_completed, list) or not all(
+        isinstance(item, str) for item in raw_completed
+    ):
         raise TiingoSp500CampaignError("Tiingo checkpoint completed_symbols is invalid")
     completed = set(raw_completed)
     if not completed.issubset(set(snapshot.symbols)):
