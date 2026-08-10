@@ -38,10 +38,12 @@ def _free_stack(path: Path) -> Path:
             "criteria": [
                 {
                     "criterion": "alpha_vantage_point_in_time_listing_status",
+                    "status": "PARTIAL",
                     "note": "Alpha bounded validation evidence is available.",
                 },
                 {
                     "criterion": "stooq_historical_ohlcv_retrieval",
+                    "status": "PARTIAL",
                     "note": "Stooq automated retrieval remains operationally constrained.",
                 },
             ]
@@ -76,9 +78,14 @@ def test_data_health_reads_durable_tiingo_campaign_state(tmp_path: Path) -> None
     assert health.dataset_version is None
     assert tiingo.progress_current == 0
     assert tiingo.progress_total == 3
+    assert tiingo.operational_status == "NOT_STARTED"
+    assert tiingo.quota_pause_count == 0
+    assert tiingo.failure_count == 0
     assert "durable campaign 0/3" in tiingo.message
     assert health.missing_data_anomaly_count is None
     assert health.cross_provider_discrepancy_count is None
+    assert any("0/3 symbols secured" in item for item in health.phase_blockers)
+    assert any("CANDIDATE_NOT_ACCEPTED" in item for item in health.phase_blockers)
 
 
 def test_data_health_aggregates_only_supplied_composite_evidence(tmp_path: Path) -> None:
@@ -118,8 +125,10 @@ def test_data_health_aggregates_only_supplied_composite_evidence(tmp_path: Path)
 
     assert health.missing_data_anomaly_count == 3
     assert health.cross_provider_discrepancy_count == 2
+    assert health.review_work_item_count == 5
     assert health.corporate_action_anomaly_count is None
     assert health.failed_ingestion_job_count is None
+    assert any("5 review items outstanding" in item for item in health.phase_blockers)
 
 
 def test_missing_canonical_selection_never_looks_fresh(tmp_path: Path) -> None:
@@ -133,3 +142,5 @@ def test_missing_canonical_selection_never_looks_fresh(tmp_path: Path) -> None:
 
     assert health.scanner_freshness_gate is HealthState.BLOCKED
     assert health.latest_canonical_session is None
+    assert any("No canonical Phase 1 dataset" in item for item in health.phase_blockers)
+    assert any("reconciliation evidence has not been supplied" in item for item in health.phase_blockers)
