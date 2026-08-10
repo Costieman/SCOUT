@@ -64,11 +64,11 @@ def _csv(snapshot_date: str = "2026-08-10") -> bytes:
 
 def _share_class_csv() -> bytes:
     return (
-        "symbol,date,gics sector,cik\n"
-        "BRK.B,2026-08-10,Financials,1067983\n"
-        "AAPL,2026-08-10,Information Technology,320193\n"
-        "JPM,2026-08-10,Financials,19617\n"
-    ).encode()
+        b"symbol,date,gics sector,cik\n"
+        b"BRK.B,2026-08-10,Financials,1067983\n"
+        b"AAPL,2026-08-10,Information Technology,320193\n"
+        b"JPM,2026-08-10,Financials,19617\n"
+    )
 
 
 def test_universe_snapshot_is_sorted_and_hashed() -> None:
