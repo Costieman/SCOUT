@@ -26,7 +26,9 @@ def test_display_filter_can_search_symbol_or_company_name() -> None:
     candidates = synthetic_scanner_candidates()
 
     by_symbol = filter_scanner_candidates(candidates, ScannerDisplayFilter(search_text="beta"))
-    by_company = filter_scanner_candidates(candidates, ScannerDisplayFilter(search_text="gamma holdings"))
+    by_company = filter_scanner_candidates(
+        candidates, ScannerDisplayFilter(search_text="gamma holdings")
+    )
 
     assert tuple(item.symbol for item in by_symbol) == ("BETA",)
     assert tuple(item.symbol for item in by_company) == ("GAMM",)
