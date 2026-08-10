@@ -94,7 +94,7 @@ def _parser() -> argparse.ArgumentParser:
     identity.add_argument(
         "--config",
         type=Path,
-        default=Path("configs/tiingo_reviewed_identity_seeds_v0.1.json"),
+        default=Path("configs/tiingo_reviewed_identity_seeds_v0.2.json"),
     )
 
     serve = subparsers.add_parser("serve", help="Open the read-only console for this workspace.")
