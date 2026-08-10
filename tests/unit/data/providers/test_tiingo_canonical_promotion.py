@@ -5,12 +5,20 @@ from types import MappingProxyType
 
 import pytest
 
-from trade_scout.data.contracts import InstrumentId, InstrumentRecord, SecurityType, SymbolHistoryRecord
+from trade_scout.data.contracts import (
+    InstrumentId,
+    InstrumentRecord,
+    SecurityType,
+    SymbolHistoryRecord,
+)
 from trade_scout.data.durable_raw_receipt import (
     create_durable_raw_receipt,
     persist_durable_raw_receipt,
 )
-from trade_scout.data.instrument_storage import InstrumentMasterPromotionRequest, InstrumentMasterStore
+from trade_scout.data.instrument_storage import (
+    InstrumentMasterPromotionRequest,
+    InstrumentMasterStore,
+)
 from trade_scout.data.providers.tiingo_canonical_promotion import (
     TiingoCanonicalPromotionError,
     persist_tiingo_canonical_promotion_report,
