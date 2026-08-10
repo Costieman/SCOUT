@@ -26,6 +26,10 @@ from trade_scout.data.providers.tiingo_profile import (
     persist_tiingo_durable_profile,
     profile_durable_tiingo,
 )
+from trade_scout.data.reviewed_identity_promotion import (
+    ReviewedIdentityPromotionError,
+    promote_reviewed_identity_candidate,
+)
 from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotError,
     build_reviewed_identity_snapshot_candidate,
@@ -97,6 +101,17 @@ def _parser() -> argparse.ArgumentParser:
         default=Path("configs/tiingo_reviewed_identity_seeds_v0.2.json"),
     )
 
+    promote_identity = subparsers.add_parser(
+        "promote-tiingo-identity",
+        help="Promote an exactly reverified reviewed identity candidate into canonical storage.",
+    )
+    promote_identity.add_argument("--root", type=Path, required=True)
+    promote_identity.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/tiingo_reviewed_identity_seeds_v0.2.json"),
+    )
+
     serve = subparsers.add_parser("serve", help="Open the read-only console for this workspace.")
     serve.add_argument("--root", type=Path, required=True)
     serve.add_argument("--host", default="127.0.0.1")
@@ -126,9 +141,16 @@ def main() -> int:
             return _profile_tiingo(args)
         if args.command == "build-tiingo-identity":
             return _build_tiingo_identity(args)
+        if args.command == "promote-tiingo-identity":
+            return _promote_tiingo_identity(args)
         if args.command == "serve":
             return _serve(args)
-    except (OperatorWorkspaceError, TiingoProfileError, ReviewedIdentitySnapshotError) as exc:
+    except (
+        OperatorWorkspaceError,
+        TiingoProfileError,
+        ReviewedIdentitySnapshotError,
+        ReviewedIdentityPromotionError,
+    ) as exc:
         print(f"operator workspace error: {exc}", file=sys.stderr)
         return 2
     raise AssertionError("unreachable workspace command")
@@ -357,6 +379,54 @@ def _build_tiingo_identity(args: argparse.Namespace) -> int:
             }
             for item in candidate.coverage_gaps
         ],
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def _promote_tiingo_identity(args: argparse.Namespace) -> int:
+    workspace = _load_checked_workspace(args.root)
+    verification = verify_operator_workspace(workspace)
+    if not verification.is_consistent:
+        raise OperatorWorkspaceError(
+            "durable evidence is inconsistent; identity promotion is blocked fail-closed"
+        )
+
+    candidate_path = (
+        workspace.root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
+    )
+    audit_path = workspace.root / "evidence" / "tiingo-lineage" / "audit.json"
+    if not candidate_path.is_file():
+        raise OperatorWorkspaceError(
+            "reviewed Tiingo identity candidate is missing; run build-tiingo-identity first"
+        )
+    if not audit_path.is_file():
+        raise OperatorWorkspaceError("Tiingo lineage audit is missing")
+
+    result = promote_reviewed_identity_candidate(
+        candidate_path=candidate_path,
+        seed_path=_resolved_repository_path(args.config),
+        lineage_audit_path=audit_path,
+        store_root=workspace.canonical_store_root,
+    )
+    manifest = result.manifest
+    summary = {
+        "snapshot_version": manifest.snapshot_version,
+        "promotion_scope": "reviewed_seed_set_only",
+        "already_registered": result.already_registered,
+        "instrument_count": manifest.instrument_count,
+        "symbol_history_count": manifest.symbol_history_count,
+        "instrument_logical_sha256": manifest.instrument_logical_sha256,
+        "symbol_history_logical_sha256": manifest.symbol_history_logical_sha256,
+        "instrument_parquet_sha256": manifest.instrument_parquet_sha256,
+        "symbol_history_parquet_sha256": manifest.symbol_history_parquet_sha256,
+        "instrument_parquet_path": str(
+            workspace.canonical_store_root / manifest.instrument_parquet_relative_path
+        ),
+        "symbol_history_parquet_path": str(
+            workspace.canonical_store_root / manifest.symbol_history_parquet_relative_path
+        ),
+        "price_rows_promoted": 0,
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
