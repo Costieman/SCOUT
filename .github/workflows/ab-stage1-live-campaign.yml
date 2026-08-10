@@ -1,0 +1,44 @@
+name: A+B Stage 1 live campaign
+
+on:
+  push:
+    branches:
+      - phase1/ab-stage1-live-campaign
+    paths:
+      - campaigns/ab_stage1_trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  campaign:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run 24-instrument recent A+B campaign
+        env:
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        shell: bash
+        run: |
+          args=()
+          while IFS= read -r item; do
+            [[ -z "$item" ]] && continue
+            args+=(--case "$item")
+          done < campaigns/ab_stage1_recent_24.txt
+          uv run python scripts/run_alpha_stooq_composite_evidence.py "${args[@]}" \
+            --price-relative-tolerance 0.000001 \
+            --volume-relative-tolerance 0.000001 \
+            --output-root runtime/ab-stage1-live
+      - name: Upload Stage 1 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ab-stage1-live-report
+          path: runtime/ab-stage1-live/report/
+          if-no-files-found: error
