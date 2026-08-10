@@ -100,8 +100,10 @@ def promote_reviewed_tiingo_prices(
     """
 
     candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
-    target_dataset_version = dataset_version or _dataset_version_for_identity_snapshot(
-        candidate.snapshot_version
+    target_dataset_version = (
+        dataset_version
+        if dataset_version is not None
+        else _dataset_version_for_identity_snapshot(candidate.snapshot_version)
     )
     built = _build_reviewed_slice(
         receipt_root=receipt_root,
@@ -201,7 +203,8 @@ def _dataset_version_for_identity_snapshot(snapshot_version: str) -> DatasetVers
         return _DATASET_VERSION_BY_IDENTITY_SNAPSHOT[snapshot_version]
     except KeyError as exc:
         raise TiingoCanonicalPromotionError(
-            f"reviewed identity snapshot {snapshot_version} has no approved canonical dataset version"
+            f"reviewed identity snapshot {snapshot_version} has no approved canonical "
+            "dataset version"
         ) from exc
 
 
