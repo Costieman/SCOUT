@@ -248,7 +248,8 @@ def _build_reviewed_slice(
         )
         if normalized.status is not QualityStatus.PASS:
             raise TiingoCanonicalPromotionError(
-                f"{query_symbol} normalization status {normalized.status} blocks canonical promotion"
+                f"{query_symbol} normalization status {normalized.status} "
+                "blocks canonical promotion"
             )
         if normalized.normalization_issues or normalized.quality_issues:
             raise TiingoCanonicalPromotionError(
@@ -263,7 +264,8 @@ def _build_reviewed_slice(
             and transform.tiingo_adjusted_cross_check_mismatch_count
         ):
             raise TiingoCanonicalPromotionError(
-                f"{query_symbol} split-only transform disagrees with eligible Tiingo adjusted cross-check"
+                f"{query_symbol} split-only transform disagrees with eligible Tiingo "
+                "adjusted cross-check"
             )
 
         bars.extend(normalized.bars)
