@@ -51,6 +51,7 @@ class TiingoSymbolProfile:
     row_count: int
     first_date: str | None
     last_date: str | None
+    invalid_date_row_count: int
     duplicate_date_count: int
     non_monotonic_date_count: int
     missing_required_field_row_count: int
@@ -72,6 +73,7 @@ class TiingoDurableProfile:
     receipt_count: int
     symbol_count: int
     total_row_count: int
+    invalid_date_row_count: int
     duplicate_date_count: int
     non_monotonic_date_count: int
     missing_required_field_row_count: int
@@ -126,7 +128,14 @@ def profile_durable_tiingo(
             raise TiingoProfileError(
                 f"verified Tiingo payload has unexpected response shape for {receipt.subject_key}"
             )
-        profiles.append(_profile_symbol(receipt.subject_key, receipt.receipt_id, receipt.payload_checksum_sha256, raw))
+        profiles.append(
+            _profile_symbol(
+                receipt.subject_key,
+                receipt.receipt_id,
+                receipt.payload_checksum_sha256,
+                raw,
+            )
+        )
 
     return TiingoDurableProfile(
         schema_version="tiingo-durable-profile-v0.1",
@@ -135,6 +144,7 @@ def profile_durable_tiingo(
         receipt_count=len(receipt_paths),
         symbol_count=len(profiles),
         total_row_count=sum(item.row_count for item in profiles),
+        invalid_date_row_count=sum(item.invalid_date_row_count for item in profiles),
         duplicate_date_count=sum(item.duplicate_date_count for item in profiles),
         non_monotonic_date_count=sum(item.non_monotonic_date_count for item in profiles),
         missing_required_field_row_count=sum(
@@ -170,6 +180,7 @@ def _profile_symbol(
     rows: list[dict[str, Any]],
 ) -> TiingoSymbolProfile:
     dates: list[datetime] = []
+    invalid_dates = 0
     duplicate_dates = 0
     non_monotonic = 0
     missing_required = 0
@@ -187,7 +198,9 @@ def _profile_symbol(
             missing_required += 1
 
         parsed_date = _parse_row_date(row.get("date"))
-        if parsed_date is not None:
+        if parsed_date is None:
+            invalid_dates += 1
+        else:
             date_key = parsed_date.date().isoformat()
             if date_key in seen_dates:
                 duplicate_dates += 1
@@ -244,6 +257,7 @@ def _profile_symbol(
         row_count=len(rows),
         first_date=first,
         last_date=last,
+        invalid_date_row_count=invalid_dates,
         duplicate_date_count=duplicate_dates,
         non_monotonic_date_count=non_monotonic,
         missing_required_field_row_count=missing_required,
