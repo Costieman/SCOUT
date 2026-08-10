@@ -87,7 +87,11 @@ def _candidate(
     )
 
 
-def _rows(*, mismatched_adjusted: bool = False) -> list[dict[str, object]]:
+def _rows(
+    *,
+    mismatched_adjusted: bool = False,
+    second_date: str = "2020-01-03T00:00:00.000Z",
+) -> list[dict[str, object]]:
     first_adj_open = 999.0 if mismatched_adjusted else 50.0
     return [
         {
@@ -105,7 +109,7 @@ def _rows(*, mismatched_adjusted: bool = False) -> list[dict[str, object]]:
             "splitFactor": 1.0,
         },
         {
-            "date": "2020-01-03T00:00:00.000Z",
+            "date": second_date,
             "open": 51.0,
             "high": 53.0,
             "low": 50.0,
@@ -153,7 +157,7 @@ def _workspace_inputs(
         provider_id="tiingo",
         endpoint="/tiingo/daily/TEST/prices",
         retrieval_time=datetime(2026, 8, 10, 9, 1, tzinfo=UTC),
-        request_parameters={"startDate": "2020-01-01", "endDate": "2020-01-03"},
+        request_parameters={"startDate": "2020-01-01", "endDate": "2020-01-06"},
         media_type="application/json",
     )
     receipt = create_durable_raw_receipt(
@@ -196,6 +200,9 @@ def test_promotes_reviewed_split_only_slice_and_is_idempotent(tmp_path: Path) ->
     assert first.dividend_event_count == 0
     assert first.cross_check_eligible_symbol_count == 1
     assert first.cross_check_mismatch_field_count == 0
+    assert first.missing_expected_session_count == 0
+    assert first.unexpected_observed_date_count == 0
+    assert first.duplicate_observed_date_count == 0
     assert first.manifest.quality_summary.pass_count == 2
     assert first.manifest.quality_summary.warn_count == 0
     assert first.manifest.primary_provider_id == "tiingo"
@@ -208,6 +215,7 @@ def test_promotes_reviewed_split_only_slice_and_is_idempotent(tmp_path: Path) ->
     assert report["provider_acceptance_changed"] is False
     assert report["serving_selected"] is False
     assert report["record_count"] == 2
+    assert report["session_completeness"]["complete"] is True
     assert "open_raw" not in report_text
     assert "close_split_adjusted" not in report_text
 
@@ -241,6 +249,24 @@ def test_unknown_identity_snapshot_requires_explicit_dataset_version(tmp_path: P
             storage_namespace="test-private-v1",
             candidate_path=inputs[2],
             canonical_root=inputs[3],
+        )
+
+
+def test_expected_session_gap_blocks_promotion(tmp_path: Path) -> None:
+    inputs = _workspace_inputs(
+        tmp_path,
+        candidate=_candidate(),
+        rows=_rows(second_date="2020-01-06T00:00:00.000Z"),
+    )
+
+    with pytest.raises(TiingoCanonicalPromotionError, match="expected-session completeness blocks"):
+        promote_reviewed_tiingo_prices(
+            receipt_root=inputs[0],
+            raw_root=inputs[1],
+            storage_namespace="test-private-v1",
+            candidate_path=inputs[2],
+            canonical_root=inputs[3],
+            dataset_version=_SYNTHETIC_DATASET_VERSION,
         )
 
 
