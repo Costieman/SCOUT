@@ -44,12 +44,12 @@ def _render_operational_panel(health: DataHealthSummary) -> str:
         blocker_state = "None"
 
     provider_cards = "".join(
-        _provider_operations(item)
-        for item in health.providers
-        if _has_operational_detail(item)
+        _provider_operations(item) for item in health.providers if _has_operational_detail(item)
     )
     if not provider_cards:
-        provider_cards = '<div class="empty-state">No provider operational telemetry supplied.</div>'
+        provider_cards = (
+            '<div class="empty-state">No provider operational telemetry supplied.</div>'
+        )
 
     return f"""
   <div class="card span-12 operational-panel">
