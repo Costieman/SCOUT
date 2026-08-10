@@ -131,10 +131,17 @@ and combines it with the checked-in reviewed identity seeds. Permanent internal 
 opaque review IDs, not tickers. Tiingo query symbols are stored separately from stable reviewed
 provider-series IDs.
 
+The default seed set is `configs/tiingo_reviewed_identity_seeds_v0.2.json`. It adds primary-source
+reviewed DLPH and TASR predecessor intervals for the bounded APTV and AXON lineage cases. The earlier
+v0.1 seed set remains checked in as the deliberately incomplete baseline that preserves the two
+predecessor gaps.
+
 The candidate is written to
-`evidence/instrument-identity/tiingo-reviewed-candidate.json`. Unknown predecessor-history spans stay
-as explicit coverage gaps. `promotion_ready=false` means exactly that: the candidate is useful
-research evidence but is not a complete canonical instrument master and must not be promoted as one.
+`evidence/instrument-identity/tiingo-reviewed-candidate.json`. When `promotion_ready=true`, that means
+only that every observed-history span in the **reviewed seed set** has dated symbol coverage. The
+operator output also prints `promotion_scope=reviewed_seed_set_only`. It is not evidence that all 52
+acquired series, all 503 current-snapshot constituents, or a point-in-time historical universe have
+complete identity coverage.
 
 ## Open the console against the same workspace
 
