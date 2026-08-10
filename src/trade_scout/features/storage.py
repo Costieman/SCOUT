@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import shutil
 import tempfile
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from types import MappingProxyType
-from typing import cast
 
 import duckdb
 
@@ -122,7 +122,9 @@ class FeatureSnapshotStore:
             raise FeatureSnapshotConflictError("unregistered feature snapshot directory already exists")
 
         target.parent.mkdir(parents=True, exist_ok=True)
-        temporary = Path(tempfile.mkdtemp(prefix=f".{request.feature_set_version}.", dir=target.parent))
+        temporary = Path(
+            tempfile.mkdtemp(prefix=f".{request.feature_set_version}.", dir=target.parent)
+        )
         parquet = temporary / "features.parquet"
         try:
             _write_parquet(materialized, parquet)
@@ -300,14 +302,18 @@ def _validate_values(
     seen: set[tuple[str, date, str, str]] = set()
     for item in values:
         if item.dataset_version != request.dataset_version:
-            raise FeatureSnapshotConflictError("feature value dataset version mismatches promotion request")
+            raise FeatureSnapshotConflictError(
+                "feature value dataset version mismatches promotion request"
+            )
         if item.feature_set_version != request.feature_set_version:
-            raise FeatureSnapshotConflictError("feature value set version mismatches promotion request")
+            raise FeatureSnapshotConflictError(
+                "feature value set version mismatches promotion request"
+            )
         key = (str(item.instrument_id), item.trade_date, item.feature_name, item.feature_version)
         if key in seen:
             raise FeatureSnapshotConflictError(f"duplicate feature observation: {key}")
         seen.add(key)
-        if item.value is not None and not math_is_finite(item.value):
+        if item.value is not None and not math.isfinite(item.value):
             raise FeatureSnapshotIntegrityError("available feature value must be finite")
 
 
@@ -482,7 +488,9 @@ def _validate_version(value: str, field: str) -> None:
 
 
 def _validate_hash(value: str, field: str) -> None:
-    if len(value) != 64 or any(character not in "0123456789abcdef" for character in value.lower()):
+    if len(value) != 64 or any(
+        character not in "0123456789abcdef" for character in value.lower()
+    ):
         raise ValueError(f"{field} must be a SHA-256 hex digest")
 
 
@@ -500,12 +508,6 @@ def _require_datetime(value: str) -> datetime:
     if result.tzinfo is None or result.utcoffset() is None:
         raise FeatureSnapshotIntegrityError("feature manifest created_at is not timezone-aware")
     return result
-
-
-def math_is_finite(value: float) -> bool:
-    """Keep the storage boundary dependency-light while rejecting NaN/inf."""
-
-    return value == value and value not in (float("inf"), float("-inf"))
 
 
 __all__ = [
