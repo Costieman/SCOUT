@@ -765,12 +765,12 @@ def _validate_loaded_candidate(
             "symbol history references unknown candidate instrument"
         )
     for link in links:
-        instrument = by_id.get(link.instrument_id)
-        if instrument is None:
+        linked_instrument = by_id.get(link.instrument_id)
+        if linked_instrument is None:
             raise ReviewedIdentitySnapshotError(
                 "provider series link references unknown instrument"
             )
-        if instrument.provider_ids.get(link.provider_id) != link.provider_series_id:
+        if linked_instrument.provider_ids.get(link.provider_id) != link.provider_series_id:
             raise ReviewedIdentitySnapshotError(
                 "provider series link disagrees with candidate instrument provider identity"
             )
