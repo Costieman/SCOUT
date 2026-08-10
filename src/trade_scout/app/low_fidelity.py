@@ -12,7 +12,7 @@ from trade_scout.api.dashboard_contracts import (
     ApplicationSnapshot,
     HealthState,
     ProvenanceSummary,
-    ResearchState,
+    ScannerCandidateSummary,
 )
 
 
@@ -117,7 +117,7 @@ footer {{ color: var(--muted); margin-top: 38px; font-size: 11px; }}
       </div>
       <span class="pill">BUILD {escape(snapshot.build_label)}</span>
     </header>
-    {f'<div class="notice"><ul>{notices}</ul></div>' if notices else ''}
+    {f'<div class="notice"><ul>{notices}</ul></div>' if notices else ""}
 
     <section id="data-health" class="section">
       <div class="section-head">
@@ -196,7 +196,9 @@ def _render_data_health(snapshot: ApplicationSnapshot) -> str:
 
 def _render_research(snapshot: ApplicationSnapshot) -> str:
     research = snapshot.research
-    blockers = "".join(f"<div class='blocker'>{escape(item)}</div>" for item in research.blocking_reasons)
+    blockers = "".join(
+        f"<div class='blocker'>{escape(item)}</div>" for item in research.blocking_reasons
+    )
     return f"""
 <div class="grid">
   <div class="card span-7">
@@ -206,8 +208,8 @@ def _render_research(snapshot: ApplicationSnapshot) -> str:
       <dt>Universe</dt><dd>{escape(research.universe_label)}</dd>
       <dt>Dataset</dt><dd>{escape(research.dataset_label)}</dd>
       <dt>Mode</dt><dd><span class="mode {escape(research.research_mode)}">{escape(research.research_mode)}</span></dd>
-      <dt>Resolved configuration</dt><dd>{escape(research.resolved_configuration_id or 'Not resolved')}</dd>
-      <dt>Launch</dt><dd>{'ENABLED' if research.launch_enabled else 'BLOCKED'}</dd>
+      <dt>Resolved configuration</dt><dd>{escape(research.resolved_configuration_id or "Not resolved")}</dd>
+      <dt>Launch</dt><dd>{"ENABLED" if research.launch_enabled else "BLOCKED"}</dd>
     </dl>
     {blockers}
     {_provenance(research.provenance)}
@@ -229,7 +231,9 @@ def _render_research(snapshot: ApplicationSnapshot) -> str:
 
 def _render_scanner(snapshot: ApplicationSnapshot) -> str:
     scanner = snapshot.scanner
-    blockers = "".join(f"<div class='blocker'>{escape(item)}</div>" for item in scanner.blocking_reasons)
+    blockers = "".join(
+        f"<div class='blocker'>{escape(item)}</div>" for item in scanner.blocking_reasons
+    )
     if not scanner.candidates:
         rows = "<tr><td colspan='8' class='subtle'>No normal candidate rows available.</td></tr>"
     else:
@@ -249,11 +253,7 @@ def _render_scanner(snapshot: ApplicationSnapshot) -> str:
 """
 
 
-def _candidate_row(candidate: object) -> str:
-    from trade_scout.api.dashboard_contracts import ScannerCandidateSummary
-
-    if not isinstance(candidate, ScannerCandidateSummary):
-        raise TypeError("scanner candidate must satisfy ScannerCandidateSummary")
+def _candidate_row(candidate: ScannerCandidateSummary) -> str:
     probability = _percentage(candidate.evidence.positive_outcome_fraction)
     expectancy = _number(candidate.evidence.expectancy)
     return (
