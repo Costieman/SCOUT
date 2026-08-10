@@ -134,9 +134,7 @@ def main() -> int:
     for symbol in recent_symbols:
         rows = _rows(client, symbol, "2026-07-01", "2026-08-07")
         missing = (
-            sorted(REQUIRED_PRICE_FIELDS - set(rows[0]))
-            if rows
-            else sorted(REQUIRED_PRICE_FIELDS)
+            sorted(REQUIRED_PRICE_FIELDS - set(rows[0])) if rows else sorted(REQUIRED_PRICE_FIELDS)
         )
         schema_ok = schema_ok and bool(rows) and not missing
         recent_summary.append(
@@ -214,9 +212,7 @@ def main() -> int:
             "start_date": delisted_meta.get("startDate")
             if isinstance(delisted_meta, dict)
             else None,
-            "end_date": delisted_meta.get("endDate")
-            if isinstance(delisted_meta, dict)
-            else None,
+            "end_date": delisted_meta.get("endDate") if isinstance(delisted_meta, dict) else None,
         }
     except Exception as exc:  # diagnostic boundary: preserve failure class, not token-bearing text
         delisted_status = "PARTIAL"
