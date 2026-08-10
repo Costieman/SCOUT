@@ -24,10 +24,14 @@ jobs:
         env:
           TIINGO_API_TOKEN: ${{ secrets.TIINGO_API_TOKEN }}
         run: uv run python scripts/run_tiingo_manifesto_evaluation.py
-      - name: Upload derived evaluation report only
+      - name: Run live split-only normalization probe
+        env:
+          TIINGO_API_TOKEN: ${{ secrets.TIINGO_API_TOKEN }}
+        run: uv run python scripts/run_tiingo_split_normalization_probe.py
+      - name: Upload derived evaluation reports only
         uses: actions/upload-artifact@v4
         with:
           name: tiingo-manifesto-evaluation
-          path: runtime/tiingo-manifesto-evaluation/report.json
+          path: runtime/tiingo-manifesto-evaluation/*.json
           if-no-files-found: error
           retention-days: 14
