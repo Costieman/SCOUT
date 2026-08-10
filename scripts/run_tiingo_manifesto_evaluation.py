@@ -133,7 +133,11 @@ def main() -> int:
     schema_ok = True
     for symbol in recent_symbols:
         rows = _rows(client, symbol, "2026-07-01", "2026-08-07")
-        missing = sorted(REQUIRED_PRICE_FIELDS - set(rows[0])) if rows else sorted(REQUIRED_PRICE_FIELDS)
+        missing = (
+            sorted(REQUIRED_PRICE_FIELDS - set(rows[0]))
+            if rows
+            else sorted(REQUIRED_PRICE_FIELDS)
+        )
         schema_ok = schema_ok and bool(rows) and not missing
         recent_summary.append(
             {
@@ -163,7 +167,11 @@ def main() -> int:
         _criterion(
             "corporate_action_split_evidence",
             "PASS" if split_events else "FAIL",
-            {"event_count": len(split_events), "events": split_events, "response_hash": _hash(split_rows)},
+            {
+                "event_count": len(split_events),
+                "events": split_events,
+                "response_hash": _hash(split_rows),
+            },
         )
     )
 
@@ -203,13 +211,19 @@ def main() -> int:
             "symbol": "TWTR",
             "response_type": type(delisted_meta).__name__,
             "response_hash": _hash(delisted_meta),
-            "start_date": delisted_meta.get("startDate") if isinstance(delisted_meta, dict) else None,
-            "end_date": delisted_meta.get("endDate") if isinstance(delisted_meta, dict) else None,
+            "start_date": delisted_meta.get("startDate")
+            if isinstance(delisted_meta, dict)
+            else None,
+            "end_date": delisted_meta.get("endDate")
+            if isinstance(delisted_meta, dict)
+            else None,
         }
     except Exception as exc:  # diagnostic boundary: preserve failure class, not token-bearing text
         delisted_status = "PARTIAL"
         delisted_evidence = {"symbol": "TWTR", "error_type": type(exc).__name__}
-    criteria.append(_criterion("inactive_delisted_retrievability_probe", delisted_status, delisted_evidence))
+    criteria.append(
+        _criterion("inactive_delisted_retrievability_probe", delisted_status, delisted_evidence)
+    )
 
     # Static design gates established from the accepted Trade Scout specs and Tiingo license/docs.
     criteria.extend(
@@ -245,7 +259,9 @@ def main() -> int:
             _criterion(
                 "rate_retry_checkpoint_backfill_behavior",
                 "NOT_TESTED",
-                {"reason": "small credential probe is intentionally below primary-provider acceptance scale"},
+                {
+                    "reason": "small credential probe is intentionally below primary-provider acceptance scale"
+                },
             ),
             _criterion(
                 "canonical_normalization",
@@ -257,7 +273,9 @@ def main() -> int:
             _criterion(
                 "secondary_source_validation",
                 "NOT_TESTED",
-                {"reason": "cross-provider campaign follows only if Tiingo transport and field gates pass"},
+                {
+                    "reason": "cross-provider campaign follows only if Tiingo transport and field gates pass"
+                },
             ),
         ]
     )
