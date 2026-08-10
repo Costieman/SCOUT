@@ -58,9 +58,7 @@ def build_phase1_application_snapshot(
         blocking_reasons=tuple(scanner_blockers),
         provenance=data_health.provenance,
     )
-    notices = [
-        "DATA HEALTH is evidence-backed; Research and Scanner remain intentionally gated."
-    ]
+    notices = ["DATA HEALTH is evidence-backed; Research and Scanner remain intentionally gated."]
     if data_health.dataset_version is None:
         notices.append("No canonical Phase 1 dataset has been promoted for this snapshot.")
 
