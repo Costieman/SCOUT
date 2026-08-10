@@ -24,9 +24,7 @@ from trade_scout.app.operator_workspace import (
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Initialize, acquire, verify, inspect, and serve one private Trade Scout workspace."
-    )
+    parser = argparse.ArgumentParser(description="Operate one private Trade Scout workspace.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     init = subparsers.add_parser("init", help="Create the private workspace directory layout.")
