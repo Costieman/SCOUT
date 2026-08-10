@@ -72,7 +72,8 @@ class CompositeProvenanceStore:
             existing_manifest = manifest_path.read_bytes()
             if existing_payload != payload or existing_manifest != manifest_payload:
                 raise CompositeProvenanceConflictError(
-                    f"composite provenance already exists for {dataset_version} with different content"
+                    "composite provenance already exists for "
+                    f"{dataset_version} with different content"
                 )
             self.load(manifest)
             return manifest
