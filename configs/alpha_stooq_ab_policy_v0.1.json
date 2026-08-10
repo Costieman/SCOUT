@@ -1,0 +1,12 @@
+{
+  "policy_id": "alpha-stooq-ab-policy-v0.1",
+  "provider_a": "alpha_vantage",
+  "provider_b": "stooq",
+  "automatic_promotion_states": ["BOTH_AGREE"],
+  "review_required_states": ["BOTH_DISAGREE", "A_ONLY", "B_ONLY"],
+  "allow_averaging": false,
+  "allow_interpolation_in_canonical_raw": false,
+  "allow_majority_vote": false,
+  "allow_one_sided_fill_without_review": false,
+  "preserve_provider_raw_payloads": true
+}
