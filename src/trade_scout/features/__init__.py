@@ -24,6 +24,8 @@ from trade_scout.features.storage import (
 )
 
 __all__ = [
+    "INITIAL_FEATURE_SET",
+    "INITIAL_FEATURE_SET_VERSION",
     "FeatureAvailabilityStatus",
     "FeatureDefinition",
     "FeatureInputError",
@@ -35,8 +37,6 @@ __all__ = [
     "FeatureSnapshotPromotionRequest",
     "FeatureSnapshotStore",
     "FeatureValue",
-    "INITIAL_FEATURE_SET",
-    "INITIAL_FEATURE_SET_VERSION",
     "compute_incremental_initial_feature_frame",
     "compute_initial_feature_frame",
     "initial_feature_definition_sha256",
