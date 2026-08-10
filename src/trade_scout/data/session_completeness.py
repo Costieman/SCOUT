@@ -13,6 +13,13 @@ from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, I
 
 US_EQUITY_SESSION_CALENDAR_VERSION = "us-equities-core-full-day-v0.1"
 _SUPPORTED_EXCHANGES = frozenset({"XNYS", "XNAS"})
+_SEC_911_URL = (
+    "https://www.sec.gov/rules-regulations/2001/09/"
+    "emergency-order-pursuant-section-12k2-securities-exchange-act-1934-"
+    "taking-temporary-action-respond"
+)
+_NYSE_HOLIDAY_URL = "https://www.nyse.com/markets/hours-calendars"
+_NASDAQ_STATUS_URL = "https://www.nasdaqtrader.com/Trader.aspx?id=MarketSystemStatusSearch"
 
 
 class SessionCompletenessError(RuntimeError):
@@ -113,69 +120,47 @@ class DatasetSessionCompletenessAudit:
 def default_us_equity_session_calendar() -> ExchangeSessionCalendar:
     """Return the pinned 2001+ full-day XNYS/XNAS session policy used by Trade Scout."""
 
-    closures = tuple(
-        ExceptionalClosure(day, label, refs)
-        for day, label, refs in (
-            (
-                date(2001, 9, 11),
-                "September 11 attacks market closure",
-                ("https://www.sec.gov/rules-regulations/2001/09/emergency-order-pursuant-section-12k2-securities-exchange-act-1934-taking-temporary-action-respond",),
-            ),
-            (
-                date(2001, 9, 12),
-                "September 11 attacks market closure",
-                ("https://www.sec.gov/rules-regulations/2001/09/emergency-order-pursuant-section-12k2-securities-exchange-act-1934-taking-temporary-action-respond",),
-            ),
-            (
-                date(2001, 9, 13),
-                "September 11 attacks market closure",
-                ("https://www.sec.gov/rules-regulations/2001/09/emergency-order-pursuant-section-12k2-securities-exchange-act-1934-taking-temporary-action-respond",),
-            ),
-            (
-                date(2001, 9, 14),
-                "September 11 attacks market closure",
-                ("https://www.sec.gov/rules-regulations/2001/09/emergency-order-pursuant-section-12k2-securities-exchange-act-1934-taking-temporary-action-respond",),
-            ),
-            (
-                date(2004, 6, 11),
-                "National day of mourning for Ronald Reagan",
-                ("https://www.sec.gov/news/press/2004-77.htm",),
-            ),
-            (
-                date(2007, 1, 2),
-                "National day of mourning for Gerald Ford",
-                ("https://www.nasdaqtrader.com/TraderNews.aspx?id=gn2007-022",),
-            ),
-            (
-                date(2012, 10, 29),
-                "Hurricane Sandy market closure",
-                ("https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2012-44",),
-            ),
-            (
-                date(2012, 10, 30),
-                "Hurricane Sandy market closure",
-                ("https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2012-45",),
-            ),
-            (
-                date(2018, 12, 5),
-                "National day of mourning for George H.W. Bush",
-                ("https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2018-98",),
-            ),
-            (
-                date(2025, 1, 9),
-                "National day of mourning for Jimmy Carter",
-                ("https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2024-87",),
-            ),
-        )
+    closures = (
+        _closure(date(2001, 9, 11), "September 11 attacks market closure", _SEC_911_URL),
+        _closure(date(2001, 9, 12), "September 11 attacks market closure", _SEC_911_URL),
+        _closure(date(2001, 9, 13), "September 11 attacks market closure", _SEC_911_URL),
+        _closure(date(2001, 9, 14), "September 11 attacks market closure", _SEC_911_URL),
+        _closure(
+            date(2004, 6, 11),
+            "National day of mourning for Ronald Reagan",
+            "https://www.sec.gov/news/press/2004-77.htm",
+        ),
+        _closure(
+            date(2007, 1, 2),
+            "National day of mourning for Gerald Ford",
+            "https://www.nasdaqtrader.com/TraderNews.aspx?id=gn2007-022",
+        ),
+        _closure(
+            date(2012, 10, 29),
+            "Hurricane Sandy market closure",
+            "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2012-44",
+        ),
+        _closure(
+            date(2012, 10, 30),
+            "Hurricane Sandy market closure",
+            "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2012-45",
+        ),
+        _closure(
+            date(2018, 12, 5),
+            "National day of mourning for George H.W. Bush",
+            "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2018-98",
+        ),
+        _closure(
+            date(2025, 1, 9),
+            "National day of mourning for Jimmy Carter",
+            "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2024-87",
+        ),
     )
     return ExchangeSessionCalendar(
         definition_version=US_EQUITY_SESSION_CALENDAR_VERSION,
         supported_exchanges=_SUPPORTED_EXCHANGES,
         exceptional_closures=MappingProxyType({item.trade_date: item for item in closures}),
-        evidence_refs=(
-            "https://www.nyse.com/markets/hours-calendars",
-            "https://www.nasdaqtrader.com/Trader.aspx?id=MarketSystemStatusSearch",
-        ),
+        evidence_refs=(_NYSE_HOLIDAY_URL, _NASDAQ_STATUS_URL),
     )
 
 
@@ -194,13 +179,13 @@ def expected_exchange_sessions(
     if end < start:
         return ()
 
-    result: list[date] = []
+    sessions: list[date] = []
     cursor = start
     while cursor <= end:
         if _is_expected_session(cursor, policy):
-            result.append(cursor)
+            sessions.append(cursor)
         cursor += timedelta(days=1)
-    return tuple(result)
+    return tuple(sessions)
 
 
 def audit_daily_bar_session_completeness(
@@ -212,10 +197,9 @@ def audit_daily_bar_session_completeness(
 ) -> DatasetSessionCompletenessAudit:
     """Compare canonical bar dates with expected exchange sessions without inventing bars.
 
-    The audit starts at a reviewed ``first_trade_date`` when one exists; otherwise it starts at the
-    first observed canonical bar. Active instruments are expected through ``dataset_end_date``.
-    Delisted instruments are expected only through their recorded delisting date. Missing sessions
-    are evidence defects, not interpolation requests.
+    A reviewed ``first_trade_date`` defines the start when available; otherwise the first observed
+    canonical bar does. Active instruments are expected through ``dataset_end_date`` and delisted
+    instruments only through their recorded delisting date.
     """
 
     policy = calendar or default_us_equity_session_calendar()
@@ -225,9 +209,9 @@ def audit_daily_bar_session_completeness(
     versions = {bar.dataset_version for bar in materialized}
     if len(versions) != 1:
         raise SessionCompletenessError("session completeness audit requires one dataset version")
-    dataset_version = next(iter(versions))
     if any(bar.trade_date > dataset_end_date for bar in materialized):
         raise SessionCompletenessError("dataset_end_date precedes one or more observed bars")
+    dataset_version = next(iter(versions))
 
     instrument_records = tuple(instruments)
     instrument_by_id: dict[InstrumentId, InstrumentRecord] = {}
@@ -246,12 +230,11 @@ def audit_daily_bar_session_completeness(
         instrument_id: [] for instrument_id in instrument_by_id
     }
     for bar in materialized:
-        try:
-            bars_by_instrument[bar.instrument_id].append(bar)
-        except KeyError as exc:
+        if bar.instrument_id not in bars_by_instrument:
             raise SessionCompletenessError(
                 f"canonical bar references unknown instrument {bar.instrument_id}"
-            ) from exc
+            )
+        bars_by_instrument[bar.instrument_id].append(bar)
 
     results = tuple(
         _audit_instrument(
@@ -354,8 +337,6 @@ def _audit_instrument(
             calendar=calendar,
         )
     )
-    missing = tuple(sorted(expected - distinct_dates))
-    unexpected = tuple(sorted(distinct_dates - expected))
     return InstrumentSessionCompleteness(
         instrument_id=instrument.instrument_id,
         exchange=instrument.exchange,
@@ -368,17 +349,17 @@ def _audit_instrument(
         expected_session_count=len(expected),
         duplicate_observed_date_count=len(observed_dates) - len(distinct_dates),
         missing_history=False,
-        missing_expected_sessions=missing,
-        unexpected_observed_dates=unexpected,
+        missing_expected_sessions=tuple(sorted(expected - distinct_dates)),
+        unexpected_observed_dates=tuple(sorted(distinct_dates - expected)),
     )
 
 
 def _is_expected_session(day: date, calendar: ExchangeSessionCalendar) -> bool:
-    if day.weekday() >= 5:
-        return False
-    if day in calendar.exceptional_closures:
-        return False
-    return not _is_regular_full_day_holiday(day)
+    return (
+        day.weekday() < 5
+        and day not in calendar.exceptional_closures
+        and not _is_regular_full_day_holiday(day)
+    )
 
 
 def _is_regular_full_day_holiday(day: date) -> bool:
@@ -422,10 +403,7 @@ def _nth_weekday(year: int, month: int, weekday: int, ordinal: int) -> date:
 
 
 def _last_weekday(year: int, month: int, weekday: int) -> date:
-    if month == 12:
-        next_month = date(year + 1, 1, 1)
-    else:
-        next_month = date(year, month + 1, 1)
+    next_month = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
     last = next_month - timedelta(days=1)
     return last - timedelta(days=(last.weekday() - weekday) % 7)
 
@@ -448,6 +426,10 @@ def _easter_sunday(year: int) -> date:
     month = (h + ell - 7 * m + 114) // 31
     day = ((h + ell - 7 * m + 114) % 31) + 1
     return date(year, month, day)
+
+
+def _closure(day: date, label: str, evidence_ref: str) -> ExceptionalClosure:
+    return ExceptionalClosure(day, label, (evidence_ref,))
 
 
 def _instrument_payload(item: InstrumentSessionCompleteness) -> dict[str, object]:
