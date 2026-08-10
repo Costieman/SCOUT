@@ -7,6 +7,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
+from itertools import pairwise
 from pathlib import Path
 from types import MappingProxyType
 from uuid import UUID, uuid5
@@ -516,7 +517,7 @@ def _validate_seed_intervals(
     intervals: tuple[ReviewedSymbolInterval, ...],
 ) -> None:
     ordered = sorted(intervals, key=lambda item: item.effective_from)
-    for previous, current in zip(ordered, ordered[1:], strict=False):
+    for previous, current in pairwise(ordered):
         if previous.effective_to is None or current.effective_from <= previous.effective_to:
             raise ReviewedIdentitySnapshotError(
                 f"seed {review_id} has overlapping symbol-history intervals"
@@ -549,7 +550,7 @@ def _coverage_gaps_for_seed(
             )
         )
 
-    for previous, current in zip(intervals, intervals[1:], strict=False):
+    for previous, current in pairwise(intervals):
         if previous.effective_to is None:
             break
         expected_next = previous.effective_to + timedelta(days=1)
@@ -608,7 +609,7 @@ def _validate_candidate_history(history: tuple[SymbolHistoryRecord, ...]) -> Non
         by_instrument.setdefault(record.instrument_id, []).append(record)
     for instrument_id, records in by_instrument.items():
         ordered = sorted(records, key=lambda item: item.effective_from)
-        for previous, current in zip(ordered, ordered[1:], strict=False):
+        for previous, current in pairwise(ordered):
             if previous.effective_to is None or current.effective_from <= previous.effective_to:
                 raise ReviewedIdentitySnapshotError(
                     f"candidate has overlapping symbol history for {instrument_id}"
