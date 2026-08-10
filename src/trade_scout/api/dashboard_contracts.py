@@ -72,6 +72,13 @@ class ProviderHealthSummary:
     progress_current: int | None = None
     progress_total: int | None = None
     progress_label: str | None = None
+    operational_status: str | None = None
+    last_observed_at: datetime | None = None
+    quota_pause_count: int | None = None
+    failure_count: int | None = None
+    last_rate_limited_symbol: str | None = None
+    last_failed_symbol: str | None = None
+    last_failure_type: str | None = None
 
     def __post_init__(self) -> None:
         if (self.progress_current is None) != (self.progress_total is None):
@@ -81,6 +88,13 @@ class ProviderHealthSummary:
                 raise ValueError("provider progress counts cannot be negative")
             if self.progress_current > self.progress_total:
                 raise ValueError("provider progress current cannot exceed total")
+        for value in (self.quota_pause_count, self.failure_count):
+            if value is not None and value < 0:
+                raise ValueError("provider operational counts cannot be negative")
+        if self.last_observed_at is not None and (
+            self.last_observed_at.tzinfo is None or self.last_observed_at.utcoffset() is None
+        ):
+            raise ValueError("provider last_observed_at must be timezone-aware")
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +126,8 @@ class DataHealthSummary:
     providers: tuple[ProviderHealthSummary, ...]
     message: str
     provenance: ProvenanceSummary
+    review_work_item_count: int | None = None
+    phase_blockers: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         counts = (
@@ -119,9 +135,10 @@ class DataHealthSummary:
             self.cross_provider_discrepancy_count,
             self.corporate_action_anomaly_count,
             self.failed_ingestion_job_count,
+            self.review_work_item_count,
         )
         if any(value is not None and value < 0 for value in counts):
-            raise ValueError("data-health anomaly counts cannot be negative")
+            raise ValueError("data-health counts cannot be negative")
 
 
 @dataclass(frozen=True, slots=True)

@@ -59,7 +59,9 @@ def build_data_health_summary(sources: DataHealthSourcePaths) -> DataHealthSumma
         _stooq_provider_summary(free_stack),
     )
 
-    missing_count, discrepancy_count = _composite_counts(sources.composite_evidence_paths)
+    missing_count, discrepancy_count, review_count = _composite_counts(
+        sources.composite_evidence_paths
+    )
     corporate_action_count = _count_report_items(sources.corporate_action_anomaly_reports)
     failed_job_count = _existing_marker_count(sources.failed_ingestion_markers)
     canonical = _canonical_summary(sources)
@@ -113,6 +115,15 @@ def build_data_health_summary(sources: DataHealthSourcePaths) -> DataHealthSumma
             as_of_date=latest_session,
         )
 
+    phase_blockers = _phase_blockers(
+        tiingo_assessment=tiingo_assessment,
+        tiingo_state=tiingo_state,
+        canonical=canonical,
+        review_count=review_count,
+        corporate_action_count=corporate_action_count,
+        failed_job_count=failed_job_count,
+        scanner_gate=scanner_gate,
+    )
     return DataHealthSummary(
         state=overall_state,
         dataset_version=dataset_version,
@@ -126,6 +137,8 @@ def build_data_health_summary(sources: DataHealthSourcePaths) -> DataHealthSumma
         providers=providers,
         message=message,
         provenance=provenance,
+        review_work_item_count=review_count,
+        phase_blockers=phase_blockers,
     )
 
 
@@ -139,9 +152,23 @@ def _tiingo_provider_summary(
         message = f"{decision}; no durable S&P 500 campaign state has been supplied."
         current = None
         total = None
+        operational_status = "STATE_NOT_SUPPLIED"
+        last_observed_at = None
+        quota_pause_count = None
+        failure_count = None
+        last_rate_limited_symbol = None
+        last_failed_symbol = None
+        last_failure_type = None
     else:
         current = state.durable_completed_symbol_count
         total = state.total_symbol_count
+        operational_status = state.last_status
+        last_observed_at = state.last_run_at
+        quota_pause_count = state.quota_pause_count
+        failure_count = state.failure_count
+        last_rate_limited_symbol = state.last_rate_limited_symbol
+        last_failed_symbol = state.last_failed_symbol
+        last_failure_type = state.last_failure_type
         message = (
             f"{decision}; durable campaign {current}/{total}; last status {state.last_status}."
         )
@@ -157,6 +184,13 @@ def _tiingo_provider_summary(
         progress_current=current,
         progress_total=total,
         progress_label="durably secured symbols" if state is not None else None,
+        operational_status=operational_status,
+        last_observed_at=last_observed_at,
+        quota_pause_count=quota_pause_count,
+        failure_count=failure_count,
+        last_rate_limited_symbol=last_rate_limited_symbol,
+        last_failed_symbol=last_failed_symbol,
+        last_failure_type=last_failure_type,
     )
 
 
@@ -169,6 +203,10 @@ def _alpha_provider_summary(free_stack: dict[str, object]) -> ProviderHealthSumm
         state=HealthState.WARN,
         latest_successful_session=None,
         message=note,
+        operational_status=_criterion_status(
+            free_stack,
+            "alpha_vantage_point_in_time_listing_status",
+        ),
     )
 
 
@@ -181,6 +219,7 @@ def _stooq_provider_summary(free_stack: dict[str, object]) -> ProviderHealthSumm
         state=HealthState.BLOCKED,
         latest_successful_session=None,
         message=note,
+        operational_status=_criterion_status(free_stack, "stooq_historical_ohlcv_retrieval"),
     )
 
 
@@ -222,11 +261,53 @@ def _overall_state(
     return HealthState.PASS
 
 
-def _composite_counts(paths: tuple[Path, ...]) -> tuple[int | None, int | None]:
+def _phase_blockers(
+    *,
+    tiingo_assessment: dict[str, object],
+    tiingo_state: TiingoSafeCampaignState | None,
+    canonical: CanonicalDatasetManifest | None,
+    review_count: int | None,
+    corporate_action_count: int | None,
+    failed_job_count: int | None,
+    scanner_gate: HealthState,
+) -> tuple[str, ...]:
+    blockers: list[str] = []
+    decision = _required_text(tiingo_assessment.get("decision"), "Tiingo decision")
+    if decision != "ACCEPTED":
+        blockers.append(f"Tiingo baseline provider decision remains {decision}.")
+    if tiingo_state is None:
+        blockers.append("Durable Tiingo S&P 500 acquisition state is not available to the console.")
+    elif tiingo_state.durable_pending_symbol_count:
+        blockers.append(
+            "Durable Tiingo acquisition is incomplete: "
+            f"{tiingo_state.durable_completed_symbol_count}/{tiingo_state.total_symbol_count} "
+            "symbols secured."
+        )
+    if review_count is None:
+        blockers.append("Cross-provider reconciliation evidence has not been supplied.")
+    elif review_count:
+        blockers.append(
+            f"Cross-provider reconciliation has {review_count} review items outstanding."
+        )
+    if corporate_action_count is None:
+        blockers.append("Corporate-action anomaly evidence has not been supplied to Data Health.")
+    elif corporate_action_count:
+        blockers.append(f"Corporate-action review has {corporate_action_count} open anomalies.")
+    if failed_job_count:
+        blockers.append(f"There are {failed_job_count} failed ingestion job markers.")
+    if canonical is None:
+        blockers.append("No canonical Phase 1 dataset has been explicitly selected and promoted.")
+    elif scanner_gate is not HealthState.PASS:
+        blockers.append(f"Scanner freshness gate is {scanner_gate.value}, not PASS.")
+    return tuple(blockers)
+
+
+def _composite_counts(paths: tuple[Path, ...]) -> tuple[int | None, int | None, int | None]:
     if not paths:
-        return None, None
+        return None, None, None
     missing = 0
     discrepancies = 0
+    reviews = 0
     for path in paths:
         payload = _load_object(path)
         cases = payload.get("cases")
@@ -238,13 +319,16 @@ def _composite_counts(paths: tuple[Path, ...]) -> tuple[int | None, int | None]:
             summary = case.get("summary")
             if not isinstance(summary, dict):
                 raise DataHealthServiceError(f"composite evidence case lacks summary: {path}")
-            missing += _required_nonnegative_int(summary.get("a_only_count"), "a_only_count")
-            missing += _required_nonnegative_int(summary.get("b_only_count"), "b_only_count")
-            discrepancies += _required_nonnegative_int(
+            a_only = _required_nonnegative_int(summary.get("a_only_count"), "a_only_count")
+            b_only = _required_nonnegative_int(summary.get("b_only_count"), "b_only_count")
+            disagree = _required_nonnegative_int(
                 summary.get("both_disagree_count"),
                 "both_disagree_count",
             )
-    return missing, discrepancies
+            missing += a_only + b_only
+            discrepancies += disagree
+            reviews += a_only + b_only + disagree
+    return missing, discrepancies, reviews
 
 
 def _count_report_items(paths: tuple[Path, ...]) -> int | None:
@@ -267,13 +351,25 @@ def _existing_marker_count(paths: tuple[Path, ...]) -> int | None:
 
 
 def _criterion_note(payload: dict[str, object], criterion_name: str) -> str:
+    item = _criterion(payload, criterion_name)
+    return _required_text(item.get("note"), f"criterion note {criterion_name}")
+
+
+def _criterion_status(payload: dict[str, object], criterion_name: str) -> str | None:
+    item = _criterion(payload, criterion_name)
+    status = item.get("status")
+    if status is None:
+        return None
+    return _required_text(status, f"criterion status {criterion_name}")
+
+
+def _criterion(payload: dict[str, object], criterion_name: str) -> dict[str, object]:
     criteria = payload.get("criteria")
     if not isinstance(criteria, list):
         raise DataHealthServiceError("provider assessment lacks criteria array")
     for item in criteria:
         if isinstance(item, dict) and item.get("criterion") == criterion_name:
-            note = item.get("note")
-            return _required_text(note, f"criterion note {criterion_name}")
+            return item
     raise DataHealthServiceError(f"provider assessment lacks criterion {criterion_name}")
 
 

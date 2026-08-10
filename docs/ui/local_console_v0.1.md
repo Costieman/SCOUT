@@ -33,6 +33,22 @@ The server binds only to loopback by default. Binding to a non-loopback interfac
 explicit `--allow-remote` flag; this is intentionally inconvenient because this development server
 has no authentication layer.
 
+## Operational Data Health control plane
+
+The Data Health workspace now exposes a concise operational control plane above the provider table.
+It is derived only from persisted evidence supplied to the application service. The panel includes:
+
+- explicit Phase 1 blockers rather than a generic red/green project flag;
+- durable Tiingo acquisition progress when safe campaign state is supplied;
+- the latest campaign status and observation time;
+- cumulative quota-pause and failure counts;
+- the most recent rate-limited or failed symbol when recorded by safe state;
+- cross-provider review-work count, missing-session observations, and discrepancies;
+- corporate-action anomaly and ingestion-failure counts when those artifacts are supplied.
+
+A missing input remains `Unknown` and can itself produce a visible evidence-gap blocker. The console
+does not infer a zero count from an absent report and does not query a provider to fill the gap.
+
 ## Evidence inputs
 
 The default launch reads the checked-in Tiingo and free-provider acceptance assessments. Additional
@@ -55,9 +71,11 @@ canonical manifest/store boundary.
 ## Routes
 
 - `/` and `/index.html` — HTML research console.
-- `/api/data-health.json` — provider-independent Data Health contract.
+- `/api/data-health.json` — provider-independent Data Health contract, including blockers and
+  provider operational metadata.
 - `/api/snapshot.json` — complete presentation-ready application snapshot.
-- `/healthz` — local process/application-gate status. This is not a live provider-connectivity test.
+- `/healthz` — local process/application-gate status, including blocker and review counts. This is
+  not a live provider-connectivity test.
 
 All responses are `no-store` and include restrictive browser security headers. Normal POST requests
 are rejected; the console has no mutation or order-entry routes.

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from trade_scout.app.application_snapshot_service import build_phase1_application_snapshot
 from trade_scout.app.data_health_service import DataHealthSourcePaths, build_data_health_summary
-from trade_scout.app.low_fidelity import render_application_html
+from trade_scout.app.operational_surface import render_operational_application_html
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -61,10 +61,10 @@ def main() -> int:
     snapshot = build_phase1_application_snapshot(
         health,
         generated_at=datetime.now(UTC),
-        build_label="data-health-v0.1",
+        build_label="data-health-v0.2",
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(render_application_html(snapshot), encoding="utf-8")
+    args.output.write_text(render_operational_application_html(snapshot), encoding="utf-8")
     print(args.output)
     return 0
 
