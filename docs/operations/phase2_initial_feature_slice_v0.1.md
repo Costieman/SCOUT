@@ -3,8 +3,9 @@
 ## Purpose
 
 This is the first provider-independent Feature Engine materialization over an immutable canonical
-Trade Scout daily-bar dataset. It is deliberately bounded to the reviewed three-instrument canonical
-slice and exists to prove the Feature Engine contract before the data foundation is widened.
+Trade Scout daily-bar dataset. It was first proven on the reviewed three-instrument canonical slice
+and now remains reusable as the same mathematical feature set is applied to later immutable reviewed
+dataset versions.
 
 The feature layer never reads Tiingo raw files, Tiingo receipts, query tickers, or vendor-native
 schemas. Its input is the canonical `DailyBar` contract and its provenance is the immutable canonical
@@ -27,7 +28,7 @@ traded on each session. Technical continuity measurements use split-adjusted pri
 
 ATR is deliberately not included in this first slice. The Feature Engine specification requires the
 ATR smoothing convention to be explicitly finalized and versioned; that decision should be made in a
-focused follow-up rather than smuggled into this foundational PR.
+focused follow-up rather than smuggled into this foundational feature definition.
 
 ## Point-in-time behavior
 
@@ -39,7 +40,7 @@ Warm-up is explicit. A fixed-window feature returns `WARMUP` until its declared 
 count exists; it never silently shortens its window. Missing required split-adjusted inputs return
 `INPUT_UNAVAILABLE` rather than substituting raw prices.
 
-This first slice also requires every source canonical bar to carry `PASS` quality. A non-PASS input
+This feature set also requires every source canonical bar to carry `PASS` quality. A non-PASS input
 fails the build rather than allowing the Feature Engine to reinterpret an upstream quality decision.
 
 ## Batch and incremental equivalence
@@ -76,24 +77,34 @@ re-run is idempotent and reloads the existing immutable snapshot.
 
 ## Local run
 
-After the reviewed canonical price slice exists, run from the repository root:
+The command accepts an explicit immutable canonical dataset version. To reproduce the original
+three-instrument feature snapshot, run:
+
+```powershell
+uv run python .\scripts\build_initial_feature_slice.py --root "$HOME\trade-scout-private" --dataset-version tiingo-reviewed-split-only-v0.1
+```
+
+After the reviewed identity expansion, the command defaults to
+`tiingo-reviewed-split-only-v0.2`, so the shorter form builds the expanded feature snapshot:
 
 ```powershell
 uv run python .\scripts\build_initial_feature_slice.py --root "$HOME\trade-scout-private"
 ```
 
-The command makes no provider calls. It writes the private feature Parquet plus a metadata-only report
-at:
+The command makes no provider calls. Metadata-only reports are versioned by both source dataset and
+feature set, for example:
 
 ```text
-<workspace>/evidence/feature-foundation/phase2-initial-features-v0.1.json
+<workspace>/evidence/feature-foundation/
+  tiingo-reviewed-split-only-v0.1__phase2-initial-features-v0.1.json
+  tiingo-reviewed-split-only-v0.2__phase2-initial-features-v0.1.json
 ```
 
 The terminal/report output contains counts and checksums, not feature values or licensed price data.
 
 ## Scope boundary
 
-A successful run proves that the Feature Engine can consume canonical data deterministically. It does
-not mean the full Phase 1 data foundation is accepted, does not make the three-name slice suitable for
-strategy conclusions, and does not make the Pattern Engine production-ready. The current dataset and
-feature snapshot remain a bounded engineering validation slice.
+A successful run proves that the Feature Engine can consume a named canonical dataset
+deterministically. It does not mean the full Phase 1 data foundation is accepted, does not make a
+small reviewed slice suitable for broad strategy conclusions, and does not make the Pattern Engine
+production-ready. Dataset scope remains explicit in every derived snapshot.
