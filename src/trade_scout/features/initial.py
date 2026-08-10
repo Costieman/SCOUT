@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from collections.abc import Iterable, Mapping, Sequence
+from datetime import date
 from types import MappingProxyType
 
 from trade_scout.data.contracts import DailyBar, PriceRepresentation, QualityStatus
@@ -133,7 +134,7 @@ def compute_initial_feature_frame(
             )
 
     by_instrument: dict[str, list[DailyBar]] = {}
-    seen: set[tuple[str, object]] = set()
+    seen: set[tuple[str, date]] = set()
     for item in materialized:
         key = (str(item.instrument_id), item.trade_date)
         if key in seen:
@@ -193,13 +194,13 @@ def compute_incremental_initial_feature_frame(
     if not new:
         return ()
 
-    history_latest: dict[str, object] = {}
+    history_latest: dict[str, date] = {}
     for bar in history:
         key = str(bar.instrument_id)
         latest = history_latest.get(key)
         if latest is None or bar.trade_date > latest:
             history_latest[key] = bar.trade_date
-    new_keys: set[tuple[str, object]] = set()
+    new_keys: set[tuple[str, date]] = set()
     for bar in new:
         instrument = str(bar.instrument_id)
         latest = history_latest.get(instrument)
