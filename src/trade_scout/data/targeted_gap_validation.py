@@ -98,7 +98,8 @@ def evaluate_targeted_gap_validator(
     for bar in bars:
         if bar.provider_id != case.validator_provider_id:
             raise TargetedGapValidationError(
-                f"validator bar provider mismatch: {bar.provider_id} != {case.validator_provider_id}"
+                "validator bar provider mismatch: "
+                f"{bar.provider_id} != {case.validator_provider_id}"
             )
         if bar.symbol.upper() != case.validator_symbol.upper():
             raise TargetedGapValidationError(
