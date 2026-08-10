@@ -12,7 +12,7 @@ keys, access tokens, raw market-data values, or credentials.
 
 ## Layout
 
-After initialization the root has this shape:
+After initialization and optional research steps the root has this shape:
 
 ```text
 <workspace>/
@@ -27,6 +27,12 @@ After initialization the root has this shape:
     composite/
     corporate-actions/
     failed-ingestion/
+    tiingo-profile/
+      profile.json
+    tiingo-lineage/
+      audit.json
+    instrument-identity/
+      tiingo-reviewed-candidate.json
   canonical-store/
 ```
 
@@ -109,6 +115,26 @@ The command reuses the existing durable Tiingo slice runner. Each successful sym
 
 HTTP 429 remains a provider throttle event and is not converted into a market-data gap. The next
 run resumes from safe durable state.
+
+## Build reviewed identity evidence
+
+After `profile-tiingo` and the separate Tiingo symbol-lineage audit exist, build the reviewed
+instrument/symbol-history candidate:
+
+```bash
+uv run python scripts/trade_scout_workspace.py build-tiingo-identity \
+  --root "$WORKSPACE"
+```
+
+This command makes no provider calls. It re-verifies durable receipts, reads the local lineage audit,
+and combines it with the checked-in reviewed identity seeds. Permanent internal IDs are derived from
+opaque review IDs, not tickers. Tiingo query symbols are stored separately from stable reviewed
+provider-series IDs.
+
+The candidate is written to
+`evidence/instrument-identity/tiingo-reviewed-candidate.json`. Unknown predecessor-history spans stay
+as explicit coverage gaps. `promotion_ready=false` means exactly that: the candidate is useful
+research evidence but is not a complete canonical instrument master and must not be promoted as one.
 
 ## Open the console against the same workspace
 
