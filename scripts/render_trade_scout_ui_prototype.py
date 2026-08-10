@@ -14,8 +14,8 @@ from trade_scout.api.dashboard_contracts import (
     ApplicationSnapshot,
     DataHealthSummary,
     HealthState,
-    ProviderHealthSummary,
     ProvenanceSummary,
+    ProviderHealthSummary,
     QualityCounts,
     ResearchLabSummary,
     ResearchState,
@@ -68,7 +68,10 @@ def _phase1_preview_snapshot() -> ApplicationSnapshot:
                 role="Long-history baseline candidate",
                 state=HealthState.WARN,
                 latest_successful_session=None,
-                message="Credential and historical-depth probes passed; primary acceptance remains gated.",
+                message=(
+                    "Credential and historical-depth probes passed; primary acceptance remains "
+                    "gated."
+                ),
             ),
             ProviderHealthSummary(
                 provider_id="alpha_vantage",
@@ -76,7 +79,10 @@ def _phase1_preview_snapshot() -> ApplicationSnapshot:
                 role="Independent validation / listings evidence",
                 state=HealthState.WARN,
                 latest_successful_session=None,
-                message="Useful bounded validator; free-tier history and request limits constrain scale.",
+                message=(
+                    "Useful bounded validator; free-tier history and request limits constrain "
+                    "scale."
+                ),
             ),
             ProviderHealthSummary(
                 provider_id="stooq",
@@ -100,7 +106,10 @@ def _phase1_preview_snapshot() -> ApplicationSnapshot:
         launch_enabled=False,
         blocking_reasons=(
             "Phase 1 data-foundation acceptance is not complete.",
-            "Research controls must be generated from validated configuration schemas before launch.",
+            (
+                "Research controls must be generated from validated configuration schemas "
+                "before launch."
+            ),
         ),
         provenance=no_production_provenance,
     )
@@ -110,7 +119,10 @@ def _phase1_preview_snapshot() -> ApplicationSnapshot:
         freshness_gate=HealthState.BLOCKED,
         candidates=(),
         blocking_reasons=(
-            "Scanner output is downstream of validated strategy definitions and an accepted fresh dataset.",
+            (
+                "Scanner output is downstream of validated strategy definitions and an accepted "
+                "fresh dataset."
+            ),
             "No synthetic candidate rows are shown as if they were market observations.",
         ),
         provenance=no_production_provenance,
@@ -125,7 +137,10 @@ def _phase1_preview_snapshot() -> ApplicationSnapshot:
         experiments=(),
         global_notices=(
             "DESIGN PREVIEW — not a live market-data dashboard.",
-            "Current phase gate is visible by design: Research can be previewed; Scanner and Alerts remain blocked.",
+            (
+                "Current phase gate is visible by design: Research can be previewed; Scanner and "
+                "Alerts remain blocked."
+            ),
         ),
     )
 
