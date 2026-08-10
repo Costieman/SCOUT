@@ -30,6 +30,12 @@ from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotCandidate,
     load_reviewed_identity_snapshot_candidate,
 )
+from trade_scout.data.session_completeness import (
+    DatasetSessionCompletenessAudit,
+    SessionCompletenessError,
+    audit_daily_bar_session_completeness,
+    default_us_equity_session_calendar,
+)
 
 _DATASET_ID = "equities_daily_reviewed_tiingo_slice"
 _TRANSFORMATION_VERSION = "tiingo-reviewed-split-only-normalization-v0.1"
@@ -60,6 +66,10 @@ class TiingoCanonicalPromotionResult:
     dividend_event_count: int
     cross_check_eligible_symbol_count: int
     cross_check_mismatch_field_count: int
+    session_calendar_definition_version: str
+    missing_expected_session_count: int
+    unexpected_observed_date_count: int
+    duplicate_observed_date_count: int
     source_receipt_ids: tuple[str, ...]
     source_batch_ids: tuple[str, ...]
 
@@ -73,6 +83,7 @@ class _BuiltCanonicalSlice:
     dividend_event_count: int
     cross_check_eligible_symbol_count: int
     cross_check_mismatch_field_count: int
+    session_audit: DatasetSessionCompletenessAudit
     source_receipt_ids: tuple[str, ...]
     source_batch_ids: tuple[str, ...]
 
@@ -91,8 +102,9 @@ def promote_reviewed_tiingo_prices(
 
     The gate re-verifies every targeted durable receipt, rebuilds split-only provider bars from raw
     Tiingo OHLC plus event-date ``splitFactor``, resolves permanent identity plus dated symbol
-    history, requires strictly PASS quality, and only then writes an immutable canonical Parquet
-    dataset. Tiingo's dividend-adjusted ``adj*`` values are never used as canonical prices.
+    history, requires strictly PASS quality and complete expected exchange sessions, and only then
+    writes an immutable canonical Parquet dataset. Tiingo's dividend-adjusted ``adj*`` values are
+    never used as canonical prices.
 
     Known reviewed identity snapshots map to explicit immutable canonical dataset versions. Callers
     may provide ``dataset_version`` for synthetic/test candidates, but production expansion remains
@@ -148,6 +160,10 @@ def promote_reviewed_tiingo_prices(
         dividend_event_count=built.dividend_event_count,
         cross_check_eligible_symbol_count=built.cross_check_eligible_symbol_count,
         cross_check_mismatch_field_count=built.cross_check_mismatch_field_count,
+        session_calendar_definition_version=built.session_audit.calendar_definition_version,
+        missing_expected_session_count=built.session_audit.missing_expected_session_count,
+        unexpected_observed_date_count=built.session_audit.unexpected_observed_date_count,
+        duplicate_observed_date_count=built.session_audit.duplicate_observed_date_count,
         source_receipt_ids=built.source_receipt_ids,
         source_batch_ids=built.source_batch_ids,
     )
@@ -177,6 +193,17 @@ def persist_tiingo_canonical_promotion_report(
         "dividend_event_count": result.dividend_event_count,
         "cross_check_eligible_symbol_count": result.cross_check_eligible_symbol_count,
         "cross_check_mismatch_field_count": result.cross_check_mismatch_field_count,
+        "session_completeness": {
+            "calendar_definition_version": result.session_calendar_definition_version,
+            "missing_expected_session_count": result.missing_expected_session_count,
+            "unexpected_observed_date_count": result.unexpected_observed_date_count,
+            "duplicate_observed_date_count": result.duplicate_observed_date_count,
+            "complete": not (
+                result.missing_expected_session_count
+                or result.unexpected_observed_date_count
+                or result.duplicate_observed_date_count
+            ),
+        },
         "source_receipt_ids": list(result.source_receipt_ids),
         "source_batch_ids": list(result.source_batch_ids),
         "transformation_version": manifest.transformation_version,
@@ -308,6 +335,24 @@ def _build_reviewed_slice(
     if not frozen_bars:
         raise TiingoCanonicalPromotionError("reviewed Tiingo canonical slice is empty")
 
+    try:
+        session_audit = audit_daily_bar_session_completeness(
+            frozen_bars,
+            instruments=snapshot.instruments,
+            dataset_end_date=max(bar.trade_date for bar in frozen_bars),
+            calendar=default_us_equity_session_calendar(),
+        )
+    except SessionCompletenessError as exc:
+        raise TiingoCanonicalPromotionError(f"expected-session audit failed: {exc}") from exc
+    if not session_audit.complete:
+        raise TiingoCanonicalPromotionError(
+            "expected-session completeness blocks canonical promotion: "
+            f"missing={session_audit.missing_expected_session_count}, "
+            f"unexpected={session_audit.unexpected_observed_date_count}, "
+            f"duplicates={session_audit.duplicate_observed_date_count}, "
+            f"missing_histories={session_audit.missing_history_instrument_count}"
+        )
+
     return _BuiltCanonicalSlice(
         bars=frozen_bars,
         identity_snapshot_version=candidate.snapshot_version,
@@ -316,6 +361,7 @@ def _build_reviewed_slice(
         dividend_event_count=dividend_events,
         cross_check_eligible_symbol_count=cross_check_eligible,
         cross_check_mismatch_field_count=cross_check_mismatches,
+        session_audit=session_audit,
         source_receipt_ids=tuple(sorted(receipt_ids)),
         source_batch_ids=tuple(sorted(batch_ids)),
     )
