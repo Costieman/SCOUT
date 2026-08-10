@@ -142,7 +142,9 @@ def _tiingo_provider_summary(
     else:
         current = state.durable_completed_symbol_count
         total = state.total_symbol_count
-        message = f"{decision}; durable campaign {current}/{total}; last status {state.last_status}."
+        message = (
+            f"{decision}; durable campaign {current}/{total}; last status {state.last_status}."
+        )
         if state.last_status == "FAILED":
             acceptance_state = HealthState.WARN
     return ProviderHealthSummary(
