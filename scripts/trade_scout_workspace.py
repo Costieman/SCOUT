@@ -21,6 +21,11 @@ from trade_scout.app.operator_workspace import (
     verify_operator_workspace,
     workspace_status_payload,
 )
+from trade_scout.data.providers.tiingo_profile import (
+    TiingoProfileError,
+    persist_tiingo_durable_profile,
+    profile_durable_tiingo,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -69,6 +74,12 @@ def _parser() -> argparse.ArgumentParser:
         default=Path("configs/tiingo_sp500_campaign_v0.1.json"),
     )
 
+    profile = subparsers.add_parser(
+        "profile-tiingo",
+        help="Profile verified private Tiingo history without provider calls or raw-price output.",
+    )
+    profile.add_argument("--root", type=Path, required=True)
+
     serve = subparsers.add_parser("serve", help="Open the read-only console for this workspace.")
     serve.add_argument("--root", type=Path, required=True)
     serve.add_argument("--host", default="127.0.0.1")
@@ -94,9 +105,11 @@ def main() -> int:
             return _plan_tiingo(args)
         if args.command == "acquire-tiingo":
             return _acquire_tiingo(args)
+        if args.command == "profile-tiingo":
+            return _profile_tiingo(args)
         if args.command == "serve":
             return _serve(args)
-    except OperatorWorkspaceError as exc:
+    except (OperatorWorkspaceError, TiingoProfileError) as exc:
         print(f"operator workspace error: {exc}", file=sys.stderr)
         return 2
     raise AssertionError("unreachable workspace command")
@@ -227,6 +240,53 @@ def _acquire_tiingo(args: argparse.Namespace) -> int:
         )
         return 2
     return completed.returncode
+
+
+def _profile_tiingo(args: argparse.Namespace) -> int:
+    workspace = _load_checked_workspace(args.root)
+    verification = verify_operator_workspace(workspace)
+    if not verification.is_consistent:
+        raise OperatorWorkspaceError(
+            "durable evidence is inconsistent; profile generation is blocked fail-closed"
+        )
+
+    profile = profile_durable_tiingo(
+        receipt_root=workspace.tiingo_receipts_root,
+        raw_root=workspace.tiingo_raw_root,
+        storage_namespace=workspace.manifest.storage_namespace,
+    )
+    output = workspace.root / "evidence" / "tiingo-profile" / "profile.json"
+    persist_tiingo_durable_profile(output, profile)
+    anomaly_symbol_count = sum(
+        1
+        for item in profile.symbols
+        if (
+            item.duplicate_date_count
+            or item.non_monotonic_date_count
+            or item.missing_required_field_row_count
+            or item.invalid_numeric_row_count
+            or item.ohlc_invariant_violation_count
+            or item.negative_volume_count
+            or item.long_calendar_gap_count
+        )
+    )
+    summary = {
+        "profile_path": str(output),
+        "symbol_count": profile.symbol_count,
+        "total_row_count": profile.total_row_count,
+        "symbols_with_structural_anomalies": anomaly_symbol_count,
+        "duplicate_date_count": profile.duplicate_date_count,
+        "non_monotonic_date_count": profile.non_monotonic_date_count,
+        "missing_required_field_row_count": profile.missing_required_field_row_count,
+        "invalid_numeric_row_count": profile.invalid_numeric_row_count,
+        "ohlc_invariant_violation_count": profile.ohlc_invariant_violation_count,
+        "negative_volume_count": profile.negative_volume_count,
+        "split_event_count": profile.split_event_count,
+        "dividend_event_count": profile.dividend_event_count,
+        "long_calendar_gap_count": profile.long_calendar_gap_count,
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
 
 
 def _serve(args: argparse.Namespace) -> int:
