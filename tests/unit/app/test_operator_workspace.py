@@ -12,6 +12,7 @@ from trade_scout.app.operator_workspace import (
     configure_operator_workspace,
     initialize_operator_workspace,
     load_operator_workspace,
+    validate_workspace_location,
     verify_operator_workspace,
     workspace_status_payload,
 )
@@ -64,6 +65,15 @@ def test_initialize_is_idempotent_but_rejects_unrelated_nonempty_directory(
     (unrelated / "notes.txt").write_text("do not overwrite", encoding="utf-8")
     with pytest.raises(OperatorWorkspaceError, match="non-empty directory"):
         initialize_operator_workspace(unrelated, storage_namespace="ns-c")
+
+
+def test_workspace_location_must_be_outside_repository_tree(tmp_path: Path) -> None:
+    repository = tmp_path / "repo"
+    repository.mkdir()
+    validate_workspace_location(tmp_path / "private", repository_root=repository)
+
+    with pytest.raises(OperatorWorkspaceError, match="outside the Git repository"):
+        validate_workspace_location(repository / "runtime-private", repository_root=repository)
 
 
 def test_workspace_discovers_only_explicit_evidence_locations(tmp_path: Path) -> None:
@@ -150,4 +160,6 @@ def test_empty_workspace_is_consistent_and_status_contains_no_market_values(tmp_
         "failure_count": 0,
         "last_run_at": None,
     }
-    assert status["verification"]["consistent"] is True
+    verification = status["verification"]
+    assert isinstance(verification, dict)
+    assert verification["consistent"] is True
