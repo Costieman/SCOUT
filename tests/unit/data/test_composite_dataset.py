@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -68,7 +68,7 @@ def _request(*, provider_id: str = COMPOSITE_CANONICAL_PROVIDER_ID) -> DatasetPr
         dataset_id="equities-daily-composite",
         dataset_version=_version(),
         primary_provider_id=provider_id,
-        created_at=datetime(2026, 8, 10, tzinfo=timezone.utc),
+        created_at=datetime(2026, 8, 10, tzinfo=UTC),
         source_batch_ids=("alpha-batch", "stooq-batch"),
         transformation_version="ab-composite-v0.1",
         adjustment_policy_version="raw-v0.1",
