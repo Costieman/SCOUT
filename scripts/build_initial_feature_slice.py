@@ -27,6 +27,7 @@ from trade_scout.features.initial import (
     initial_feature_definition_sha256,
 )
 from trade_scout.features.storage import (
+    FeatureSnapshotManifest,
     FeatureSnapshotPromotionRequest,
     FeatureSnapshotStore,
 )
@@ -123,9 +124,7 @@ def main() -> int:
                 "research_scope": _RESEARCH_SCOPE,
                 "already_registered": existing is not None,
                 "feature_definition_sha256": manifest.feature_definition_sha256,
-                "source_canonical_content_sha256": (
-                    manifest.source_canonical_content_sha256
-                ),
+                "source_canonical_content_sha256": (manifest.source_canonical_content_sha256),
                 "record_count": manifest.record_count,
                 "available_count": manifest.available_count,
                 "warmup_count": manifest.warmup_count,
@@ -134,9 +133,7 @@ def main() -> int:
                 "last_trade_date": manifest.last_trade_date.isoformat(),
                 "content_checksum_sha256": manifest.content_checksum_sha256,
                 "parquet_checksum_sha256": manifest.parquet_checksum_sha256,
-                "parquet_path": str(
-                    workspace.canonical_root / manifest.parquet_relative_path
-                ),
+                "parquet_path": str(workspace.canonical_root / manifest.parquet_relative_path),
                 "feature_counts": by_feature,
                 "provider_calls_made": False,
                 "serving_selected": False,
@@ -149,11 +146,12 @@ def main() -> int:
     return 0
 
 
-def _persist_report(path: Path, manifest: object, *, already_registered: bool) -> None:
-    from trade_scout.features.storage import FeatureSnapshotManifest
-
-    if not isinstance(manifest, FeatureSnapshotManifest):
-        raise TypeError("feature report requires FeatureSnapshotManifest")
+def _persist_report(
+    path: Path,
+    manifest: FeatureSnapshotManifest,
+    *,
+    already_registered: bool,
+) -> None:
     payload = {
         "schema_version": "phase2-initial-feature-foundation-report-v0.1",
         "dataset_version": str(manifest.dataset_version),
