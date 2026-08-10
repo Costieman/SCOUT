@@ -11,8 +11,9 @@ from trade_scout.data.contracts import (
     DatasetVersion,
     InstrumentRecord,
     QualityStatus,
+    SymbolHistoryRecord,
 )
-from trade_scout.data.instrument_master import resolve_provider_identity
+from trade_scout.data.instrument_master import resolve_provider_identity, symbol_as_of
 from trade_scout.data.provider import ProviderDailyBar
 from trade_scout.data.quality import QualityIssue, validate_daily_bars
 
@@ -21,6 +22,7 @@ class NormalizationRule(StrEnum):
     """Stable identifiers for conditions that prevent canonical daily-bar normalization."""
 
     UNRESOLVED_INSTRUMENT = "unresolved_instrument"
+    UNRESOLVED_SYMBOL_HISTORY = "unresolved_symbol_history"
     MISSING_SPLIT_FACTOR = "missing_split_factor"
     MISSING_DIVIDEND_CASH = "missing_dividend_cash"
     PARTIAL_ADJUSTED_OHLC = "partial_adjusted_ohlc"
@@ -168,6 +170,76 @@ def normalize_provider_daily_bars(
         normalization_issues=frozen_normalization_issues,
         quality_issues=quality_report.issues,
         status=overall_status,
+    )
+
+
+def normalize_provider_daily_bars_identity_aware(
+    provider_bars: Iterable[ProviderDailyBar],
+    *,
+    instruments: Iterable[InstrumentRecord],
+    symbol_history: Iterable[SymbolHistoryRecord],
+    dataset_version: DatasetVersion,
+) -> DailyBarNormalizationResult:
+    """Normalize only bars whose permanent identity also has dated symbol-history coverage.
+
+    Provider ``symbol`` remains retrieval/provenance metadata. It is deliberately not compared with
+    the canonical historical symbol effective on the bar date because some providers expose a
+    continuity series through a current query ticker. The canonical bar is keyed by permanent
+    ``instrument_id``; historical display symbols are resolved separately through
+    ``symbol_history``.
+    """
+
+    instrument_records = tuple(instruments)
+    history_records = tuple(symbol_history)
+    eligible_bars: list[ProviderDailyBar] = []
+    identity_issues: list[NormalizationIssue] = []
+
+    for provider_bar in provider_bars:
+        instrument_id = resolve_provider_identity(
+            instrument_records,
+            provider_id=provider_bar.provider_id,
+            provider_instrument_id=provider_bar.provider_instrument_id,
+        )
+        if instrument_id is None:
+            # Preserve the existing unresolved-instrument classification in the common normalizer.
+            eligible_bars.append(provider_bar)
+            continue
+
+        historical_symbol = symbol_as_of(
+            history_records,
+            instrument_id=instrument_id,
+            as_of=provider_bar.trade_date,
+        )
+        if historical_symbol is None:
+            identity_issues.append(
+                _normalization_issue(
+                    provider_bar,
+                    rule=NormalizationRule.UNRESOLVED_SYMBOL_HISTORY,
+                    status=QualityStatus.QUARANTINE,
+                    message=(
+                        "canonical instrument is resolved but no dated symbol assignment covers "
+                        "this trade date"
+                    ),
+                )
+            )
+            continue
+        eligible_bars.append(provider_bar)
+
+    normalized = normalize_provider_daily_bars(
+        eligible_bars,
+        instruments=instrument_records,
+        dataset_version=dataset_version,
+    )
+    all_normalization_issues = tuple(identity_issues) + normalized.normalization_issues
+    status = _worst_status(
+        [issue.status for issue in all_normalization_issues]
+        + [issue.status for issue in normalized.quality_issues]
+    )
+    return DailyBarNormalizationResult(
+        bars=normalized.bars,
+        normalization_issues=all_normalization_issues,
+        quality_issues=normalized.quality_issues,
+        status=status,
     )
 
 
