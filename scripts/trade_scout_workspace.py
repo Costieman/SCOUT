@@ -94,7 +94,7 @@ def _parser() -> argparse.ArgumentParser:
     identity.add_argument(
         "--config",
         type=Path,
-        default=Path("configs/tiingo_reviewed_identity_seeds_v0.1.json"),
+        default=Path("configs/tiingo_reviewed_identity_seeds_v0.2.json"),
     )
 
     serve = subparsers.add_parser("serve", help="Open the read-only console for this workspace.")
@@ -346,6 +346,7 @@ def _build_tiingo_identity(args: argparse.Namespace) -> int:
         "coverage_gap_count": len(candidate.coverage_gaps),
         "fully_covered_instrument_count": candidate.fully_covered_instrument_count,
         "promotion_ready": candidate.promotion_ready,
+        "promotion_scope": "reviewed_seed_set_only",
         "coverage_gaps": [
             {
                 "query_symbol": item.query_symbol,
