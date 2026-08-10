@@ -223,7 +223,9 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
                     required_fields=("horizon", "return_distribution", "sample_count"),
                     x_semantics="forward return",
                     y_semantics="frequency or density",
-                    empty_state_message="No completed experiment outcome distribution is available.",
+                    empty_state_message=(
+                        "No completed experiment outcome distribution is available."
+                    ),
                 ),
                 ChartSpec(
                     chart_id="outcomes-by-horizon",
@@ -267,7 +269,10 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
             workspace_id=WorkspaceId.SCANNER,
             title="Market Scanner",
             route="/scanner",
-            purpose="Display current validated setup states with freshness and historical evidence visible.",
+            purpose=(
+                "Display current validated setup states with freshness and historical evidence "
+                "visible."
+            ),
             primary_questions=(
                 "Which validated opportunities exist now?",
                 "Which are triggered, trigger-ready, or merely qualified?",
@@ -327,7 +332,9 @@ def default_dashboard_blueprint() -> DashboardBlueprint:
                     ),
                     x_semantics="trading session",
                     y_semantics="declared canonical price representation",
-                    empty_state_message="Canonical chart context is unavailable for this candidate.",
+                    empty_state_message=(
+                        "Canonical chart context is unavailable for this candidate."
+                    ),
                     canonical_price_basis_required=True,
                 ),
                 ChartSpec(
