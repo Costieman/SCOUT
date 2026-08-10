@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Synthetic, framework-neutral preview for the dashboard architecture.
 
 This module exists to inspect the user workflow before a front-end framework is selected. It uses
@@ -40,7 +41,9 @@ def filter_scanner_candidates(
 ) -> tuple[ScannerCandidateSummary, ...]:
     """Return a presentation subset while preserving the original candidate contracts."""
 
-    state_filter = {value.strip().upper() for value in display_filter.candidate_states if value.strip()}
+    state_filter = {
+        value.strip().upper() for value in display_filter.candidate_states if value.strip()
+    }
     search = display_filter.search_text.strip().casefold()
     return tuple(
         candidate
@@ -226,7 +229,9 @@ def _render_workspace(
     total_candidate_count: int | None,
 ) -> str:
     questions = "".join(f"<li>{escape(item)}</li>" for item in workspace.primary_questions)
-    contracts = "".join(f"<li><code>{escape(item)}</code></li>" for item in workspace.required_contracts)
+    contracts = "".join(
+        f"<li><code>{escape(item)}</code></li>" for item in workspace.required_contracts
+    )
     controls = _render_controls(workspace)
     charts = _render_charts(workspace)
     scanner = (
@@ -281,17 +286,20 @@ def _render_scanner_demo(
     candidates: tuple[ScannerCandidateSummary, ...],
     total_candidate_count: int,
 ) -> str:
-    rows = "".join(
-        "<tr>"
-        f"<td><strong>{escape(item.symbol)}</strong><br><span class='subtle'>{escape(item.company_name)}</span></td>"
-        f"<td class='candidate-state'>{escape(item.candidate_state)}</td>"
-        f"<td>{item.pattern_duration_sessions if item.pattern_duration_sessions is not None else '—'}</td>"
-        f"<td>{item.evidence.sample_size}</td>"
-        f"<td>{_probability(item.evidence.positive_outcome_fraction)}</td>"
-        f"<td>{escape(item.data_freshness.value)}</td>"
-        "</tr>"
-        for item in candidates
-    ) or "<tr><td colspan='6' class='subtle'>No rows match the current display filter.</td></tr>"
+    rows = (
+        "".join(
+            "<tr>"
+            f"<td><strong>{escape(item.symbol)}</strong><br><span class='subtle'>{escape(item.company_name)}</span></td>"
+            f"<td class='candidate-state'>{escape(item.candidate_state)}</td>"
+            f"<td>{item.pattern_duration_sessions if item.pattern_duration_sessions is not None else '—'}</td>"
+            f"<td>{item.evidence.sample_size}</td>"
+            f"<td>{_probability(item.evidence.positive_outcome_fraction)}</td>"
+            f"<td>{escape(item.data_freshness.value)}</td>"
+            "</tr>"
+            for item in candidates
+        )
+        or "<tr><td colspan='6' class='subtle'>No rows match the current display filter.</td></tr>"
+    )
     return f"""
 <div class="card wide">
   <h3>Scanner display-filter demonstration</h3>
