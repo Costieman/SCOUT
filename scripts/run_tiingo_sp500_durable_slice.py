@@ -124,10 +124,12 @@ def main() -> int:
             persist_tiingo_safe_campaign_state(state_path, state)
             return 0 if rate_limited else 1
 
-        if not isinstance(response, list) or not response or not all(
-            isinstance(item, dict) for item in response
+        if (
+            not isinstance(response, list)
+            or not response
+            or not all(isinstance(item, dict) for item in response)
         ):
-            state = _persist_failure(
+            _persist_failure(
                 state,
                 snapshot=snapshot,
                 completed=completed,
@@ -140,7 +142,7 @@ def main() -> int:
 
         new_records = capture.captured_records[before_capture_count:]
         if len(new_records) != 1:
-            state = _persist_failure(
+            _persist_failure(
                 state,
                 snapshot=snapshot,
                 completed=completed,
@@ -152,7 +154,7 @@ def main() -> int:
             return 1
         record = new_records[0]
         if record.manifest.endpoint != endpoint:
-            state = _persist_failure(
+            _persist_failure(
                 state,
                 snapshot=snapshot,
                 completed=completed,
