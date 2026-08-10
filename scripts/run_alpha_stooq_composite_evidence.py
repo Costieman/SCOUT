@@ -10,6 +10,10 @@ from datetime import date
 from pathlib import Path
 
 from trade_scout.data.composite_evidence import build_composite_evidence
+from trade_scout.data.composite_review_queue import (
+    CompositeReviewQueueItem,
+    build_composite_review_queue,
+)
 from trade_scout.data.contracts import InstrumentId, PriceRepresentation
 from trade_scout.data.provider import DailyBarRequest
 from trade_scout.data.providers.alpha_vantage import AlphaVantageAdapter
@@ -93,6 +97,7 @@ def main() -> int:
             provider_b_bars=stooq_bars,
             tolerance=tolerance,
         )
+        review_queue = build_composite_review_queue(report)
         reports.append(
             {
                 "alpha_symbol": alpha_symbol,
@@ -101,6 +106,8 @@ def main() -> int:
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "summary": asdict(report.summary),
+                "review_count": len(review_queue),
+                "review_queue": [_review_item_payload(item) for item in review_queue],
                 "rows": [
                     {
                         "trade_date": row.trade_date.isoformat(),
@@ -113,7 +120,7 @@ def main() -> int:
             }
         )
     payload = {
-        "evaluation_id": "alpha-stooq-composite-evidence-v0.1",
+        "evaluation_id": "alpha-stooq-composite-evidence-v0.2",
         "canonical_dataset_written": False,
         "cases": reports,
     }
@@ -123,6 +130,21 @@ def main() -> int:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(path)
     return 0
+
+
+def _review_item_payload(item: CompositeReviewQueueItem) -> dict[str, object]:
+    return {
+        "review_id": item.review_id,
+        "kind": item.kind.value,
+        "instrument_id": item.instrument_id,
+        "trade_date": item.trade_date,
+        "provider_a_id": item.provider_a_id,
+        "provider_b_id": item.provider_b_id,
+        "provider_a_present": item.provider_a_present,
+        "provider_b_present": item.provider_b_present,
+        "differing_fields": list(item.differing_fields),
+        "proposed_state": item.proposed_state.value,
+    }
 
 
 def _parse_case(value: str) -> tuple[str, str, str, str, date, date]:
