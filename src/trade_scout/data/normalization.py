@@ -185,7 +185,8 @@ def normalize_provider_daily_bars_identity_aware(
     Provider ``symbol`` remains retrieval/provenance metadata. It is deliberately not compared with
     the canonical historical symbol effective on the bar date because some providers expose a
     continuity series through a current query ticker. The canonical bar is keyed by permanent
-    ``instrument_id``; historical display symbols are resolved separately through ``symbol_history``.
+    ``instrument_id``; historical display symbols are resolved separately through
+    ``symbol_history``.
     """
 
     instrument_records = tuple(instruments)
