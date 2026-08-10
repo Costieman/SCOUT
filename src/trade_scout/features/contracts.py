@@ -71,7 +71,10 @@ class FeatureValue:
             raise ValueError("feature_set_version must be non-empty")
         if self.availability_status is FeatureAvailabilityStatus.AVAILABLE and self.value is None:
             raise ValueError("AVAILABLE feature values must contain a numeric value")
-        if self.availability_status is not FeatureAvailabilityStatus.AVAILABLE and self.value is not None:
+        if (
+            self.availability_status is not FeatureAvailabilityStatus.AVAILABLE
+            and self.value is not None
+        ):
             raise ValueError("unavailable feature values must not contain a numeric value")
 
 
