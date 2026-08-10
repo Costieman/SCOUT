@@ -77,6 +77,11 @@ def test_feature_snapshot_is_immutable_reloadable_and_idempotent(tmp_path: Path)
     assert first.input_unavailable_count == 0
     assert store.load(_DATASET, INITIAL_FEATURE_SET.feature_set_version) == values
 
+    snapshot_dir = (
+        tmp_path / "derived" / "features" / str(_DATASET) / INITIAL_FEATURE_SET.feature_set_version
+    )
+    assert {item.name for item in snapshot_dir.iterdir()} == {"features.parquet"}
+
 
 def test_same_snapshot_identity_rejects_different_provenance(tmp_path: Path) -> None:
     values = compute_initial_feature_frame(_bars(220))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import math
@@ -331,38 +332,54 @@ def _availability_counts(
 
 
 def _write_parquet(values: tuple[FeatureValue, ...], path: Path) -> None:
-    connection = duckdb.connect()
+    staging = path.with_name("feature_stage.csv")
     try:
-        connection.execute(
-            """
-            CREATE TEMP TABLE feature_stage (
-                instrument_id VARCHAR NOT NULL,
-                trade_date DATE NOT NULL,
-                feature_name VARCHAR NOT NULL,
-                feature_version VARCHAR NOT NULL,
-                resolved_parameters_json VARCHAR NOT NULL,
-                value DOUBLE,
-                units VARCHAR NOT NULL,
-                availability_status VARCHAR NOT NULL,
-                dataset_version VARCHAR NOT NULL,
-                feature_set_version VARCHAR NOT NULL
+        _write_feature_staging_csv(values, staging)
+        connection = duckdb.connect()
+        try:
+            connection.execute(
+                """
+                CREATE TEMP TABLE feature_stage (
+                    instrument_id VARCHAR NOT NULL,
+                    trade_date DATE NOT NULL,
+                    feature_name VARCHAR NOT NULL,
+                    feature_version VARCHAR NOT NULL,
+                    resolved_parameters_json VARCHAR NOT NULL,
+                    value DOUBLE,
+                    units VARCHAR NOT NULL,
+                    availability_status VARCHAR NOT NULL,
+                    dataset_version VARCHAR NOT NULL,
+                    feature_set_version VARCHAR NOT NULL
+                )
+                """
             )
-            """
-        )
-        connection.executemany(
-            "INSERT INTO feature_stage VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [_feature_row(item) for item in values],
-        )
-        connection.execute(
-            f"""
-            COPY (
-                SELECT * FROM feature_stage
-                ORDER BY instrument_id, trade_date, feature_name, feature_version
-            ) TO {_sql_literal(path)} (FORMAT PARQUET, COMPRESSION ZSTD)
-            """
-        )
+            connection.execute(
+                f"""
+                COPY feature_stage
+                FROM {_sql_literal(staging)}
+                (FORMAT CSV, HEADER FALSE, NULLSTR '')
+                """
+            )
+            connection.execute(
+                f"""
+                COPY (
+                    SELECT * FROM feature_stage
+                    ORDER BY instrument_id, trade_date, feature_name, feature_version
+                ) TO {_sql_literal(path)} (FORMAT PARQUET, COMPRESSION ZSTD)
+                """
+            )
+        finally:
+            connection.close()
     finally:
-        connection.close()
+        staging.unlink(missing_ok=True)
+
+
+def _write_feature_staging_csv(values: tuple[FeatureValue, ...], path: Path) -> None:
+    """Bulk-stage feature rows for DuckDB without one Python/SQL call per observation."""
+
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerows(_feature_row(item) for item in values)
 
 
 def _feature_row(item: FeatureValue) -> tuple[object, ...]:
