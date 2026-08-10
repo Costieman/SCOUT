@@ -59,6 +59,7 @@ from trade_scout.data.normalization import (
     NormalizationIssue,
     NormalizationRule,
     normalize_provider_daily_bars,
+    normalize_provider_daily_bars_identity_aware,
 )
 from trade_scout.data.provider import ProviderAdapter
 from trade_scout.data.provider_evaluation import (
@@ -182,6 +183,7 @@ __all__ = [
     "instrument_from_primary_provider",
     "link_provider_identity",
     "normalize_provider_daily_bars",
+    "normalize_provider_daily_bars_identity_aware",
     "normalize_symbol_history",
     "raw_validation_bar",
     "record_reconciliation_decision",
