@@ -184,8 +184,8 @@ def compute_incremental_initial_feature_frame(
 ) -> tuple[FeatureValue, ...]:
     """Compute new-session features with full trailing state and batch-equivalent semantics.
 
-    This first implementation deliberately favors correctness over optimization. It recomputes the
-    bounded history plus new rows, then returns only feature observations for the new canonical keys.
+    This first implementation deliberately favors correctness over optimization. It recomputes
+    bounded history plus new rows, then returns feature observations for the new canonical keys.
     Later cache or columnar optimizations must reproduce this result within declared tolerance.
     """
 
