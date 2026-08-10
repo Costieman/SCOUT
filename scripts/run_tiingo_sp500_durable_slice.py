@@ -35,6 +35,7 @@ from trade_scout.data.providers.tiingo_sp500_campaign import (
     load_tiingo_sp500_campaign_plan,
     parse_tiingo_sp500_universe,
 )
+from trade_scout.data.providers.tiingo_symbology import build_tiingo_query_symbol_links
 from trade_scout.data.raw_store import RawBatchStore
 
 CAMPAIGN_ID = "tiingo-sp500-baseline-v0.1"
@@ -71,6 +72,7 @@ def main() -> int:
     with urlopen(universe_request, timeout=30.0) as response:
         universe_payload = bytes(response.read())
     snapshot = parse_tiingo_sp500_universe(universe_payload, plan)
+    symbol_links = build_tiingo_query_symbol_links(snapshot.symbols)
 
     durable_root = args.durable_root.resolve()
     raw_root = durable_root / "raw"
@@ -84,13 +86,14 @@ def main() -> int:
     completed = set(state.durable_completed_symbols)
     executed = 0
 
-    for symbol in snapshot.symbols:
-        if symbol in completed:
+    for link in symbol_links:
+        source_symbol = link.source_symbol
+        if source_symbol in completed:
             continue
         if executed >= args.max_symbols:
             break
 
-        endpoint = f"/tiingo/daily/{quote(symbol, safe='')}/prices"
+        endpoint = f"/tiingo/daily/{quote(link.query_symbol, safe='')}/prices"
         before_capture_count = len(capture.captured_records)
         try:
             response = client.get_json(
@@ -108,8 +111,8 @@ def main() -> int:
                 snapshot.sha256,
                 len(completed),
                 len(snapshot.symbols),
-                rate_limited_symbol=symbol if rate_limited else None,
-                failed_symbol=None if rate_limited else symbol,
+                rate_limited_symbol=source_symbol if rate_limited else None,
+                failed_symbol=None if rate_limited else source_symbol,
                 failure_type=None if rate_limited else type(exc).__name__,
             )
             state = advance_tiingo_safe_campaign_state(
@@ -134,7 +137,7 @@ def main() -> int:
                 snapshot=snapshot,
                 completed=completed,
                 plan_version=plan.plan_version,
-                symbol=symbol,
+                symbol=source_symbol,
                 failure_type="EmptyOrInvalidTiingoHistory",
                 state_path=state_path,
             )
@@ -147,7 +150,7 @@ def main() -> int:
                 snapshot=snapshot,
                 completed=completed,
                 plan_version=plan.plan_version,
-                symbol=symbol,
+                symbol=source_symbol,
                 failure_type="UnexpectedRawCaptureCount",
                 state_path=state_path,
             )
@@ -159,7 +162,7 @@ def main() -> int:
                 snapshot=snapshot,
                 completed=completed,
                 plan_version=plan.plan_version,
-                symbol=symbol,
+                symbol=source_symbol,
                 failure_type="RawCaptureEndpointMismatch",
                 state_path=state_path,
             )
@@ -169,17 +172,17 @@ def main() -> int:
             record,
             durable_root=raw_root,
             storage_namespace=args.storage_namespace,
-            subject_key=symbol,
+            subject_key=source_symbol,
         )
         verify_durable_raw_receipt(
             receipt,
             durable_root=raw_root,
             storage_namespace=args.storage_namespace,
         )
-        receipt_path = receipt_root / symbol / f"{receipt.receipt_id}.json"
+        receipt_path = receipt_root / source_symbol / f"{receipt.receipt_id}.json"
         persist_durable_raw_receipt(receipt_path, receipt)
 
-        completed.add(symbol)
+        completed.add(source_symbol)
         executed += 1
         row_count = len(response)
         run = TiingoSp500CampaignRun(
