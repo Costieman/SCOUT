@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 from trade_scout.app.application_snapshot_service import build_phase1_application_snapshot
 from trade_scout.app.data_health_service import DataHealthSourcePaths, build_data_health_summary
-from trade_scout.app.low_fidelity import render_application_html
+from trade_scout.app.operational_surface import render_operational_application_html
 
 
 class LocalConsoleConfigurationError(ValueError):
@@ -86,7 +86,7 @@ def build_console_response(
     )
 
     if path in {"/", "/index.html"}:
-        html = render_application_html(snapshot)
+        html = render_operational_application_html(snapshot)
         html = _with_local_console_metadata(html, refresh_seconds=config.refresh_seconds)
         return ConsoleResponse(
             status_code=HTTPStatus.OK,
@@ -107,6 +107,8 @@ def build_console_response(
             "data_health_state": health.state.value,
             "dataset_version": health.dataset_version,
             "scanner_freshness_gate": health.scanner_freshness_gate.value,
+            "phase_blocker_count": len(health.phase_blockers),
+            "review_work_item_count": health.review_work_item_count,
         },
     )
 
@@ -175,9 +177,7 @@ def _handler_for(config: LocalConsoleConfig) -> type[BaseHTTPRequestHandler]:
         def _respond(self, *, head_only: bool) -> None:
             try:
                 response = build_console_response(self.path, config)
-            except (
-                Exception
-            ) as exc:  # boundary: convert application errors into a safe local response
+            except Exception as exc:
                 response = _json_response(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                     {
