@@ -1,0 +1,121 @@
+{
+  "schema_version": "reviewed-identity-seeds-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-candidate-v0.1",
+  "primary_provider_id": "trade_scout_review",
+  "identity_definition_version": "reviewed-permanent-identity-v0.1",
+  "symbol_history_definition_version": "explicit-dated-symbol-history-v0.1",
+  "seeds": [
+    {
+      "review_id": "rir-000001",
+      "primary_symbol": "APTV",
+      "name": "Aptiv PLC",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {
+        "trade_scout_review": "rir-000001",
+        "tiingo": "tiingo-series:rir-000001"
+      },
+      "provider_query_symbols": {
+        "tiingo": "APTV"
+      },
+      "symbol_history": [
+        {
+          "symbol": "APTV",
+          "exchange": "XNYS",
+          "effective_from": "2017-12-05",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://ir.aptiv.com/news/news-details/2017/Delphi-Board-of-Directors-Approves-Delphi-Technologies-Spin-off/default.aspx"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://ir.aptiv.com/news/news-details/2017/Delphi-Board-of-Directors-Approves-Delphi-Technologies-Spin-off/default.aspx"
+      ]
+    },
+    {
+      "review_id": "rir-000002",
+      "primary_symbol": "AXON",
+      "name": "Axon Enterprise, Inc.",
+      "exchange": "XNAS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {
+        "trade_scout_review": "rir-000002",
+        "tiingo": "tiingo-series:rir-000002"
+      },
+      "provider_query_symbols": {
+        "tiingo": "AXON"
+      },
+      "symbol_history": [
+        {
+          "symbol": "AAXN",
+          "exchange": "XNAS",
+          "effective_from": "2017-04-06",
+          "effective_to": "2021-01-25",
+          "evidence_refs": [
+            "https://investor.axon.com/2017-04-05-Axon-Offers-Free-Body-Cameras-for-Every-Police-Officer-in-the-U-S"
+          ]
+        },
+        {
+          "symbol": "AXON",
+          "exchange": "XNAS",
+          "effective_from": "2021-01-26",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://investor.axon.com/2021-01-25-Axon-Enterprise-To-Change-Nasdaq-Symbol-to-AXON"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://investor.axon.com/2017-04-05-Axon-Offers-Free-Body-Cameras-for-Every-Police-Officer-in-the-U-S",
+        "https://investor.axon.com/2021-01-25-Axon-Enterprise-To-Change-Nasdaq-Symbol-to-AXON"
+      ]
+    },
+    {
+      "review_id": "rir-000003",
+      "primary_symbol": "ALLE",
+      "name": "Allegion plc",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {
+        "trade_scout_review": "rir-000003",
+        "tiingo": "tiingo-series:rir-000003"
+      },
+      "provider_query_symbols": {
+        "tiingo": "ALLE"
+      },
+      "symbol_history": [
+        {
+          "symbol": "ALLE WI",
+          "exchange": "XNYS",
+          "effective_from": "2013-11-18",
+          "effective_to": "2013-12-01",
+          "evidence_refs": [
+            "https://www.allegion.com/corp/en/news/year/2013/record-distribution-dates-allegion.html"
+          ]
+        },
+        {
+          "symbol": "ALLE",
+          "exchange": "XNYS",
+          "effective_from": "2013-12-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.allegion.com/corp/en/news/year/2013/record-distribution-dates-allegion.html"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.allegion.com/corp/en/news/year/2013/record-distribution-dates-allegion.html"
+      ]
+    }
+  ]
+}
