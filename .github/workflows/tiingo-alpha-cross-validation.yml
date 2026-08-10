@@ -1,0 +1,32 @@
+name: Tiingo Alpha Vantage cross validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run bounded cross-provider probe
+        env:
+          TIINGO_API_TOKEN: ${{ secrets.TIINGO_API_TOKEN }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        run: uv run python scripts/run_tiingo_alpha_cross_validation.py
+      - name: Upload derived report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiingo-alpha-cross-validation
+          path: runtime/tiingo-alpha-cross-validation/report.json
+          if-no-files-found: warn
+          retention-days: 14
