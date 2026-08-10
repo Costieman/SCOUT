@@ -26,7 +26,9 @@ def _case() -> TargetedGapCase:
     )
 
 
-def _bar(day: date, *, provider_id: str = "alpha_vantage", symbol: str = "ALGN") -> ProviderDailyBar:
+def _bar(
+    day: date, *, provider_id: str = "alpha_vantage", symbol: str = "ALGN"
+) -> ProviderDailyBar:
     return ProviderDailyBar(
         provider_id=provider_id,
         provider_instrument_id=f"{provider_id}:symbol:{symbol}",
