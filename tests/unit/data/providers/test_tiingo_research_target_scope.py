@@ -4,9 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-
 from scripts.run_tiingo_sp500_durable_slice import _load_target_symbols
-
 
 CURRENT_REVIEWED = {
     "A",
@@ -27,7 +25,7 @@ CURRENT_REVIEWED = {
 def test_checked_in_research_50_scope_is_bounded_and_retains_current_reviewed() -> None:
     path = Path("configs/tiingo_research_50_targets_v0.1.json")
     payload = json.loads(path.read_text(encoding="utf-8"))
-    snapshot_symbols = tuple(payload["symbols"]) + ("ZZZ",)
+    snapshot_symbols = (*payload["symbols"], "ZZZ")
 
     target = _load_target_symbols(path, "tiingo-sp500-2026-08-10-v0.1", snapshot_symbols)
 
