@@ -309,8 +309,7 @@ def _timeframe_baseline_returns(
         selected.append(daily_signal_index)
         last = pattern_index
     return tuple(
-        daily_bars[index + horizon].close / daily_bars[index + 1].open - 1.0
-        for index in selected
+        daily_bars[index + horizon].close / daily_bars[index + 1].open - 1.0 for index in selected
     )
 
 
@@ -354,10 +353,7 @@ def _monthly_hits(
         key = event.signal_date.strftime("%Y-%m")
         counts[key] += 1
         instruments[key].add(str(event.instrument_id))
-    return tuple(
-        MonthlyHitCount(key, counts[key], len(instruments[key]))
-        for key in keys
-    )
+    return tuple(MonthlyHitCount(key, counts[key], len(instruments[key])) for key in keys)
 
 
 def _month_keys(start: date, end: date) -> tuple[str, ...]:
@@ -444,7 +440,9 @@ def _warnings(
             "The final calendar week is excluded unless the latest available market session is Friday."
         )
     if universe_instrument_count < 50:
-        warnings.append("Research universe has fewer than 50 instruments; breadth evidence is limited.")
+        warnings.append(
+            "Research universe has fewer than 50 instruments; breadth evidence is limited."
+        )
     if selected.sample_size < 100:
         warnings.append(
             f"Selected daily holding horizon has only {selected.sample_size} complete outcomes."
