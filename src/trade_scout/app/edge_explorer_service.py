@@ -72,7 +72,9 @@ class CanonicalEdgeExplorerSource:
                 item.query_symbol.upper()
                 for item in candidate.provider_series_links
                 if item.provider_id == "tiingo"
-                and not any(gap.instrument_id == item.instrument_id for gap in candidate.coverage_gaps)
+                and not any(
+                    gap.instrument_id == item.instrument_id for gap in candidate.coverage_gaps
+                )
             )
         )
 
@@ -88,7 +90,9 @@ class CanonicalEdgeExplorerSource:
             raise EdgeExplorerError(
                 f"{normalized} is not in the reviewed identity scope available to Edge Explorer"
             )
-        gaps = tuple(item for item in candidate.coverage_gaps if item.instrument_id == link.instrument_id)
+        gaps = tuple(
+            item for item in candidate.coverage_gaps if item.instrument_id == link.instrument_id
+        )
         if gaps:
             raise EdgeExplorerError(
                 f"{normalized} has unresolved reviewed identity/history coverage and is blocked"
