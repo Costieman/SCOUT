@@ -7,13 +7,13 @@ protective policies under explicit daily-bar fill semantics.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Mapping
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
-from trade_scout.features.initial import ATR_FEATURE_VERSION, ATR_PERIOD
+from trade_scout.features.initial import ATR_FEATURE_NAME, ATR_FEATURE_VERSION, ATR_PERIOD
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutEvent
 
 
@@ -48,6 +48,9 @@ class CostModel:
             raise ValueError("slippage assumptions must be non-negative")
         if not self.version.strip():
             raise ValueError("cost model version must be non-empty")
+
+
+_DEFAULT_COST_MODEL = CostModel()
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,7 +111,7 @@ class RiskPolicyResult:
     ambiguity_flags: tuple[str, ...]
     cost_model_version: str
     dataset_version: str
-    atr_definition_version: str = ATR_FEATURE_VERSION
+    atr_definition_version: str = f"{ATR_FEATURE_NAME}:{ATR_FEATURE_VERSION}"
     result_definition_version: str = "risk-policy-result-v0.1"
 
 
@@ -170,7 +173,7 @@ def evaluate_stop_policy(
     *,
     horizon: int,
     policy: StopPolicy,
-    cost_model: CostModel = CostModel(),
+    cost_model: CostModel = _DEFAULT_COST_MODEL,
 ) -> RiskPolicyResult | None:
     """Apply one policy after one event without changing event membership.
 
@@ -198,8 +201,6 @@ def evaluate_stop_policy(
     stop = _initial_stop(bars, event, entry_market=entry_market, policy=policy)
 
     if stop is None:
-        exit_bar = path[-1]
-        assumed_exit = no_stop_exit
         return _result(
             event=event,
             policy=policy,
@@ -208,8 +209,8 @@ def evaluate_stop_policy(
             assumed_entry=assumed_entry,
             initial_stop=None,
             stop_trigger_date=None,
-            exit_bar=exit_bar,
-            assumed_exit=assumed_exit,
+            exit_bar=path[-1],
+            assumed_exit=no_stop_exit,
             exit_reason=RiskExitReason.RESEARCH_HORIZON,
             stop_out=False,
             premature=False,
@@ -313,15 +314,18 @@ def evaluate_stop_policy_grid(
     *,
     horizon: int,
     policies: tuple[StopPolicy, ...] | None = None,
-    cost_model: CostModel = CostModel(),
+    cost_model: CostModel = _DEFAULT_COST_MODEL,
 ) -> tuple[RiskPolicyResult, ...]:
     """Evaluate every policy on every event with a complete common forward horizon."""
 
     resolved = policies or initial_stop_policy_grid()
     if not resolved:
         raise ValueError("at least one stop policy is required")
+    atr_required = any(_policy_requires_atr(item) for item in resolved)
     results: list[RiskPolicyResult] = []
     for event in events:
+        if atr_required and pre_entry_atr(bars, signal_index=event.signal_index) is None:
+            continue
         event_results = [
             evaluate_stop_policy(
                 bars,
@@ -362,6 +366,15 @@ def pre_entry_atr(
             )
         )
     return sum(true_ranges) / period
+
+
+def _policy_requires_atr(policy: StopPolicy) -> bool:
+    if policy.family is StopFamily.ATR:
+        return True
+    return (
+        policy.family is StopFamily.STRUCTURAL_BOUNDARY
+        and policy.parameters.get("atr_buffer_multiple", 0.0) > 0
+    )
 
 
 def _initial_stop(
