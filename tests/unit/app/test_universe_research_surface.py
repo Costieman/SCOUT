@@ -75,10 +75,13 @@ def test_universe_research_route_is_visible_before_running(tmp_path: Path) -> No
     text = response.body.decode("utf-8")
 
     assert response.status_code == 200
-    assert "Universe Research Analyzer" in text
-    assert "Run universe research" in text
+    assert "Market-Wide Strategy Lab" in text
+    assert "Full-universe mode" in text
+    assert "Run across full universe" in text
+    assert "Run baseline:" in text
     assert "Close above SMA 50, 100 and 200" in text
-    assert "point-in-time S&amp;P 500" in text
+    assert "2-session bars" in text
+    assert "Synthetic reviewed universe" in text
 
 
 def test_universe_research_route_runs_market_wide_analysis(tmp_path: Path) -> None:
@@ -94,6 +97,7 @@ def test_universe_research_route_runs_market_wide_analysis(tmp_path: Path) -> No
     text = response.body.decode("utf-8")
 
     assert response.status_code == 200
+    assert "Stocks scanned" in text
     assert "Historical setups" in text
     assert "Opportunity availability by month" in text
     assert "Where does the apparent edge live?" in text
