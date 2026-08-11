@@ -432,12 +432,19 @@ def _warnings(
         "Pattern timeframe and holding horizon are separate: signals use aggregated pattern bars; "
         "entries and exits use daily bars.",
         f"Pattern-bar anchoring is fixed and reproducible: {anchor}.",
-        "Multi-session timeframe results remain exploratory and require anchor/phase sensitivity tests.",
-        "Parameter surfaces remain exposed to multiple-testing risk and are not validated strategies.",
+        (
+            "Multi-session timeframe results remain exploratory and require anchor/phase "
+            "sensitivity tests."
+        ),
+        (
+            "Parameter surfaces remain exposed to multiple-testing risk and are not validated "
+            "strategies."
+        ),
     ]
     if pattern_timeframe is PatternTimeframe.WEEKLY:
         warnings.append(
-            "The final calendar week is excluded unless the latest available market session is Friday."
+            "The final calendar week is excluded unless the latest available market session "
+            "is Friday."
         )
     if universe_instrument_count < 50:
         warnings.append(
