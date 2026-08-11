@@ -9,7 +9,9 @@ from trade_scout.data.composite_evidence import (
     CompositeEvidenceSummary,
 )
 from trade_scout.data.contracts import InstrumentId
-from trade_scout.data.provider_complementarity import summarize_provider_complementarity
+from trade_scout.data.provider_complementarity import (
+    summarize_provider_complementarity,
+)
 
 
 INSTRUMENT_ID = InstrumentId("reviewed-instrument-001")
