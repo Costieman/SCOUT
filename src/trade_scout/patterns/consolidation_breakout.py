@@ -137,9 +137,8 @@ def current_consolidation_state(
         signal_index=signal_index,
         lookback_sessions=config.volume_lookback_sessions,
     )
-    volume_ok = (
-        config.min_breakout_volume_ratio is None
-        or (volume_ratio is not None and volume_ratio >= config.min_breakout_volume_ratio)
+    volume_ok = config.min_breakout_volume_ratio is None or (
+        volume_ratio is not None and volume_ratio >= config.min_breakout_volume_ratio
     )
 
     if range_pct > config.max_range_pct:
