@@ -26,7 +26,7 @@ class CloseBreakoutDefinition:
 def generate_close_breakout_events(
     bars: tuple[ResearchBar, ...],
     states: tuple[PatternState, ...],
-    definition: CloseBreakoutDefinition = CloseBreakoutDefinition(),
+    definition: CloseBreakoutDefinition | None = None,
 ) -> tuple[EventRecord, ...]:
     """Generate at most one close breakout per qualified pattern instance.
 
@@ -38,6 +38,8 @@ def generate_close_breakout_events(
         raise ValueError("bars and states must have identical lengths")
     if not bars:
         return ()
+    if definition is None:
+        definition = CloseBreakoutDefinition()
 
     events: list[EventRecord] = []
     consumed_instances: set[str] = set()
