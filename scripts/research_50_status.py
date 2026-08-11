@@ -96,7 +96,10 @@ def _target_symbols(path: Path) -> set[str]:
         raise SystemExit(f"cannot read research target config: {path}") from exc
     except json.JSONDecodeError as exc:
         raise SystemExit("research target config is invalid JSON") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "tiingo-research-targets-v0.1":
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "tiingo-research-targets-v0.1"
+    ):
         raise SystemExit("unsupported research target config")
     raw_symbols = payload.get("symbols")
     if not isinstance(raw_symbols, list) or not all(isinstance(item, str) for item in raw_symbols):
