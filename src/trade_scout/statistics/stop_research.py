@@ -108,7 +108,9 @@ def summarize_stop_policy_results(
         "Exploratory policy grids are exposed to multiple-testing risk and are not production stop recommendations.",
     ]
     if len(counts) != 1:
-        warnings.append("Policy sample sizes differ; inspect incomplete or unavailable event-level results.")
+        warnings.append(
+            "Policy sample sizes differ; inspect incomplete or unavailable event-level results."
+        )
     if entry_slippage_bps == 0 and exit_slippage_bps == 0:
         warnings.append(
             "Execution costs are currently zero; positive expectancy is gross exploratory evidence only."
