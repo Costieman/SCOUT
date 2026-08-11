@@ -1,0 +1,207 @@
+"""Application boundary for market-wide exploratory strategy research.
+
+The service reads one selected immutable canonical dataset and a reviewed identity candidate. It
+never calls a market-data provider. The only currently enabled universe is the fully reviewed
+canonical identity scope; point-in-time S&P 500 membership is deliberately not inferred.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
+from typing import Protocol
+
+from trade_scout.data.canonical_storage import CanonicalDailyBarStore
+from trade_scout.data.contracts import (
+    DailyBar,
+    DatasetVersion,
+    PriceRepresentation,
+    QualityStatus,
+    ResearchBar,
+    to_research_bar,
+)
+from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
+from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
+from trade_scout.statistics.universe_research import (
+    UniverseResearchReport,
+    build_universe_research_report,
+)
+
+
+class UniverseResearchError(RuntimeError):
+    """Raised when a universe request cannot be satisfied without guessing or silent repair."""
+
+
+@dataclass(frozen=True, slots=True)
+class UniverseOption:
+    """One explicitly supported research-universe source."""
+
+    universe_id: str
+    label: str
+    point_in_time_membership: bool
+
+
+@dataclass(frozen=True, slots=True)
+class UniverseResearchRequest:
+    """Resolved user inputs for one exploratory market-wide run."""
+
+    universe_id: str = "reviewed_canonical"
+    strategy_id: str = "consolidation_breakout"
+    lookback_years: int = 2
+    horizon: int = 20
+    duration: int = 20
+    max_range_pct: float = 0.12
+    trend_filter: TrendFilter = TrendFilter.ABOVE_SMA_50_100_200
+    min_breakout_volume_ratio: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.universe_id != "reviewed_canonical":
+            raise ValueError(f"unsupported universe_id {self.universe_id!r}")
+        if self.strategy_id != "consolidation_breakout":
+            raise ValueError(f"unsupported strategy_id {self.strategy_id!r}")
+        if self.lookback_years not in {1, 2, 3, 5, 10, 20}:
+            raise ValueError("lookback_years must be one of 1, 2, 3, 5, 10, 20")
+        if self.horizon not in {2, 3, 5, 10, 20, 40, 60}:
+            raise ValueError("horizon must be one of 2, 3, 5, 10, 20, 40, 60")
+        if not 5 <= self.duration <= 252:
+            raise ValueError("duration must be between 5 and 252 sessions")
+        if not 0 < self.max_range_pct <= 1:
+            raise ValueError("max_range_pct must be in (0, 1]")
+        if self.min_breakout_volume_ratio is not None and self.min_breakout_volume_ratio <= 0:
+            raise ValueError("min_breakout_volume_ratio must be positive when supplied")
+
+
+class UniverseResearchSource(Protocol):
+    """Read-only canonical source consumed by the universe research application service."""
+
+    def available_universes(self) -> tuple[UniverseOption, ...]: ...
+
+    def research_series(
+        self,
+        universe_id: str,
+    ) -> dict[str, tuple[ResearchBar, ...]]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalUniverseResearchSource:
+    """Expose fully reviewed canonical instrument histories for exploratory research."""
+
+    canonical_root: Path
+    dataset_version: str
+    identity_candidate_path: Path
+
+    def available_universes(self) -> tuple[UniverseOption, ...]:
+        return (
+            UniverseOption(
+                universe_id="reviewed_canonical",
+                label="Reviewed canonical equity scope — not point-in-time S&P 500",
+                point_in_time_membership=False,
+            ),
+        )
+
+    def research_series(
+        self,
+        universe_id: str,
+    ) -> dict[str, tuple[ResearchBar, ...]]:
+        if universe_id != "reviewed_canonical":
+            raise UniverseResearchError(f"unsupported research universe {universe_id!r}")
+
+        candidate = load_reviewed_identity_snapshot_candidate(self.identity_candidate_path)
+        blocked = {item.instrument_id for item in candidate.coverage_gaps}
+        links = tuple(
+            item
+            for item in candidate.provider_series_links
+            if item.provider_id == "tiingo" and item.instrument_id not in blocked
+        )
+        if not links:
+            raise UniverseResearchError("reviewed identity scope contains no fully covered series")
+
+        canonical = CanonicalDailyBarStore(self.canonical_root).load(
+            DatasetVersion(self.dataset_version)
+        )
+        bars_by_instrument: dict[str, list[DailyBar]] = {}
+        for bar in canonical:
+            bars_by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
+
+        result: dict[str, tuple[ResearchBar, ...]] = {}
+        for link in links:
+            selected = tuple(bars_by_instrument.get(str(link.instrument_id), ()))
+            if not selected:
+                continue
+            if any(item.quality_status is not QualityStatus.PASS for item in selected):
+                raise UniverseResearchError(
+                    f"canonical series {link.query_symbol} contains non-PASS quality rows"
+                )
+            try:
+                result[link.query_symbol.upper()] = tuple(
+                    to_research_bar(
+                        item,
+                        representation=PriceRepresentation.SPLIT_ADJUSTED,
+                        eligibility=True,
+                    )
+                    for item in selected
+                )
+            except ValueError as exc:
+                raise UniverseResearchError(
+                    f"split-adjusted canonical history is unavailable for {link.query_symbol}"
+                ) from exc
+
+        if not result:
+            raise UniverseResearchError(
+                "selected canonical dataset contains no fully reviewed instrument histories"
+            )
+        return dict(sorted(result.items()))
+
+
+@dataclass(frozen=True, slots=True)
+class UniverseResearchService:
+    """Resolve a user request and delegate analytics to the statistics layer."""
+
+    source: UniverseResearchSource
+
+    def run(self, request: UniverseResearchRequest) -> UniverseResearchReport:
+        options = {item.universe_id: item for item in self.source.available_universes()}
+        option = options.get(request.universe_id)
+        if option is None:
+            raise UniverseResearchError(f"unavailable research universe {request.universe_id!r}")
+
+        series = self.source.research_series(request.universe_id)
+        latest = max(bars[-1].trade_date for bars in series.values())
+        start = _subtract_years(latest, request.lookback_years)
+        config = ConsolidationBreakoutConfig(
+            duration=request.duration,
+            max_range_pct=request.max_range_pct,
+            trend_filter=request.trend_filter,
+            cooldown_sessions=5,
+            min_breakout_volume_ratio=request.min_breakout_volume_ratio,
+            volume_lookback_sessions=20,
+        )
+        horizons = tuple(sorted({2, 3, 5, 10, 20, 40, 60, request.horizon}))
+        return build_universe_research_report(
+            series,
+            universe_id=option.universe_id,
+            universe_label=option.label,
+            config=config,
+            analysis_start=start,
+            analysis_end=latest,
+            selected_horizon=request.horizon,
+            horizons=horizons,
+        )
+
+
+def _subtract_years(value: date, years: int) -> date:
+    try:
+        return value.replace(year=value.year - years)
+    except ValueError:
+        return value.replace(year=value.year - years, day=28)
+
+
+__all__ = [
+    "CanonicalUniverseResearchSource",
+    "UniverseOption",
+    "UniverseResearchError",
+    "UniverseResearchRequest",
+    "UniverseResearchService",
+    "UniverseResearchSource",
+]
