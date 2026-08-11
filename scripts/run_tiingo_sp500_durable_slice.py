@@ -8,6 +8,7 @@ runners are rejected because their filesystem is ephemeral.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -51,6 +52,12 @@ def main() -> int:
     parser.add_argument("--durable-root", type=Path, required=True)
     parser.add_argument("--storage-namespace", required=True)
     parser.add_argument("--max-symbols", type=int, default=1)
+    parser.add_argument(
+        "--target-config",
+        type=Path,
+        default=None,
+        help="Optional checked-in bounded target scope; acquisition remains inside the S&P snapshot.",
+    )
     args = parser.parse_args()
 
     if os.environ.get("RUNNER_ENVIRONMENT", "").strip().lower() == "github-hosted":
@@ -72,7 +79,12 @@ def main() -> int:
     with urlopen(universe_request, timeout=30.0) as response:
         universe_payload = bytes(response.read())
     snapshot = parse_tiingo_sp500_universe(universe_payload, plan)
-    symbol_links = build_tiingo_query_symbol_links(snapshot.symbols)
+    target_symbols = _load_target_symbols(args.target_config, plan.plan_version, snapshot.symbols)
+    symbol_links = tuple(
+        link
+        for link in build_tiingo_query_symbol_links(snapshot.symbols)
+        if link.source_symbol in target_symbols
+    )
 
     durable_root = args.durable_root.resolve()
     raw_root = durable_root / "raw"
@@ -125,6 +137,7 @@ def main() -> int:
                 observed_at=datetime.now(UTC),
             )
             persist_tiingo_safe_campaign_state(state_path, state)
+            _print_target_summary(args.target_config, target_symbols, completed, executed)
             return 0 if rate_limited else 1
 
         if (
@@ -141,6 +154,7 @@ def main() -> int:
                 failure_type="EmptyOrInvalidTiingoHistory",
                 state_path=state_path,
             )
+            _print_target_summary(args.target_config, target_symbols, completed, executed)
             return 1
 
         new_records = capture.captured_records[before_capture_count:]
@@ -154,6 +168,7 @@ def main() -> int:
                 failure_type="UnexpectedRawCaptureCount",
                 state_path=state_path,
             )
+            _print_target_summary(args.target_config, target_symbols, completed, executed)
             return 1
         record = new_records[0]
         if record.manifest.endpoint != endpoint:
@@ -166,6 +181,7 @@ def main() -> int:
                 failure_type="RawCaptureEndpointMismatch",
                 state_path=state_path,
             )
+            _print_target_summary(args.target_config, target_symbols, completed, executed)
             return 1
 
         receipt = create_durable_raw_receipt(
@@ -209,7 +225,77 @@ def main() -> int:
         persist_tiingo_safe_campaign_state(state_path, state)
 
     print(state_path)
+    _print_target_summary(args.target_config, target_symbols, completed, executed)
     return 0
+
+
+def _load_target_symbols(
+    path: Path | None,
+    plan_version: str,
+    snapshot_symbols: tuple[str, ...],
+) -> frozenset[str]:
+    if path is None:
+        return frozenset(snapshot_symbols)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise SystemExit(f"cannot read target config: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise SystemExit("target config is invalid JSON") from exc
+    required = {
+        "schema_version",
+        "target_version",
+        "source_universe_plan",
+        "purpose",
+        "target_count",
+        "symbols",
+        "selection_notes",
+    }
+    if not isinstance(payload, dict) or set(payload) != required:
+        raise SystemExit("target config has missing or unknown fields")
+    if payload["schema_version"] != "tiingo-research-targets-v0.1":
+        raise SystemExit("unsupported target config schema")
+    if payload["source_universe_plan"] != plan_version:
+        raise SystemExit("target config belongs to another Tiingo universe plan")
+    raw_symbols = payload["symbols"]
+    if not isinstance(raw_symbols, list) or not all(isinstance(item, str) for item in raw_symbols):
+        raise SystemExit("target config symbols must be a list of strings")
+    symbols = tuple(item.strip().upper() for item in raw_symbols)
+    if not symbols or any(not item for item in symbols) or len(set(symbols)) != len(symbols):
+        raise SystemExit("target config symbols must be unique non-empty values")
+    if payload["target_count"] != len(symbols):
+        raise SystemExit("target config target_count does not match symbols")
+    unknown = sorted(set(symbols) - set(snapshot_symbols))
+    if unknown:
+        raise SystemExit(f"target config includes symbols outside the validated snapshot: {unknown}")
+    return frozenset(symbols)
+
+
+def _print_target_summary(
+    target_config: Path | None,
+    target_symbols: frozenset[str],
+    completed: set[str],
+    executed: int,
+) -> None:
+    if target_config is None:
+        return
+    target_completed = sorted(target_symbols & completed)
+    target_remaining = sorted(target_symbols - completed)
+    print(
+        json.dumps(
+            {
+                "target_config": str(target_config),
+                "target_count": len(target_symbols),
+                "target_completed_count": len(target_completed),
+                "target_remaining_count": len(target_remaining),
+                "executed_this_run": executed,
+                "target_remaining_symbols": target_remaining,
+                "canonical_or_identity_promotion_performed": False,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
 
 def _load_or_initialize_state(
