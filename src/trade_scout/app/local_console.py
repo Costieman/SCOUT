@@ -132,7 +132,6 @@ def build_console_response(
             "scanner_freshness_gate": health.scanner_freshness_gate.value,
             "phase_blocker_count": len(health.phase_blockers),
             "review_work_item_count": health.review_work_item_count,
-            "edge_explorer_enabled": config.edge_explorer_source is not None,
         },
     )
 
