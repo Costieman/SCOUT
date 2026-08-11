@@ -190,9 +190,7 @@ def main() -> int:
         "requested_case_offset": args.offset,
         "requested_max_cases": args.max_cases,
         "selected_case_count": len(selected),
-        "completed_case_count": sum(
-            report.get("status") == "COMPARED" for report in case_reports
-        ),
+        "completed_case_count": sum(report.get("status") == "COMPARED" for report in case_reports),
         "stopped_on_provider_failure": stopped_on_provider_failure,
         "aggregate": aggregate,
         "cases": case_reports,
