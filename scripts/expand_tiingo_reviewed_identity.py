@@ -16,13 +16,13 @@ from trade_scout.app.operator_workspace import (
 from trade_scout.data.providers.tiingo_lineage_audit import (
     TiingoLineageAuditError,
     audit_tiingo_profile_lineage,
-    load_lineage_cases,
     persist_tiingo_lineage_audit,
 )
+from trade_scout.data.providers.tiingo_lineage_case_source import load_lineage_case_source
+from trade_scout.data.reviewed_identity_seed_source import load_reviewed_identity_seed_source
 from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotError,
     build_reviewed_identity_snapshot_candidate,
-    load_reviewed_identity_seed_set,
     persist_reviewed_identity_snapshot_candidate,
 )
 
@@ -45,8 +45,59 @@ _EXPECTED_CLASSIFICATIONS = {
     "AXON": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "CAT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "CRM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "CSCO": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "CVX": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "GE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "GOOGL": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "GS": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "HD": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "JNJ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "LLY": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "MA": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "MCD": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "META": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "MSFT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "NEE": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "NFLX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "NVDA": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ORCL": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "PG": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "RTX": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "SCHW": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "TMUS": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "TSLA": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "UNH": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "V": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "WMT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
 }
-_NEW_REVIEWED_SYMBOLS = frozenset({"AAPL", "ABBV", "AMD", "AVGO", "CAT", "CRM"})
+_NEW_REVIEWED_SYMBOLS = frozenset(
+    {
+        "CSCO",
+        "CVX",
+        "GE",
+        "GOOGL",
+        "GS",
+        "HD",
+        "JNJ",
+        "LLY",
+        "MA",
+        "MCD",
+        "META",
+        "MSFT",
+        "NEE",
+        "NFLX",
+        "NVDA",
+        "ORCL",
+        "PG",
+        "RTX",
+        "SCHW",
+        "TMUS",
+        "TSLA",
+        "UNH",
+        "V",
+        "WMT",
+    }
+)
 _DEFERRED_REASONS = {
     "ALGN": (
         "Tiingo begins 2001-01-30 after the sourced public-trading start 2001-01-26; "
@@ -62,9 +113,34 @@ _DEFERRED_REASONS = {
         "canonical promotion remains blocked until the missing initial sessions are resolved."
     ),
     "COST": (
-        "Tiingo COST begins in 1996, while Costco's official history records the PriceCostco "
-        "ticker PCCW before a February 1997 change to COST; the exact effective trading date "
-        "needed for explicit symbol history remains unresolved."
+        "Tiingo COST begins in 1996 while Price/Costco traded under PCCW before the 1997 "
+        "transition to COST; the exact trading-date boundary has not yet been established from "
+        "an accepted primary source."
+    ),
+    "HON": (
+        "The current Honeywell registrant is the AlliedSignal legal survivor of the 1999 merger, "
+        "while the Tiingo HON series begins in 1996; ownership of the provider's pre-merger HON "
+        "history by the permanent successor identity remains unresolved."
+    ),
+    "JPM": (
+        "The current JPMorgan Chase registrant descends through the Chemical/Chase legal survivor; "
+        "the Tiingo JPM series begins in 1996 and the pre-merger ticker/issuer ownership boundary "
+        "has not yet been resolved explicitly."
+    ),
+    "MRK": (
+        "The 2009 Merck/Schering-Plough transaction used a successor/survivor structure that makes "
+        "the permanent-issuer ownership of the pre-transaction Tiingo MRK continuity series "
+        "ambiguous without a dedicated lineage adjudication."
+    ),
+    "MS": (
+        "The current Morgan Stanley registrant is the Dean Witter legal successor from the 1997 "
+        "combination; the Tiingo MS history beginning in 1996 cannot be assigned to the permanent "
+        "successor identity until its pre-combination ticker ownership is explicitly sourced."
+    ),
+    "XOM": (
+        "Exxon is the legal survivor of the 1999 Mobil merger and later became Exxon Mobil, but "
+        "the exact pre-merger Exxon ticker boundary needed to label the 1996 Tiingo continuity "
+        "series has not yet been verified from an accepted primary source."
     ),
 }
 
@@ -76,8 +152,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.5.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.6.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.6.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.7.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)
@@ -93,7 +169,7 @@ def main() -> int:
         if not profile_path.is_file():
             raise OperatorWorkspaceError("Tiingo profile is missing; run profile-tiingo first")
 
-        cases = load_lineage_cases(cases_path)
+        cases = load_lineage_case_source(cases_path)
         audit = audit_tiingo_profile_lineage(profile_path=profile_path, cases=cases)
         if audit.profiled_case_count != audit.case_count:
             missing = sorted(
@@ -116,7 +192,7 @@ def main() -> int:
         audit_path = workspace.root / "evidence" / "tiingo-lineage" / "audit.json"
         persist_tiingo_lineage_audit(audit_path, audit)
 
-        seed_set = load_reviewed_identity_seed_set(seeds_path)
+        seed_set = load_reviewed_identity_seed_source(seeds_path)
         candidate = build_reviewed_identity_snapshot_candidate(
             seed_set=seed_set,
             lineage_audit_path=audit_path,

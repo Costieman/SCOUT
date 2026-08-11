@@ -12,10 +12,10 @@ from trade_scout.data.instrument_storage import (
     InstrumentMasterPromotionRequest,
     InstrumentMasterStore,
 )
+from trade_scout.data.reviewed_identity_seed_source import load_reviewed_identity_seed_source
 from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotCandidate,
     build_reviewed_identity_snapshot_candidate,
-    load_reviewed_identity_seed_set,
     load_reviewed_identity_snapshot_candidate,
 )
 
@@ -44,13 +44,13 @@ def promote_reviewed_identity_candidate(
     """Rebuild, compare, promote, and reload one reviewed identity candidate.
 
     The gate intentionally does not accept provider price rows. A persisted candidate is first
-    reloaded and structurally validated, then rebuilt from the checked-in seed set and the exact
-    lineage-audit source. Promotion is allowed only when the persisted and rebuilt candidates are
-    equal and no reviewed-history coverage gaps remain.
+    reloaded and structurally validated, then rebuilt from the checked-in reviewed seed source and
+    exact lineage-audit source. Promotion is allowed only when the persisted and rebuilt candidates
+    are equal and no reviewed-history coverage gaps remain.
     """
 
     persisted = load_reviewed_identity_snapshot_candidate(candidate_path)
-    seed_set = load_reviewed_identity_seed_set(seed_path)
+    seed_set = load_reviewed_identity_seed_source(seed_path)
     rebuilt = build_reviewed_identity_snapshot_candidate(
         seed_set=seed_set,
         lineage_audit_path=lineage_audit_path,
