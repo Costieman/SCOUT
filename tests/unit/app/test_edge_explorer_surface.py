@@ -13,6 +13,7 @@ from trade_scout.data.contracts import (
     QualityStatus,
     ResearchBar,
 )
+from trade_scout.patterns.consolidation_breakout import TrendFilter
 
 
 class _FakeSource:
@@ -68,7 +69,7 @@ def test_edge_service_builds_parameter_surface() -> None:
             horizon=20,
             duration=20,
             max_range_pct=0.12,
-            trend_filter="none",  # type: ignore[arg-type]
+            trend_filter=TrendFilter.NONE,
         )
     )
 
