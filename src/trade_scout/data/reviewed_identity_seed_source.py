@@ -29,7 +29,9 @@ def load_reviewed_identity_seed_source(path: Path) -> ReviewedIdentitySeedSet:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise ReviewedIdentitySnapshotError("reviewed identity seed source is invalid JSON") from exc
+        raise ReviewedIdentitySnapshotError(
+            "reviewed identity seed source is invalid JSON"
+        ) from exc
     if not isinstance(payload, dict):
         raise ReviewedIdentitySnapshotError("reviewed identity seed source root must be an object")
 
@@ -52,7 +54,9 @@ def load_reviewed_identity_seed_source(path: Path) -> ReviewedIdentitySeedSet:
     if base.primary_provider_id != additions.primary_provider_id:
         raise ReviewedIdentitySnapshotError("composed seed sources use different primary providers")
     if base.identity_definition_version != additions.identity_definition_version:
-        raise ReviewedIdentitySnapshotError("composed seed sources use different identity definitions")
+        raise ReviewedIdentitySnapshotError(
+            "composed seed sources use different identity definitions"
+        )
     if base.symbol_history_definition_version != additions.symbol_history_definition_version:
         raise ReviewedIdentitySnapshotError(
             "composed seed sources use different symbol-history definitions"
@@ -109,7 +113,9 @@ def _resolved_sibling(source: Path, name: str) -> Path:
     candidate = (source.parent / name).resolve()
     parent = source.parent.resolve()
     if candidate.parent != parent:
-        raise ReviewedIdentitySnapshotError("seed composition may reference sibling config files only")
+        raise ReviewedIdentitySnapshotError(
+            "seed composition may reference sibling config files only"
+        )
     if candidate == source.resolve():
         raise ReviewedIdentitySnapshotError("seed composition cannot reference itself")
     return candidate
@@ -119,7 +125,9 @@ def _read_bytes(path: Path) -> bytes:
     try:
         return path.read_bytes()
     except OSError as exc:
-        raise ReviewedIdentitySnapshotError(f"cannot read reviewed identity seed source: {path}") from exc
+        raise ReviewedIdentitySnapshotError(
+            f"cannot read reviewed identity seed source: {path}"
+        ) from exc
 
 
 def _required_text(value: object, field: str) -> str:
