@@ -478,7 +478,10 @@ def _warnings(
     warnings = [
         "Exploratory market-wide evidence only; positive results are not validated trade signals.",
         "Parameter surfaces are hypothesis-generating and remain exposed to multiple-testing risk.",
-        "The current comparator is descriptive, not a matched or statistically independent control.",
+        (
+            "The current comparator is descriptive, not a matched or statistically "
+            "independent control."
+        ),
     ]
     if universe_instrument_count < 50:
         warnings.append(
@@ -487,11 +490,13 @@ def _warnings(
         )
     if selected.sample_size < 100:
         warnings.append(
-            f"Selected horizon has only {selected.sample_size} complete outcomes across the universe."
+            f"Selected horizon has only {selected.sample_size} complete outcomes "
+            "across the universe."
         )
     if breadth < 0.25:
         warnings.append(
-            "Fewer than 25% of research-universe instruments contributed events; inspect concentration."
+            "Fewer than 25% of research-universe instruments contributed events; "
+            "inspect concentration."
         )
     if top_five_share is not None and top_five_share > 0.35:
         warnings.append("The five most active instruments contribute more than 35% of events.")
