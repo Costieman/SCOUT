@@ -1,0 +1,31 @@
+name: Tiingo Stooq historical edge probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Probe reviewed ALGN 2001 edge with Stooq
+        env:
+          TIINGO_API_TOKEN: ${{ secrets.TIINGO_API_TOKEN }}
+        run: uv run python scripts/run_tiingo_stooq_historical_edge_probe.py
+      - name: Upload derived report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiingo-stooq-historical-edge
+          path: runtime/tiingo-stooq-historical-edge/report.json
+          if-no-files-found: warn
+          retention-days: 14
