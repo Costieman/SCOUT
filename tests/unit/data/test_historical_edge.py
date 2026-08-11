@@ -9,7 +9,6 @@ from trade_scout.data.composite_evidence import (
 from trade_scout.data.contracts import InstrumentId
 from trade_scout.data.historical_edge import HistoricalEdgeStatus, classify_initial_history_gap
 
-
 INSTRUMENT_ID = InstrumentId("historical-edge-test")
 GAP_DATES = (date(2001, 1, 26), date(2001, 1, 29))
 ANCHOR_DATE = date(2001, 1, 30)
