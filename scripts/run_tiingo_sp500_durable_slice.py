@@ -267,7 +267,9 @@ def _load_target_symbols(
         raise SystemExit("target config target_count does not match symbols")
     unknown = sorted(set(symbols) - set(snapshot_symbols))
     if unknown:
-        raise SystemExit(f"target config includes symbols outside the validated snapshot: {unknown}")
+        raise SystemExit(
+            f"target config includes symbols outside the validated snapshot: {unknown}"
+        )
     return frozenset(symbols)
 
 
