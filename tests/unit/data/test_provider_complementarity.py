@@ -91,12 +91,8 @@ def _report(
     )
     summary = CompositeEvidenceSummary(
         row_count=len(rows),
-        both_agree_count=sum(
-            row.state is CompositeCoverageState.BOTH_AGREE for row in rows
-        ),
-        both_disagree_count=sum(
-            row.state is CompositeCoverageState.BOTH_DISAGREE for row in rows
-        ),
+        both_agree_count=sum(row.state is CompositeCoverageState.BOTH_AGREE for row in rows),
+        both_disagree_count=sum(row.state is CompositeCoverageState.BOTH_DISAGREE for row in rows),
         a_only_count=sum(row.state is CompositeCoverageState.A_ONLY for row in rows),
         b_only_count=sum(row.state is CompositeCoverageState.B_ONLY for row in rows),
     )
