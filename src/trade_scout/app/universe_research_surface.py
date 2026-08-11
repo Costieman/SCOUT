@@ -184,13 +184,15 @@ def _surface_cell(cell: UniverseParameterCell) -> str:
     return (
         f'<td class="{css}"><strong>{_pct(cell.excess_mean_return)}</strong>'
         f'<br><span class="subtle">n={cell.complete_outcome_count} · '
-        f'{cell.instrument_count} stocks · {cell.mean_events_per_month:.1f}/mo</span></td>'
+        f"{cell.instrument_count} stocks · {cell.mean_events_per_month:.1f}/mo</span></td>"
     )
 
 
 def _options(values: tuple[int, ...], selected: int, suffix: str) -> str:
     return "".join(
-        f'<option value="{value}"' + (" selected" if value == selected else "") + f">{value}{suffix}</option>"
+        f'<option value="{value}"'
+        + (" selected" if value == selected else "")
+        + f">{value}{suffix}</option>"
         for value in values
     )
 
