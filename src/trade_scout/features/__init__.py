@@ -7,6 +7,9 @@ from trade_scout.features.contracts import (
     FeatureValue,
 )
 from trade_scout.features.initial import (
+    ATR_FEATURE_NAME,
+    ATR_FEATURE_VERSION,
+    ATR_PERIOD,
     INITIAL_FEATURE_SET,
     INITIAL_FEATURE_SET_VERSION,
     FeatureInputError,
@@ -24,6 +27,9 @@ from trade_scout.features.storage import (
 )
 
 __all__ = [
+    "ATR_FEATURE_NAME",
+    "ATR_FEATURE_VERSION",
+    "ATR_PERIOD",
     "INITIAL_FEATURE_SET",
     "INITIAL_FEATURE_SET_VERSION",
     "FeatureAvailabilityStatus",
