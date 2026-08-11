@@ -17,12 +17,12 @@ _COMPOSITION_SCHEMA = "reviewed-identity-seed-composition-v0.1"
 
 
 def load_reviewed_identity_seed_source(path: Path) -> ReviewedIdentitySeedSet:
-    """Load a full seed set or a composition of an immutable base plus reviewed additions.
+    """Load a full seed set or a composition of immutable reviewed seed files.
 
-    Composition exists to preserve previously reviewed seed files byte-for-byte while allowing a later
-    snapshot to add newly reviewed identities. Both the base and additions are independently strict
-    ``reviewed-identity-seeds-v0.1`` files. The resolved source checksum commits to both inputs and the
-    small composition manifest.
+    Composition preserves prior reviewed seed files byte-for-byte while allowing a later
+    snapshot to add reviewed identities. Base and additions remain independently strict
+    ``reviewed-identity-seeds-v0.1`` files. The resolved checksum commits to both inputs
+    and the small composition manifest.
     """
 
     raw = _read_bytes(path)
