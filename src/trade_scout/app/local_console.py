@@ -1,8 +1,9 @@
 """Small local HTTP shell for the evidence-backed Trade Scout application.
 
-The server is deliberately presentation-only. Every request rebuilds the application snapshot from
-persisted application-service evidence; it never calls market-data providers, exposes raw provider
-payloads, or implements analytical logic. The default bind is loopback-only.
+The server is deliberately presentation-only. Normal console requests rebuild the application
+snapshot from persisted application-service evidence. The Edge Explorer route delegates all
+analytics to an injected application service backed by canonical data; the HTTP layer never calls
+market-data providers or calculates research results itself. The default bind is loopback-only.
 """
 
 from __future__ import annotations
@@ -15,11 +16,19 @@ from enum import Enum
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, cast
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from trade_scout.app.application_snapshot_service import build_phase1_application_snapshot
 from trade_scout.app.data_health_service import DataHealthSourcePaths, build_data_health_summary
+from trade_scout.app.edge_explorer_service import (
+    EdgeExplorerError,
+    EdgeExplorerRequest,
+    EdgeExplorerService,
+    EdgeExplorerSource,
+)
+from trade_scout.app.edge_explorer_surface import render_edge_explorer_html
 from trade_scout.app.operational_surface import render_operational_application_html
+from trade_scout.patterns.consolidation_breakout import TrendFilter
 
 
 class LocalConsoleConfigurationError(ValueError):
@@ -33,6 +42,7 @@ class LocalConsoleConfig:
     sources: DataHealthSourcePaths
     build_label: str = "local-console-v0.1"
     refresh_seconds: int = 15
+    edge_explorer_source: EdgeExplorerSource | None = None
 
     def __post_init__(self) -> None:
         if not self.build_label.strip():
@@ -62,7 +72,8 @@ def build_console_response(
     now = generated_at or datetime.now(UTC)
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("generated_at must be timezone-aware")
-    path = urlsplit(request_target).path
+    parsed_target = urlsplit(request_target)
+    path = parsed_target.path
 
     if path == "/favicon.ico":
         return ConsoleResponse(
@@ -72,11 +83,22 @@ def build_console_response(
             headers=_security_headers(),
         )
 
-    if path not in {"/", "/index.html", "/api/snapshot.json", "/api/data-health.json", "/healthz"}:
+    allowed = {
+        "/",
+        "/index.html",
+        "/research/edge",
+        "/api/snapshot.json",
+        "/api/data-health.json",
+        "/healthz",
+    }
+    if path not in allowed:
         return _json_response(
             HTTPStatus.NOT_FOUND,
             {"error": "not_found", "path": path},
         )
+
+    if path == "/research/edge":
+        return _edge_explorer_response(parsed_target.query, config)
 
     health = build_data_health_summary(config.sources)
     snapshot = build_phase1_application_snapshot(
@@ -87,6 +109,7 @@ def build_console_response(
 
     if path in {"/", "/index.html"}:
         html = render_operational_application_html(snapshot)
+        html = _with_edge_explorer_link(html, enabled=config.edge_explorer_source is not None)
         html = _with_local_console_metadata(html, refresh_seconds=config.refresh_seconds)
         return ConsoleResponse(
             status_code=HTTPStatus.OK,
@@ -181,7 +204,7 @@ def _handler_for(config: LocalConsoleConfig) -> type[BaseHTTPRequestHandler]:
                 response = _json_response(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                     {
-                        "error": "data_health_unavailable",
+                        "error": "application_unavailable",
                         "error_type": type(exc).__name__,
                         "message": str(exc),
                     },
@@ -199,6 +222,76 @@ def _handler_for(config: LocalConsoleConfig) -> type[BaseHTTPRequestHandler]:
                 self.wfile.write(response.body)
 
     return LocalConsoleHandler
+
+
+def _edge_explorer_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
+    source = config.edge_explorer_source
+    if source is None:
+        html = render_edge_explorer_html(
+            symbols=(),
+            error=(
+                "Edge Explorer is not configured for this console. Use an operator workspace "
+                "with a selected canonical dataset and reviewed identity candidate."
+            ),
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    try:
+        symbols = source.available_symbols()
+    except Exception as exc:
+        html = render_edge_explorer_html(
+            symbols=(),
+            error=f"Cannot load reviewed symbol scope: {type(exc).__name__}: {exc}",
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    parameters = parse_qs(query, keep_blank_values=False)
+    if "symbol" not in parameters:
+        html = render_edge_explorer_html(symbols=symbols)
+        return _html_response(HTTPStatus.OK, html)
+
+    request: EdgeExplorerRequest | None = None
+    try:
+        request = EdgeExplorerRequest(
+            symbol=_one(parameters, "symbol"),
+            strategy_id=_one(parameters, "strategy", default="consolidation_breakout"),
+            horizon=int(_one(parameters, "horizon", default="20")),
+            duration=int(_one(parameters, "duration", default="20")),
+            max_range_pct=float(_one(parameters, "max_range_pct", default="12")) / 100.0,
+            trend_filter=TrendFilter(
+                _one(parameters, "trend_filter", default=TrendFilter.ABOVE_RISING_SMA_200.value)
+            ),
+        )
+        report = EdgeExplorerService(source).run(request)
+        html = render_edge_explorer_html(symbols=symbols, request=request, report=report)
+        return _html_response(HTTPStatus.OK, html)
+    except (ValueError, EdgeExplorerError) as exc:
+        html = render_edge_explorer_html(
+            symbols=symbols,
+            request=request,
+            error=str(exc),
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+
+def _one(parameters: dict[str, list[str]], name: str, *, default: str | None = None) -> str:
+    values = parameters.get(name)
+    if not values:
+        if default is None:
+            raise ValueError(f"missing query parameter {name}")
+        return default
+    if len(values) != 1:
+        raise ValueError(f"query parameter {name} must appear once")
+    return values[0]
+
+
+def _html_response(status: HTTPStatus, html: str) -> ConsoleResponse:
+    return ConsoleResponse(
+        status_code=status,
+        content_type="text/html; charset=utf-8",
+        body=html.encode("utf-8"),
+        headers=_security_headers(),
+    )
 
 
 def _json_response(
@@ -224,7 +317,7 @@ def _security_headers() -> tuple[tuple[str, str], ...]:
         (
             "Content-Security-Policy",
             "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; "
-            "base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+            "base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
         ),
     )
 
@@ -238,6 +331,14 @@ def _with_local_console_metadata(html: str, *, refresh_seconds: int) -> str:
         '<meta name="trade-scout-surface" content="local-evidence-console-v0.1">'
     )
     return html.replace(marker, marker + "\n" + metadata, 1)
+
+
+def _with_edge_explorer_link(html: str, *, enabled: bool) -> str:
+    marker = '<a href="#research">Research</a>'
+    if marker not in html:
+        raise RuntimeError("application renderer omitted Research navigation marker")
+    label = "Edge Explorer" if enabled else "Edge Explorer (not configured)"
+    return html.replace(marker, marker + f'<a href="/research/edge">{label}</a>', 1)
 
 
 def _json_ready(value: object) -> object:
