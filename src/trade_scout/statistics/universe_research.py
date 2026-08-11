@@ -158,9 +158,7 @@ def build_universe_research_report(
 
     summaries = summarize_outcomes(tuple(all_outcomes), horizons)
     selected = next(item for item in summaries if item.horizon == selected_horizon)
-    baseline_mean = (
-        sum(baseline_values) / len(baseline_values) if baseline_values else None
-    )
+    baseline_mean = sum(baseline_values) / len(baseline_values) if baseline_values else None
     excess = (
         selected.mean_return - baseline_mean
         if selected.mean_return is not None and baseline_mean is not None
@@ -249,9 +247,7 @@ def _parameter_surface(
                 stride=5,
             )
         )
-    baseline_mean = (
-        sum(baseline_values) / len(baseline_values) if baseline_values else None
-    )
+    baseline_mean = sum(baseline_values) / len(baseline_values) if baseline_values else None
 
     cells: list[UniverseParameterCell] = []
     for duration in durations:
@@ -371,9 +367,7 @@ def _baseline_returns(
         selected.append(index)
         last = index
 
-    return tuple(
-        bars[index + horizon].close / bars[index + 1].open - 1.0 for index in selected
-    )
+    return tuple(bars[index + horizon].close / bars[index + 1].open - 1.0 for index in selected)
 
 
 def _monthly_hits(
@@ -500,9 +494,7 @@ def _warnings(
             "Fewer than 25% of research-universe instruments contributed events; inspect concentration."
         )
     if top_five_share is not None and top_five_share > 0.35:
-        warnings.append(
-            "The five most active instruments contribute more than 35% of events."
-        )
+        warnings.append("The five most active instruments contribute more than 35% of events.")
     positive_cells = sum(
         item.excess_mean_return is not None and item.excess_mean_return > 0
         for item in parameter_surface
