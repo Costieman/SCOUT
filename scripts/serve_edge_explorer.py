@@ -31,7 +31,8 @@ def main() -> int:
     dataset_version = workspace.manifest.canonical_dataset_version
     if dataset_version is None:
         raise SystemExit(
-            "operator workspace has no selected canonical dataset; configure it before Edge Explorer"
+            "operator workspace has no selected canonical dataset; "
+            "configure it before Edge Explorer"
         )
     identity_candidate = (
         workspace.root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
