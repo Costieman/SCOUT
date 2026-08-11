@@ -86,8 +86,8 @@ def test_v07_composes_prior_review_with_24_sourced_targets(tmp_path: Path) -> No
     assert audit.case_count == 42
     assert audit.profiled_case_count == 42
     assert Counter(classifications.values()) == {
-        "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH": 24,
-        "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED": 8,
+        "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH": 25,
+        "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED": 7,
         "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED": 8,
         "WHEN_ISSUED_START_MATCH": 2,
     }
@@ -116,14 +116,39 @@ def test_v07_composes_prior_review_with_24_sourced_targets(tmp_path: Path) -> No
     )
 
     expected_histories = {
-        "CVX": [("CHV", "XNYS", "1996-01-02", "2001-10-09"), ("CVX", "XNYS", "2001-10-10", None)],
-        "GOOGL": [("GOOG", "XNAS", "2004-08-19", "2014-04-02"), ("GOOGL", "XNAS", "2014-04-03", None)],
-        "META": [("FB", "XNAS", "2012-05-18", "2022-06-08"), ("META", "XNAS", "2022-06-09", None)],
-        "NEE": [("FPL", "XNYS", "1996-01-02", "2010-06-22"), ("NEE", "XNYS", "2010-06-23", None)],
-        "ORCL": [("ORCL", "XNAS", "1986-03-12", "2013-07-14"), ("ORCL", "XNYS", "2013-07-15", None)],
-        "RTX": [("UTX", "XNYS", "1996-01-02", "2020-04-02"), ("RTX", "XNYS", "2020-04-03", None)],
-        "TMUS": [("PCS", "XNYS", "2007-04-19", "2013-04-30"), ("TMUS", "XNYS", "2013-05-01", "2015-10-26"), ("TMUS", "XNAS", "2015-10-27", None)],
-        "WMT": [("WMT", "XNYS", "1996-01-02", "2025-12-08"), ("WMT", "XNAS", "2025-12-09", None)],
+        "CVX": [
+            ("CHV", "XNYS", "1996-01-02", "2001-10-09"),
+            ("CVX", "XNYS", "2001-10-10", None),
+        ],
+        "GOOGL": [
+            ("GOOG", "XNAS", "2004-08-19", "2014-04-02"),
+            ("GOOGL", "XNAS", "2014-04-03", None),
+        ],
+        "META": [
+            ("FB", "XNAS", "2012-05-18", "2022-06-08"),
+            ("META", "XNAS", "2022-06-09", None),
+        ],
+        "NEE": [
+            ("FPL", "XNYS", "1996-01-02", "2010-06-22"),
+            ("NEE", "XNYS", "2010-06-23", None),
+        ],
+        "ORCL": [
+            ("ORCL", "XNAS", "1986-03-12", "2013-07-14"),
+            ("ORCL", "XNYS", "2013-07-15", None),
+        ],
+        "RTX": [
+            ("UTX", "XNYS", "1996-01-02", "2020-04-02"),
+            ("RTX", "XNYS", "2020-04-03", None),
+        ],
+        "TMUS": [
+            ("PCS", "XNYS", "2007-04-19", "2013-04-30"),
+            ("TMUS", "XNYS", "2013-05-01", "2015-10-26"),
+            ("TMUS", "XNAS", "2015-10-27", None),
+        ],
+        "WMT": [
+            ("WMT", "XNYS", "1996-01-02", "2025-12-08"),
+            ("WMT", "XNAS", "2025-12-09", None),
+        ],
     }
     instruments = {item.primary_symbol: item for item in candidate.instruments}
     for symbol, expected in expected_histories.items():
