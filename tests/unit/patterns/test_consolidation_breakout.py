@@ -18,7 +18,9 @@ from trade_scout.patterns.consolidation_breakout import (
 )
 
 
-def _bar(index: int, *, close: float, high: float | None = None, low: float | None = None) -> ResearchBar:
+def _bar(
+    index: int, *, close: float, high: float | None = None, low: float | None = None
+) -> ResearchBar:
     return ResearchBar(
         instrument_id=InstrumentId("tsi_test"),
         trade_date=date(2024, 1, 1) + timedelta(days=index),
@@ -69,8 +71,7 @@ def test_future_changes_do_not_change_first_event() -> None:
     original = detect_consolidation_breakouts(bars, config)[0]
     changed = list(bars)
     changed[20:] = [
-        replace(item, open=500.0, high=505.0, low=495.0, close=500.0)
-        for item in changed[20:]
+        replace(item, open=500.0, high=505.0, low=495.0, close=500.0) for item in changed[20:]
     ]
 
     after = detect_consolidation_breakouts(tuple(changed), config)[0]
