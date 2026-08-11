@@ -1,0 +1,28 @@
+name: Stooq historical transport diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Diagnose bounded Stooq ALGN request
+        run: uv run python scripts/run_stooq_historical_transport_diagnostic.py
+      - name: Upload derived diagnostic only
+        uses: actions/upload-artifact@v4
+        with:
+          name: stooq-historical-transport-diagnostic
+          path: runtime/stooq-historical-transport-diagnostic/report.json
+          if-no-files-found: error
+          retention-days: 14
