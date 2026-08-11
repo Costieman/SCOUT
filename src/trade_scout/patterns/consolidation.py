@@ -87,7 +87,9 @@ def detect_consolidation_states(
         qualifies = quality_ok and range_pct <= definition.max_range_pct
 
         if not qualifies:
-            lifecycle = PatternLifecycleState.INVALIDATED if prior_active else PatternLifecycleState.NONE
+            lifecycle = (
+                PatternLifecycleState.INVALIDATED if prior_active else PatternLifecycleState.NONE
+            )
             states.append(
                 _state(
                     bar=bar,
