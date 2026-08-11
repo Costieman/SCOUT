@@ -1,0 +1,44 @@
+name: Tiingo Alpha complementarity campaign
+
+on:
+  workflow_dispatch:
+    inputs:
+      offset:
+        description: "Zero-based case offset"
+        required: true
+        default: "0"
+      max_cases:
+        description: "Maximum cases in this bounded run"
+        required: true
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run bounded complementarity batch
+        env:
+          TIINGO_API_TOKEN: ${{ secrets.TIINGO_API_TOKEN }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        run: >-
+          uv run python scripts/run_tiingo_alpha_complementarity_campaign.py
+          --offset "${{ inputs.offset }}"
+          --max-cases "${{ inputs.max_cases }}"
+      - name: Upload derived report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiingo-alpha-complementarity-${{ inputs.offset }}
+          path: runtime/tiingo-alpha-complementarity/report.json
+          if-no-files-found: warn
+          retention-days: 14
