@@ -107,7 +107,10 @@ def _load_profile_symbols(path: Path) -> dict[str, dict[str, object]]:
         raise TiingoReviewProbeError(f"cannot read Tiingo profile: {path}") from exc
     except json.JSONDecodeError as exc:
         raise TiingoReviewProbeError("Tiingo profile is invalid JSON") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "tiingo-durable-profile-v0.1":
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "tiingo-durable-profile-v0.1"
+    ):
         raise TiingoReviewProbeError("unsupported Tiingo durable profile")
     raw_symbols = payload.get("symbols")
     if not isinstance(raw_symbols, list):
