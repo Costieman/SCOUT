@@ -58,6 +58,11 @@ class UniverseResearchRequest:
     min_breakout_volume_ratio: float | None = None
 
     def __post_init__(self) -> None:
+        encoded_prefix = "consolidation_breakout@"
+        if self.strategy_id.startswith(encoded_prefix):
+            timeframe_value = self.strategy_id.removeprefix(encoded_prefix)
+            object.__setattr__(self, "pattern_timeframe", PatternTimeframe(timeframe_value))
+            object.__setattr__(self, "strategy_id", "consolidation_breakout")
         if self.universe_id != "reviewed_canonical":
             raise ValueError(f"unsupported universe_id {self.universe_id!r}")
         if self.strategy_id != "consolidation_breakout":
