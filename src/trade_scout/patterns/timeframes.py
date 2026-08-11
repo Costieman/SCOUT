@@ -40,7 +40,9 @@ class PatternSeriesFrame:
         count = len(self.bars)
         if len(self.source_start_indices) != count or len(self.source_end_indices) != count:
             raise ValueError("pattern-bar mappings must align one-to-one with pattern bars")
-        if any(start > end for start, end in zip(self.source_start_indices, self.source_end_indices)):
+        if any(
+            start > end for start, end in zip(self.source_start_indices, self.source_end_indices)
+        ):
             raise ValueError("pattern-bar source start cannot be after source end")
 
 
@@ -123,7 +125,9 @@ def _market_blocks(
     if not market_sessions:
         raise ValueError("market-session calendar must not be empty")
     if timeframe is PatternTimeframe.DAILY:
-        return tuple((session,) for session in market_sessions), "one source session per pattern bar"
+        return tuple(
+            (session,) for session in market_sessions
+        ), "one source session per pattern bar"
     if timeframe in {PatternTimeframe.TWO_SESSION, PatternTimeframe.THREE_SESSION}:
         size = 2 if timeframe is PatternTimeframe.TWO_SESSION else 3
         blocks = tuple(
@@ -160,7 +164,9 @@ def _aggregate_block(bars: tuple[ResearchBar, ...]) -> ResearchBar:
     versions = {bar.dataset_version for bar in bars}
     representations = {bar.price_representation for bar in bars}
     if len(instruments) != 1 or len(versions) != 1 or len(representations) != 1:
-        raise ValueError("pattern-bar block cannot mix instruments, datasets, or price representations")
+        raise ValueError(
+            "pattern-bar block cannot mix instruments, datasets, or price representations"
+        )
     dates = tuple(bar.trade_date for bar in bars)
     if tuple(sorted(dates)) != dates or len(set(dates)) != len(dates):
         raise ValueError("pattern-bar source dates must be unique and increasing")
