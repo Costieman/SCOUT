@@ -160,9 +160,7 @@ def _parameter_surface(
         horizons=(selected_horizon,),
         stride=5,
     )[selected_horizon]
-    baseline_mean = (
-        sum(baseline_values) / len(baseline_values) if baseline_values else None
-    )
+    baseline_mean = sum(baseline_values) / len(baseline_values) if baseline_values else None
 
     cells: list[ParameterSurfaceCell] = []
     for duration in durations:
