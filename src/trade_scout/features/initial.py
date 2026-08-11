@@ -17,7 +17,10 @@ from trade_scout.features.contracts import (
     FeatureValue,
 )
 
-INITIAL_FEATURE_SET_VERSION = "phase2-initial-features-v0.1"
+INITIAL_FEATURE_SET_VERSION = "phase2-initial-features-v0.2"
+ATR_FEATURE_NAME = "atr_14"
+ATR_FEATURE_VERSION = "v0.1"
+ATR_PERIOD = 14
 
 
 class FeatureInputError(ValueError):
@@ -48,6 +51,18 @@ INITIAL_FEATURE_SET = FeatureSetDefinition(
             resolved_parameters=_params(period=200),
             units="price",
             minimum_observations=200,
+        ),
+        FeatureDefinition(
+            feature_name=ATR_FEATURE_NAME,
+            feature_version=ATR_FEATURE_VERSION,
+            description=(
+                "Simple mean of 14 split-adjusted true ranges ending at t; each true range uses "
+                "the prior session close."
+            ),
+            required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
+            resolved_parameters=_params(period=ATR_PERIOD, method="simple_true_range_mean"),
+            units="price",
+            minimum_observations=ATR_PERIOD + 1,
         ),
         FeatureDefinition(
             feature_name="return_60",
@@ -236,6 +251,24 @@ def _calculate_feature(
         numeric = _require_optional_values(closes)
         return FeatureAvailabilityStatus.AVAILABLE, math.fsum(numeric) / period
 
+    if definition.feature_name == ATR_FEATURE_NAME:
+        period = _integer_parameter(definition, "period")
+        true_ranges: list[float] = []
+        for current_index in range(index - period + 1, index + 1):
+            current_high = _split_high(bars[current_index])
+            current_low = _split_low(bars[current_index])
+            previous_close = _split_close(bars[current_index - 1])
+            if current_high is None or current_low is None or previous_close is None:
+                return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
+            true_ranges.append(
+                max(
+                    current_high - current_low,
+                    abs(current_high - previous_close),
+                    abs(current_low - previous_close),
+                )
+            )
+        return FeatureAvailabilityStatus.AVAILABLE, math.fsum(true_ranges) / period
+
     if definition.feature_name == "return_60":
         intervals = _integer_parameter(definition, "intervals")
         current = _split_close(bars[index])
@@ -303,6 +336,9 @@ def _require_optional_values(values: Sequence[float | None]) -> tuple[float, ...
 
 
 __all__ = [
+    "ATR_FEATURE_NAME",
+    "ATR_FEATURE_VERSION",
+    "ATR_PERIOD",
     "INITIAL_FEATURE_SET",
     "INITIAL_FEATURE_SET_VERSION",
     "FeatureInputError",
