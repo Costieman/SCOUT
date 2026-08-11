@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import date
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
 from trade_scout.patterns.contracts import (
@@ -48,7 +49,7 @@ def detect_consolidation_states(
     _validate_bars(bars)
     states: list[PatternState] = []
     active_instance_id: str | None = None
-    active_formation_start = None
+    active_formation_start: date | None = None
     prior_active = False
 
     parameters = (
@@ -86,12 +87,12 @@ def detect_consolidation_states(
         qualifies = quality_ok and range_pct <= definition.max_range_pct
 
         if not qualifies:
-            state = PatternLifecycleState.INVALIDATED if prior_active else PatternLifecycleState.NONE
+            lifecycle = PatternLifecycleState.INVALIDATED if prior_active else PatternLifecycleState.NONE
             states.append(
                 _state(
                     bar=bar,
                     definition=definition,
-                    state=state,
+                    state=lifecycle,
                     pattern_instance_id=active_instance_id or _none_id(bar, definition),
                     formation_start=active_formation_start if prior_active else None,
                     formation_end=bar.trade_date if prior_active else None,
@@ -107,24 +108,28 @@ def detect_consolidation_states(
             prior_active = False
             continue
 
-        formation_start = window[0].trade_date
-        instance_id = _qualified_id(bar.instrument_id, formation_start, definition)
+        if active_instance_id is None:
+            active_formation_start = window[0].trade_date
+            active_instance_id = _qualified_id(
+                bar.instrument_id,
+                active_formation_start,
+                definition,
+            )
+
         distance = max(0.0, (high - bar.close) / high)
         lifecycle = (
             PatternLifecycleState.TRIGGER_READY
             if distance <= definition.trigger_ready_distance_pct
             else PatternLifecycleState.QUALIFIED
         )
-        active_instance_id = instance_id
-        active_formation_start = formation_start
         prior_active = True
         states.append(
             _state(
                 bar=bar,
                 definition=definition,
                 state=lifecycle,
-                pattern_instance_id=instance_id,
-                formation_start=formation_start,
+                pattern_instance_id=active_instance_id,
+                formation_start=active_formation_start,
                 formation_end=bar.trade_date,
                 parameters=parameters,
                 boundaries=(
@@ -143,8 +148,8 @@ def _state(
     definition: ConsolidationDefinition,
     state: PatternLifecycleState,
     pattern_instance_id: str,
-    formation_start: object,
-    formation_end: object,
+    formation_start: date | None,
+    formation_end: date | None,
     parameters: tuple[ResolvedPatternParameter, ...],
     boundaries: tuple[StructuralBoundary, ...],
 ) -> PatternState:
@@ -155,8 +160,8 @@ def _state(
         pattern_version=definition.pattern_version,
         as_of_date=bar.trade_date,
         state=state,
-        formation_start=formation_start,  # type: ignore[arg-type]
-        formation_end=formation_end,  # type: ignore[arg-type]
+        formation_start=formation_start,
+        formation_end=formation_end,
         resolved_parameters=parameters,
         structural_boundaries=boundaries,
         feature_set_version=definition.feature_set_version,
@@ -170,13 +175,17 @@ def _stable_id(prefix: str, payload: dict[str, str]) -> str:
     return f"{prefix}_{hashlib.sha256(encoded).hexdigest()[:24]}"
 
 
-def _qualified_id(instrument_id: str, formation_start: object, definition: ConsolidationDefinition) -> str:
+def _qualified_id(
+    instrument_id: str,
+    formation_start: date,
+    definition: ConsolidationDefinition,
+) -> str:
     return _stable_id(
         "pat",
         {
             "instrument_id": str(instrument_id),
             "pattern_version": definition.pattern_version,
-            "formation_start": str(formation_start),
+            "formation_start": formation_start.isoformat(),
             "duration_sessions": str(definition.duration_sessions),
             "max_range_pct": f"{definition.max_range_pct:.12g}",
         },
