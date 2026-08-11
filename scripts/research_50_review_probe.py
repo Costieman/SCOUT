@@ -45,9 +45,7 @@ def main() -> int:
     payload = {
         "schema_version": "tiingo-research-50-review-probe-v0.1",
         "pending_review_count": len(rows),
-        "all_pending_structurally_clean": all(
-            item.structural_anomaly_count == 0 for item in rows
-        ),
+        "all_pending_structurally_clean": all(item.structural_anomaly_count == 0 for item in rows),
         "symbols": [asdict(item) for item in rows],
         "provider_calls_made": False,
         "identity_promotion_performed": False,
@@ -62,7 +60,10 @@ def _target_symbols(path: Path) -> set[str]:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SystemExit(f"cannot read research target config: {path}") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "tiingo-research-targets-v0.1":
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "tiingo-research-targets-v0.1"
+    ):
         raise SystemExit("unsupported research target config")
     raw_symbols = payload.get("symbols")
     if not isinstance(raw_symbols, list) or not all(isinstance(item, str) for item in raw_symbols):
