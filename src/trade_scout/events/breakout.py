@@ -8,7 +8,11 @@ from dataclasses import dataclass
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
 from trade_scout.events.contracts import EventRecord
-from trade_scout.patterns.contracts import PatternLifecycleState, PatternState, ResolvedPatternParameter
+from trade_scout.patterns.contracts import (
+    PatternLifecycleState,
+    PatternState,
+    ResolvedPatternParameter,
+)
 
 
 @dataclass(frozen=True, slots=True)
