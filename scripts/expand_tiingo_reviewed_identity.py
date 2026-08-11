@@ -28,24 +28,44 @@ from trade_scout.data.reviewed_identity_snapshot import (
 
 _EXPECTED_CLASSIFICATIONS = {
     "A": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AAPL": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "ABBV": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ABNB": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AIZ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AKAM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ALLE": "WHEN_ISSUED_START_MATCH",
+    "AMD": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "AMP": "WHEN_ISSUED_START_MATCH",
     "AMZN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ANET": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APTV": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "AVGO": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AWK": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AXON": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "CAT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "CRM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
 }
-_NEW_REVIEWED_SYMBOLS = frozenset({"A", "AIZ", "AKAM", "AMP", "AMZN"})
+_NEW_REVIEWED_SYMBOLS = frozenset({"AAPL", "ABBV", "AMD", "AVGO", "CAT", "CRM"})
 _DEFERRED_REASONS = {
     "ALGN": (
         "Tiingo begins 2001-01-30 after the sourced public-trading start 2001-01-26; "
         "canonical promotion remains blocked until the missing sessions are independently resolved."
-    )
+    ),
+    "BAC": (
+        "The Tiingo BAC series begins before the 1998 NationsBank/BankAmerica merger, while "
+        "the current issuer is the successor to NationsBank; permanent-issuer ownership of the "
+        "pre-merger provider history remains unresolved."
+    ),
+    "BKNG": (
+        "Tiingo begins 1999-03-31 after the sourced Priceline public-trading start 1999-03-29; "
+        "canonical promotion remains blocked until the missing initial sessions are resolved."
+    ),
+    "COST": (
+        "Tiingo COST begins in 1996, while Costco's official history records the PriceCostco "
+        "ticker PCCW before a February 1997 change to COST; the exact effective trading date "
+        "needed for explicit symbol history remains unresolved."
+    ),
 }
 
 
@@ -56,8 +76,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.4.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.5.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.5.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.6.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)
