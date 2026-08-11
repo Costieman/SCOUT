@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import json
-from datetime import date
 from pathlib import Path
 
 from trade_scout.data.providers.tiingo_lineage_audit import (
     LineageCase,
-    LineageEvent,
     TiingoLineageAuditError,
     load_lineage_cases,
 )
