@@ -1,0 +1,55 @@
+{
+  "schema_version": "tiingo-alpha-complementarity-cases-v0.1",
+  "start_date": "2026-04-01",
+  "end_date": "2026-08-07",
+  "cases": [
+    {
+      "case_id": "cmp-001",
+      "symbol": "AAPL",
+      "exchange": "XNAS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-001"
+    },
+    {
+      "case_id": "cmp-002",
+      "symbol": "MSFT",
+      "exchange": "XNAS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-002"
+    },
+    {
+      "case_id": "cmp-003",
+      "symbol": "NVDA",
+      "exchange": "XNAS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-003"
+    },
+    {
+      "case_id": "cmp-004",
+      "symbol": "AMZN",
+      "exchange": "XNAS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-004"
+    },
+    {
+      "case_id": "cmp-005",
+      "symbol": "JPM",
+      "exchange": "XNYS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-005"
+    },
+    {
+      "case_id": "cmp-006",
+      "symbol": "XOM",
+      "exchange": "XNYS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-006"
+    },
+    {
+      "case_id": "cmp-007",
+      "symbol": "KO",
+      "exchange": "XNYS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-007"
+    },
+    {
+      "case_id": "cmp-008",
+      "symbol": "CAT",
+      "exchange": "XNYS",
+      "tiingo_provider_instrument_id": "tiingo-review-series-008"
+    }
+  ]
+}
