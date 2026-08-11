@@ -14,6 +14,7 @@ from typing import Protocol
 
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
 from trade_scout.data.contracts import (
+    DailyBar,
     DatasetVersion,
     PriceRepresentation,
     QualityStatus,
@@ -119,7 +120,7 @@ class CanonicalUniverseResearchSource:
         canonical = CanonicalDailyBarStore(self.canonical_root).load(
             DatasetVersion(self.dataset_version)
         )
-        bars_by_instrument: dict[str, list] = {}
+        bars_by_instrument: dict[str, list[DailyBar]] = {}
         for bar in canonical:
             bars_by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
 
