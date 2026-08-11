@@ -102,7 +102,9 @@ def main() -> int:
     expected_set = set(expected_probe_sessions)
     unexpected_dates = sorted({row.trade_date for row in evidence.rows} - expected_set)
     if unexpected_dates:
-        raise RuntimeError("provider returned observations outside the bounded historical-edge window")
+        raise RuntimeError(
+            "provider returned observations outside the bounded historical-edge window"
+        )
 
     status = classify_initial_history_gap(
         evidence,
