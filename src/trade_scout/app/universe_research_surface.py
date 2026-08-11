@@ -27,7 +27,7 @@ def render_universe_research_html(
         for item in universes
     )
     timeframe_options = "".join(
-        f'<option value="{value}"'
+        f'<option value="consolidation_breakout@{value}"'
         + (" selected" if value == selected.pattern_timeframe.value else "")
         + f">{label}</option>"
         for value, label in (
@@ -98,8 +98,8 @@ ul {{ padding-left:19px; }} details {{ margin-top:10px; }} code {{ color:#d9e3ef
 <div class="card">
 <form action="/research/universe" method="get">
 <label>Universe<select name="universe">{universe_options}</select></label>
-<label>Strategy<select name="strategy"><option value="consolidation_breakout">Consolidation breakout</option></select></label>
-<label>Pattern timeframe<select name="pattern_timeframe">{timeframe_options}</select></label>
+<label>Strategy<select disabled><option>Consolidation breakout</option></select></label>
+<label>Pattern timeframe<select name="strategy">{timeframe_options}</select></label>
 <label>Lookback<select name="lookback_years">{lookback_options}</select></label>
 <label>Holding horizon<select name="horizon">{horizon_options}</select></label>
 <label>Base bars<input name="duration" type="number" min="5" max="252" value="{selected.duration}"></label>
