@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from statistics import median
-from typing import Mapping
 
 from trade_scout.risk.initial_stops import RiskPolicyResult, StopFamily, StopPolicy
 
@@ -102,10 +102,22 @@ def summarize_stop_policy_results(
     )
     counts = {item.sample_size for item in summaries}
     warnings = [
-        "Stop policies are applied after event detection; they do not change which breakouts existed.",
-        "Premature stop means a stopped event still finished positive at the selected no-stop horizon.",
-        "Daily-bar stop-only simulations have no stop/target ordering ambiguity, but intraday path is not observed.",
-        "Exploratory policy grids are exposed to multiple-testing risk and are not production stop recommendations.",
+        (
+            "Stop policies are applied after event detection; they do not change which "
+            "breakouts existed."
+        ),
+        (
+            "Premature stop means a stopped event still finished positive at the selected "
+            "no-stop horizon."
+        ),
+        (
+            "Daily-bar stop-only simulations have no stop/target ordering ambiguity, but "
+            "intraday path is not observed."
+        ),
+        (
+            "Exploratory policy grids are exposed to multiple-testing risk and are not "
+            "production stop recommendations."
+        ),
     ]
     if len(counts) != 1:
         warnings.append(
@@ -113,7 +125,7 @@ def summarize_stop_policy_results(
         )
     if entry_slippage_bps == 0 and exit_slippage_bps == 0:
         warnings.append(
-            "Execution costs are currently zero; positive expectancy is gross exploratory evidence only."
+            "Execution costs are zero; positive expectancy is gross exploratory evidence only."
         )
 
     cost_versions = {item.cost_model_version for item in results}
