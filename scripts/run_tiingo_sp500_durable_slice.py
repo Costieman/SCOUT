@@ -56,7 +56,10 @@ def main() -> int:
         "--target-config",
         type=Path,
         default=None,
-        help="Optional checked-in bounded target scope; acquisition remains inside the S&P snapshot.",
+        help=(
+            "Optional checked-in bounded target scope; acquisition remains inside the S&P "
+            "snapshot."
+        ),
     )
     args = parser.parse_args()
 
