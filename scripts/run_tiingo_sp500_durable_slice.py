@@ -40,6 +40,12 @@ from trade_scout.data.providers.tiingo_symbology import build_tiingo_query_symbo
 from trade_scout.data.raw_store import RawBatchStore
 
 CAMPAIGN_ID = "tiingo-sp500-baseline-v0.1"
+_TARGET_CONFIG_HELP = " ".join(
+    (
+        "Optional checked-in bounded target scope; acquisition remains",
+        "inside the S&P snapshot.",
+    )
+)
 
 
 def main() -> int:
@@ -56,10 +62,7 @@ def main() -> int:
         "--target-config",
         type=Path,
         default=None,
-        help=(
-            "Optional checked-in bounded target scope; acquisition remains inside the S&P "
-            "snapshot."
-        ),
+        help=_TARGET_CONFIG_HELP,
     )
     args = parser.parse_args()
 
