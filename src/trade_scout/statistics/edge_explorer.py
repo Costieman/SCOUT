@@ -225,12 +225,19 @@ def _warnings(
 ) -> tuple[str, ...]:
     warnings = [
         "Exploratory single-stock evidence only; this is not a validated trade signal.",
-        "The comparator is a simple same-stock trend-context baseline, not a matched or independent control.",
-        "Parameter-surface highs are hypothesis-generating and are exposed to multiple-testing/data-mining risk.",
+        (
+            "The comparator is a simple same-stock trend-context baseline, not a matched "
+            "or independent control."
+        ),
+        (
+            "Parameter-surface highs are hypothesis-generating and are exposed to "
+            "multiple-testing/data-mining risk."
+        ),
     ]
     if selected.sample_size < 10:
         warnings.append(
-            f"Selected horizon has only {selected.sample_size} complete breakout outcomes; treat estimates as unstable."
+            f"Selected horizon has only {selected.sample_size} complete breakout outcomes; "
+            "treat estimates as unstable."
         )
     if baseline_size < 20:
         warnings.append(
@@ -241,6 +248,7 @@ def _warnings(
     )
     if positive_cells in {0, len(surface)}:
         warnings.append(
-            "The nearby-parameter surface is one-sided; broader instruments/time periods are needed before interpretation."
+            "The nearby-parameter surface is one-sided; broader instruments/time periods "
+            "are needed before interpretation."
         )
     return tuple(warnings)
