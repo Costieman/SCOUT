@@ -12,8 +12,9 @@ import json
 import os
 import sys
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
+from typing import cast
 
 from trade_scout.data.composite_evidence import (
     CompositeCoverageState,
@@ -222,8 +223,8 @@ def _load_config(path: Path) -> CampaignConfig:
     end = date.fromisoformat(_text(payload["end_date"], "end_date"))
     if end < start:
         raise ValueError("campaign end date must be on or after start date")
-    if start < end.replace(year=end.year - 1):
-        raise ValueError("campaign window is intentionally bounded to less than one year")
+    if start < end - timedelta(days=180):
+        raise ValueError("campaign window exceeds the accepted Alpha Vantage compact range")
 
     raw_cases = payload["cases"]
     if not isinstance(raw_cases, list) or not raw_cases:
@@ -277,11 +278,12 @@ def _provider_failure(
 
 
 def _aggregate(case_reports: list[dict[str, object]]) -> dict[str, object]:
-    summaries = [
-        report["summary"]
-        for report in case_reports
-        if report.get("status") == "COMPARED" and isinstance(report.get("summary"), dict)
-    ]
+    summaries: list[dict[str, object]] = []
+    for report in case_reports:
+        candidate = report.get("summary")
+        if report.get("status") == "COMPARED" and isinstance(candidate, dict):
+            summaries.append(cast(dict[str, object], candidate))
+
     keys = (
         "expected_session_count",
         "provider_a_session_count",
@@ -293,9 +295,7 @@ def _aggregate(case_reports: list[dict[str, object]]) -> dict[str, object]:
         "provider_b_only_count",
         "both_missing_count",
     )
-    totals = {
-        key: sum(int(summary[key]) for summary in summaries if key in summary) for key in keys
-    }
+    totals = {key: _sum_int_field(summaries, key) for key in keys}
     expected = totals["expected_session_count"]
     totals["tiingo_coverage_fraction"] = _safe_fraction(
         totals["provider_a_session_count"], expected
@@ -311,6 +311,16 @@ def _aggregate(case_reports: list[dict[str, object]]) -> dict[str, object]:
         totals["provider_a_only_count"], expected
     )
     return totals
+
+
+def _sum_int_field(summaries: list[dict[str, object]], field: str) -> int:
+    total = 0
+    for summary in summaries:
+        value = summary.get(field)
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise ValueError(f"campaign summary field {field} must be an integer")
+        total += value
+    return total
 
 
 def _safe_fraction(numerator: int, denominator: int) -> float | None:
