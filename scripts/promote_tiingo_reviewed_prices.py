@@ -19,6 +19,10 @@ from trade_scout.data.providers.tiingo_canonical_promotion import (
     persist_tiingo_canonical_promotion_report,
     promote_reviewed_tiingo_prices,
 )
+from trade_scout.data.providers.tiingo_sp500_campaign import (
+    TiingoSp500CampaignError,
+    load_tiingo_sp500_campaign_plan,
+)
 from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotError,
     load_reviewed_identity_snapshot_candidate,
@@ -56,6 +60,9 @@ def main() -> int:
             )
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
         dataset_version = _OPERATOR_DATASET_VERSION_BY_IDENTITY.get(candidate.snapshot_version)
+        campaign_plan = load_tiingo_sp500_campaign_plan(
+            repository_root / "configs" / "tiingo_sp500_campaign_v0.1.json"
+        )
 
         result = promote_reviewed_tiingo_prices(
             receipt_root=workspace.tiingo_receipts_root,
@@ -64,6 +71,8 @@ def main() -> int:
             candidate_path=candidate_path,
             canonical_root=workspace.canonical_root,
             dataset_version=dataset_version,
+            dataset_start_date=campaign_plan.history_start,
+            dataset_end_date=campaign_plan.history_end,
         )
         output = (
             workspace.root
@@ -76,6 +85,7 @@ def main() -> int:
         OperatorWorkspaceError,
         ReviewedIdentitySnapshotError,
         TiingoCanonicalPromotionError,
+        TiingoSp500CampaignError,
     ) as exc:
         print(f"Tiingo canonical price promotion error: {exc}", file=sys.stderr)
         return 2
@@ -98,7 +108,13 @@ def main() -> int:
                 "dividend_event_count": result.dividend_event_count,
                 "cross_check_eligible_symbol_count": result.cross_check_eligible_symbol_count,
                 "cross_check_mismatch_field_count": result.cross_check_mismatch_field_count,
-                "session_calendar_definition_version": (result.session_calendar_definition_version),
+                "session_calendar_definition_version": result.session_calendar_definition_version,
+                "session_coverage_start_date": (
+                    result.session_coverage_start_date.isoformat()
+                    if result.session_coverage_start_date is not None
+                    else None
+                ),
+                "session_coverage_end_date": result.session_coverage_end_date.isoformat(),
                 "missing_expected_session_count": result.missing_expected_session_count,
                 "unexpected_observed_date_count": result.unexpected_observed_date_count,
                 "duplicate_observed_date_count": result.duplicate_observed_date_count,
