@@ -82,6 +82,24 @@ def test_expected_sessions_apply_regular_holidays_and_new_year_saturday_rule() -
     )
 
 
+def test_pre_1998_mlk_days_are_sessions_and_1998_is_closed() -> None:
+    assert date(1996, 1, 15) in expected_exchange_sessions(
+        exchange="XNAS",
+        start=date(1996, 1, 15),
+        end=date(1996, 1, 15),
+    )
+    assert date(1997, 1, 20) in expected_exchange_sessions(
+        exchange="XNYS",
+        start=date(1997, 1, 20),
+        end=date(1997, 1, 20),
+    )
+    assert date(1998, 1, 19) not in expected_exchange_sessions(
+        exchange="XNAS",
+        start=date(1998, 1, 19),
+        end=date(1998, 1, 19),
+    )
+
+
 def test_expected_sessions_apply_sourced_exceptional_full_day_closures() -> None:
     calendar = default_us_equity_session_calendar()
 
@@ -157,10 +175,33 @@ def test_first_trade_and_delisting_bounds_are_respected() -> None:
     assert audit.complete is True
 
 
+def test_dataset_start_bounds_pre_campaign_lifecycle_without_hiding_internal_gaps() -> None:
+    instrument = _instrument(first_trade_date=date(1980, 12, 12))
+    complete = audit_daily_bar_session_completeness(
+        (_bar(date(1996, 1, 2)), _bar(date(1996, 1, 3))),
+        instruments=(instrument,),
+        dataset_start_date=date(1996, 1, 2),
+        dataset_end_date=date(1996, 1, 3),
+    )
+    missing = audit_daily_bar_session_completeness(
+        (_bar(date(1996, 1, 3)),),
+        instruments=(instrument,),
+        dataset_start_date=date(1996, 1, 2),
+        dataset_end_date=date(1996, 1, 3),
+    )
+
+    assert complete.dataset_start_date == date(1996, 1, 2)
+    assert complete.instruments[0].expected_start_date == date(1996, 1, 2)
+    assert complete.complete is True
+    assert missing.instruments[0].missing_expected_sessions == (date(1996, 1, 2),)
+    assert missing.complete is False
+
+
 def test_metadata_report_contains_dates_and_counts_but_no_price_values(tmp_path) -> None:
     audit = audit_daily_bar_session_completeness(
         (_bar(date(2024, 1, 2)), _bar(date(2024, 1, 3))),
         instruments=(_instrument(),),
+        dataset_start_date=date(2024, 1, 2),
         dataset_end_date=date(2024, 1, 3),
     )
     path = tmp_path / "session-completeness.json"
@@ -175,6 +216,7 @@ def test_metadata_report_contains_dates_and_counts_but_no_price_values(tmp_path)
     text = path.read_text(encoding="utf-8")
     payload = json.loads(text)
     assert payload["complete"] is True
+    assert payload["dataset_start_date"] == "2024-01-02"
     assert payload["missing_expected_session_count"] == 0
     assert payload["bars_fabricated"] == 0
     assert payload["provider_calls_made"] is False

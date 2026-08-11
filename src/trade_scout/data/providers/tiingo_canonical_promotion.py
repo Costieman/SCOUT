@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +67,8 @@ class TiingoCanonicalPromotionResult:
     cross_check_eligible_symbol_count: int
     cross_check_mismatch_field_count: int
     session_calendar_definition_version: str
+    session_coverage_start_date: date | None
+    session_coverage_end_date: date
     missing_expected_session_count: int
     unexpected_observed_date_count: int
     duplicate_observed_date_count: int
@@ -96,6 +98,8 @@ def promote_reviewed_tiingo_prices(
     candidate_path: Path,
     canonical_root: Path,
     dataset_version: DatasetVersion | None = None,
+    dataset_start_date: date | None = None,
+    dataset_end_date: date | None = None,
     promoted_at: datetime | None = None,
 ) -> TiingoCanonicalPromotionResult:
     """Rebuild and promote the reviewed Tiingo price slice with no silent repair.
@@ -105,6 +109,11 @@ def promote_reviewed_tiingo_prices(
     history, requires strictly PASS quality and complete expected exchange sessions, and only then
     writes an immutable canonical Parquet dataset. Tiingo's dividend-adjusted ``adj*`` values are
     never used as canonical prices.
+
+    ``dataset_start_date`` and ``dataset_end_date`` may pin the explicit historical coverage
+    contract of the acquisition campaign. This prevents a security that listed before the campaign
+    window from creating false pre-window gaps while still detecting missing initial or terminal
+    sessions inside the requested window.
 
     Known reviewed identity snapshots map to explicit immutable canonical dataset versions. Callers
     may provide ``dataset_version`` for synthetic/test candidates, but production expansion remains
@@ -124,6 +133,8 @@ def promote_reviewed_tiingo_prices(
         candidate=candidate,
         canonical_root=canonical_root,
         dataset_version=target_dataset_version,
+        dataset_start_date=dataset_start_date,
+        dataset_end_date=dataset_end_date,
     )
     store = CanonicalDailyBarStore(canonical_root)
     existing = store.get_manifest(target_dataset_version)
@@ -161,6 +172,8 @@ def promote_reviewed_tiingo_prices(
         cross_check_eligible_symbol_count=built.cross_check_eligible_symbol_count,
         cross_check_mismatch_field_count=built.cross_check_mismatch_field_count,
         session_calendar_definition_version=built.session_audit.calendar_definition_version,
+        session_coverage_start_date=built.session_audit.dataset_start_date,
+        session_coverage_end_date=built.session_audit.dataset_end_date,
         missing_expected_session_count=built.session_audit.missing_expected_session_count,
         unexpected_observed_date_count=built.session_audit.unexpected_observed_date_count,
         duplicate_observed_date_count=built.session_audit.duplicate_observed_date_count,
@@ -195,6 +208,12 @@ def persist_tiingo_canonical_promotion_report(
         "cross_check_mismatch_field_count": result.cross_check_mismatch_field_count,
         "session_completeness": {
             "calendar_definition_version": result.session_calendar_definition_version,
+            "coverage_start_date": (
+                result.session_coverage_start_date.isoformat()
+                if result.session_coverage_start_date is not None
+                else None
+            ),
+            "coverage_end_date": result.session_coverage_end_date.isoformat(),
             "missing_expected_session_count": result.missing_expected_session_count,
             "unexpected_observed_date_count": result.unexpected_observed_date_count,
             "duplicate_observed_date_count": result.duplicate_observed_date_count,
@@ -243,6 +262,8 @@ def _build_reviewed_slice(
     candidate: ReviewedIdentitySnapshotCandidate,
     canonical_root: Path,
     dataset_version: DatasetVersion,
+    dataset_start_date: date | None,
+    dataset_end_date: date | None,
 ) -> _BuiltCanonicalSlice:
     if not candidate.promotion_ready:
         raise TiingoCanonicalPromotionError("reviewed identity candidate still has coverage gaps")
@@ -335,11 +356,14 @@ def _build_reviewed_slice(
     if not frozen_bars:
         raise TiingoCanonicalPromotionError("reviewed Tiingo canonical slice is empty")
 
+    observed_end = max(bar.trade_date for bar in frozen_bars)
+    audit_end = dataset_end_date or observed_end
     try:
         session_audit = audit_daily_bar_session_completeness(
             frozen_bars,
             instruments=snapshot.instruments,
-            dataset_end_date=max(bar.trade_date for bar in frozen_bars),
+            dataset_start_date=dataset_start_date,
+            dataset_end_date=audit_end,
             calendar=default_us_equity_session_calendar(),
         )
     except SessionCompletenessError as exc:

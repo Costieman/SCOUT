@@ -11,7 +11,7 @@ from types import MappingProxyType
 
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, InstrumentRecord
 
-US_EQUITY_SESSION_CALENDAR_VERSION = "us-equities-core-full-day-v0.1"
+US_EQUITY_SESSION_CALENDAR_VERSION = "us-equities-core-full-day-v0.2"
 _SUPPORTED_EXCHANGES = frozenset({"XNYS", "XNAS"})
 _SEC_911_URL = (
     "https://www.sec.gov/rules-regulations/2001/09/"
@@ -20,6 +20,9 @@ _SEC_911_URL = (
 )
 _NYSE_HOLIDAY_URL = "https://www.nyse.com/markets/hours-calendars"
 _NASDAQ_STATUS_URL = "https://www.nasdaqtrader.com/Trader.aspx?id=MarketSystemStatusSearch"
+_FINRA_1996_CALENDAR_URL = "https://www.finra.org/rules-guidance/notices/95-107"
+_FINRA_1997_CALENDAR_URL = "https://www.finra.org/rules-guidance/notices/96-90"
+_FINRA_1998_CALENDAR_URL = "https://www.finra.org/rules-guidance/notices/97-93"
 
 
 class SessionCompletenessError(RuntimeError):
@@ -81,6 +84,7 @@ class DatasetSessionCompletenessAudit:
 
     dataset_version: DatasetVersion
     calendar_definition_version: str
+    dataset_start_date: date | None
     dataset_end_date: date
     instruments: tuple[InstrumentSessionCompleteness, ...]
 
@@ -118,7 +122,7 @@ class DatasetSessionCompletenessAudit:
 
 
 def default_us_equity_session_calendar() -> ExchangeSessionCalendar:
-    """Return the pinned 2001+ full-day XNYS/XNAS session policy used by Trade Scout."""
+    """Return the pinned historical full-day XNYS/XNAS session policy used by Trade Scout."""
 
     closures = (
         _closure(date(2001, 9, 11), "September 11 attacks market closure", _SEC_911_URL),
@@ -160,7 +164,13 @@ def default_us_equity_session_calendar() -> ExchangeSessionCalendar:
         definition_version=US_EQUITY_SESSION_CALENDAR_VERSION,
         supported_exchanges=_SUPPORTED_EXCHANGES,
         exceptional_closures=MappingProxyType({item.trade_date: item for item in closures}),
-        evidence_refs=(_NYSE_HOLIDAY_URL, _NASDAQ_STATUS_URL),
+        evidence_refs=(
+            _NYSE_HOLIDAY_URL,
+            _NASDAQ_STATUS_URL,
+            _FINRA_1996_CALENDAR_URL,
+            _FINRA_1997_CALENDAR_URL,
+            _FINRA_1998_CALENDAR_URL,
+        ),
     )
 
 
@@ -193,24 +203,36 @@ def audit_daily_bar_session_completeness(
     *,
     instruments: Iterable[InstrumentRecord],
     dataset_end_date: date,
+    dataset_start_date: date | None = None,
     calendar: ExchangeSessionCalendar | None = None,
 ) -> DatasetSessionCompletenessAudit:
     """Compare canonical bar dates with expected exchange sessions without inventing bars.
 
-    A reviewed ``first_trade_date`` defines the start when available; otherwise the first observed
-    canonical bar does. Active instruments are expected through ``dataset_end_date`` and delisted
-    instruments only through their recorded delisting date.
+    When ``dataset_start_date`` is supplied, it is the lower bound of the dataset's declared
+    historical coverage contract. A reviewed ``first_trade_date`` before that bound does not imply
+    that the dataset claims pre-bound history. Within the declared coverage window, lifecycle dates
+    still determine when an instrument should begin and missing sessions still fail closed.
+    Without an explicit lower bound, the legacy behavior is retained: reviewed ``first_trade_date``
+    defines the expected start when available, otherwise the first observed canonical bar does.
+    Active instruments are expected through ``dataset_end_date`` and delisted instruments only
+    through their recorded delisting date.
     """
 
     policy = calendar or default_us_equity_session_calendar()
     materialized = tuple(bars)
     if not materialized:
         raise SessionCompletenessError("session completeness audit requires at least one daily bar")
+    if dataset_start_date is not None and dataset_end_date < dataset_start_date:
+        raise SessionCompletenessError("dataset_end_date precedes dataset_start_date")
     versions = {bar.dataset_version for bar in materialized}
     if len(versions) != 1:
         raise SessionCompletenessError("session completeness audit requires one dataset version")
     if any(bar.trade_date > dataset_end_date for bar in materialized):
         raise SessionCompletenessError("dataset_end_date precedes one or more observed bars")
+    if dataset_start_date is not None and any(
+        bar.trade_date < dataset_start_date for bar in materialized
+    ):
+        raise SessionCompletenessError("dataset_start_date follows one or more observed bars")
     dataset_version = next(iter(versions))
 
     instrument_records = tuple(instruments)
@@ -240,6 +262,7 @@ def audit_daily_bar_session_completeness(
         _audit_instrument(
             instrument=instrument,
             bars=tuple(bars_by_instrument[instrument.instrument_id]),
+            dataset_start_date=dataset_start_date,
             dataset_end_date=dataset_end_date,
             calendar=policy,
         )
@@ -248,6 +271,7 @@ def audit_daily_bar_session_completeness(
     return DatasetSessionCompletenessAudit(
         dataset_version=dataset_version,
         calendar_definition_version=policy.definition_version,
+        dataset_start_date=dataset_start_date,
         dataset_end_date=dataset_end_date,
         instruments=results,
     )
@@ -273,6 +297,7 @@ def persist_session_completeness_report(
         "identity_snapshot_version": identity_snapshot_version,
         "calendar_definition_version": audit.calendar_definition_version,
         "calendar_evidence_refs": list(policy.evidence_refs),
+        "dataset_start_date": _date_text(audit.dataset_start_date),
         "dataset_end_date": audit.dataset_end_date.isoformat(),
         "instrument_count": audit.instrument_count,
         "complete_instrument_count": audit.complete_instrument_count,
@@ -296,6 +321,7 @@ def _audit_instrument(
     *,
     instrument: InstrumentRecord,
     bars: tuple[DailyBar, ...],
+    dataset_start_date: date | None,
     dataset_end_date: date,
     calendar: ExchangeSessionCalendar,
 ) -> InstrumentSessionCompleteness:
@@ -305,13 +331,18 @@ def _audit_instrument(
         else dataset_end_date
     )
     if not bars:
-        no_history_required = (
-            instrument.first_trade_date is not None and instrument.first_trade_date > expected_end
-        )
+        expected_start = instrument.first_trade_date
+        if dataset_start_date is not None:
+            expected_start = (
+                max(expected_start, dataset_start_date)
+                if expected_start is not None
+                else dataset_start_date
+            )
+        no_history_required = expected_start is not None and expected_start > expected_end
         return InstrumentSessionCompleteness(
             instrument_id=instrument.instrument_id,
             exchange=instrument.exchange,
-            expected_start_date=instrument.first_trade_date,
+            expected_start_date=expected_start,
             expected_end_date=expected_end,
             observed_first_date=None,
             observed_last_date=None,
@@ -329,6 +360,8 @@ def _audit_instrument(
     observed_first = min(distinct_dates)
     observed_last = max(distinct_dates)
     expected_start = instrument.first_trade_date or observed_first
+    if dataset_start_date is not None:
+        expected_start = max(expected_start, dataset_start_date)
     expected = frozenset(
         expected_exchange_sessions(
             exchange=instrument.exchange,
@@ -368,7 +401,7 @@ def _is_regular_full_day_holiday(day: date) -> bool:
         return True
     if date(year, 1, 1).weekday() == 6 and day == date(year, 1, 2):
         return True
-    if day == _nth_weekday(year, 1, 0, 3):
+    if year >= 1998 and day == _nth_weekday(year, 1, 0, 3):
         return True
     if day == _nth_weekday(year, 2, 0, 3):
         return True
