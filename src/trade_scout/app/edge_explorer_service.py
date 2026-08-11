@@ -107,7 +107,8 @@ class CanonicalEdgeExplorerSource:
             )
         if any(item.quality_status is not QualityStatus.PASS for item in selected):
             raise EdgeExplorerError(
-                f"canonical rows for {normalized} include non-PASS quality states; analysis is blocked"
+                f"canonical rows for {normalized} include non-PASS quality states; "
+                "analysis is blocked"
             )
         try:
             return tuple(
