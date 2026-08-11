@@ -1,9 +1,9 @@
 """Small local HTTP shell for the evidence-backed Trade Scout application.
 
 The server is deliberately presentation-only. Normal console requests rebuild the application
-snapshot from persisted application-service evidence. The Edge Explorer route delegates all
-analytics to an injected application service backed by canonical data; the HTTP layer never calls
-market-data providers or calculates research results itself. The default bind is loopback-only.
+snapshot from persisted application-service evidence. Research routes delegate analytics to
+injected application services backed by canonical data; the HTTP layer never calls market-data
+providers or calculates research results itself. The default bind is loopback-only.
 """
 
 from __future__ import annotations
@@ -28,6 +28,13 @@ from trade_scout.app.edge_explorer_service import (
 )
 from trade_scout.app.edge_explorer_surface import render_edge_explorer_html
 from trade_scout.app.operational_surface import render_operational_application_html
+from trade_scout.app.universe_research_service import (
+    UniverseResearchError,
+    UniverseResearchRequest,
+    UniverseResearchService,
+    UniverseResearchSource,
+)
+from trade_scout.app.universe_research_surface import render_universe_research_html
 from trade_scout.patterns.consolidation_breakout import TrendFilter
 
 
@@ -43,6 +50,7 @@ class LocalConsoleConfig:
     build_label: str = "local-console-v0.1"
     refresh_seconds: int = 15
     edge_explorer_source: EdgeExplorerSource | None = None
+    universe_research_source: UniverseResearchSource | None = None
 
     def __post_init__(self) -> None:
         if not self.build_label.strip():
@@ -87,6 +95,7 @@ def build_console_response(
         "/",
         "/index.html",
         "/research/edge",
+        "/research/universe",
         "/api/snapshot.json",
         "/api/data-health.json",
         "/healthz",
@@ -99,6 +108,8 @@ def build_console_response(
 
     if path == "/research/edge":
         return _edge_explorer_response(parsed_target.query, config)
+    if path == "/research/universe":
+        return _universe_research_response(parsed_target.query, config)
 
     health = build_data_health_summary(config.sources)
     snapshot = build_phase1_application_snapshot(
@@ -110,6 +121,10 @@ def build_console_response(
     if path in {"/", "/index.html"}:
         html = render_operational_application_html(snapshot)
         html = _with_edge_explorer_link(html, enabled=config.edge_explorer_source is not None)
+        html = _with_universe_research_link(
+            html,
+            enabled=config.universe_research_source is not None,
+        )
         html = _with_local_console_metadata(html, refresh_seconds=config.refresh_seconds)
         return ConsoleResponse(
             status_code=HTTPStatus.OK,
@@ -274,6 +289,73 @@ def _edge_explorer_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
         return _html_response(HTTPStatus.BAD_REQUEST, html)
 
 
+def _universe_research_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
+    source = config.universe_research_source
+    if source is None:
+        html = render_universe_research_html(
+            universes=(),
+            error=(
+                "Universe Research Analyzer is not configured for this console. Use an operator "
+                "workspace with a selected canonical dataset and reviewed identity candidate."
+            ),
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    try:
+        universes = source.available_universes()
+    except Exception as exc:
+        html = render_universe_research_html(
+            universes=(),
+            error=f"Cannot load research-universe scope: {type(exc).__name__}: {exc}",
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    parameters = parse_qs(query, keep_blank_values=False)
+    if "universe" not in parameters:
+        html = render_universe_research_html(universes=universes)
+        return _html_response(HTTPStatus.OK, html)
+
+    request: UniverseResearchRequest | None = None
+    try:
+        request = UniverseResearchRequest(
+            universe_id=_one(parameters, "universe", default="reviewed_canonical"),
+            strategy_id=_one(parameters, "strategy", default="consolidation_breakout"),
+            lookback_years=int(_one(parameters, "lookback_years", default="2")),
+            horizon=int(_one(parameters, "horizon", default="20")),
+            duration=int(_one(parameters, "duration", default="20")),
+            max_range_pct=float(_one(parameters, "max_range_pct", default="12")) / 100.0,
+            trend_filter=TrendFilter(
+                _one(parameters, "trend_filter", default=TrendFilter.ABOVE_SMA_50_100_200.value)
+            ),
+            min_breakout_volume_ratio=_optional_volume_ratio(
+                _one(parameters, "volume_ratio", default="none")
+            ),
+        )
+        report = UniverseResearchService(source).run(request)
+        html = render_universe_research_html(
+            universes=universes,
+            request=request,
+            report=report,
+        )
+        return _html_response(HTTPStatus.OK, html)
+    except (ValueError, UniverseResearchError) as exc:
+        html = render_universe_research_html(
+            universes=universes,
+            request=request,
+            error=str(exc),
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+
+def _optional_volume_ratio(value: str) -> float | None:
+    if value.strip().lower() == "none":
+        return None
+    result = float(value)
+    if result <= 0:
+        raise ValueError("volume_ratio must be positive or 'none'")
+    return result
+
+
 def _one(parameters: dict[str, list[str]], name: str, *, default: str | None = None) -> str:
     values = parameters.get(name)
     if not values:
@@ -339,6 +421,14 @@ def _with_edge_explorer_link(html: str, *, enabled: bool) -> str:
         raise RuntimeError("application renderer omitted Research navigation marker")
     label = "Edge Explorer" if enabled else "Edge Explorer (not configured)"
     return html.replace(marker, marker + f'<a href="/research/edge">{label}</a>', 1)
+
+
+def _with_universe_research_link(html: str, *, enabled: bool) -> str:
+    marker = '<a href="#research">Research</a>'
+    if marker not in html:
+        raise RuntimeError("application renderer omitted Research navigation marker")
+    label = "Universe Research" if enabled else "Universe Research (not configured)"
+    return html.replace(marker, marker + f'<a href="/research/universe">{label}</a>', 1)
 
 
 def _json_ready(value: object) -> object:
