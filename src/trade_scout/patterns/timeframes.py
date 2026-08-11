@@ -41,7 +41,12 @@ class PatternSeriesFrame:
         if len(self.source_start_indices) != count or len(self.source_end_indices) != count:
             raise ValueError("pattern-bar mappings must align one-to-one with pattern bars")
         if any(
-            start > end for start, end in zip(self.source_start_indices, self.source_end_indices)
+            start > end
+            for start, end in zip(
+                self.source_start_indices,
+                self.source_end_indices,
+                strict=True,
+            )
         ):
             raise ValueError("pattern-bar source start cannot be after source end")
 
@@ -137,7 +142,8 @@ def _market_blocks(
         )
         return (
             blocks,
-            f"non-overlapping {size}-session blocks anchored to the first market session in the dataset",
+            f"non-overlapping {size}-session blocks anchored to the first market session "
+            "in the dataset",
         )
 
     grouped: list[list[date]] = []
