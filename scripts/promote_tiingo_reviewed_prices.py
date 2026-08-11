@@ -27,6 +27,7 @@ from trade_scout.data.reviewed_identity_snapshot import (
 _OPERATOR_DATASET_VERSION_BY_IDENTITY = {
     "tiingo-reviewed-identity-candidate-v0.4": DatasetVersion("tiingo-reviewed-split-only-v0.3"),
     "tiingo-reviewed-identity-candidate-v0.5": DatasetVersion("tiingo-reviewed-split-only-v0.4"),
+    "tiingo-reviewed-identity-candidate-v0.6": DatasetVersion("tiingo-reviewed-split-only-v0.5"),
 }
 
 
