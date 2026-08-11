@@ -31,6 +31,10 @@ from trade_scout.data.providers.tiingo_campaign_state import (
     persist_tiingo_safe_campaign_state,
 )
 from trade_scout.data.providers.tiingo_receipt_capture import TiingoReceiptTrackingCapture
+from trade_scout.data.providers.tiingo_research_targets import (
+    TiingoResearchTargetError,
+    load_tiingo_research_target,
+)
 from trade_scout.data.providers.tiingo_sp500_campaign import (
     TiingoSp500CampaignRun,
     load_tiingo_sp500_campaign_plan,
@@ -243,40 +247,14 @@ def _load_target_symbols(
     if path is None:
         return frozenset(snapshot_symbols)
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except OSError as exc:
-        raise SystemExit(f"cannot read target config: {path}") from exc
-    except json.JSONDecodeError as exc:
-        raise SystemExit("target config is invalid JSON") from exc
-    required = {
-        "schema_version",
-        "target_version",
-        "source_universe_plan",
-        "purpose",
-        "target_count",
-        "symbols",
-        "selection_notes",
-    }
-    if not isinstance(payload, dict) or set(payload) != required:
-        raise SystemExit("target config has missing or unknown fields")
-    if payload["schema_version"] != "tiingo-research-targets-v0.1":
-        raise SystemExit("unsupported target config schema")
-    if payload["source_universe_plan"] != plan_version:
-        raise SystemExit("target config belongs to another Tiingo universe plan")
-    raw_symbols = payload["symbols"]
-    if not isinstance(raw_symbols, list) or not all(isinstance(item, str) for item in raw_symbols):
-        raise SystemExit("target config symbols must be a list of strings")
-    symbols = tuple(item.strip().upper() for item in raw_symbols)
-    if not symbols or any(not item for item in symbols) or len(set(symbols)) != len(symbols):
-        raise SystemExit("target config symbols must be unique non-empty values")
-    if payload["target_count"] != len(symbols):
-        raise SystemExit("target config target_count does not match symbols")
-    unknown = sorted(set(symbols) - set(snapshot_symbols))
-    if unknown:
-        raise SystemExit(
-            f"target config includes symbols outside the validated snapshot: {unknown}"
+        target = load_tiingo_research_target(
+            path,
+            expected_plan_version=plan_version,
+            snapshot_symbols=snapshot_symbols,
         )
-    return frozenset(symbols)
+    except TiingoResearchTargetError as exc:
+        raise SystemExit(str(exc)) from exc
+    return frozenset(target.symbols)
 
 
 def _print_target_summary(
