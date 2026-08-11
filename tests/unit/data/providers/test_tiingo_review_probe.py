@@ -29,9 +29,7 @@ def _symbol_profile(symbol: str, first_date: str) -> dict[str, object]:
     }
 
 
-def test_probe_returns_only_acquired_targets_awaiting_review(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_probe_returns_only_acquired_targets_awaiting_review(tmp_path: Path, monkeypatch) -> None:
     profile_path = tmp_path / "profile.json"
     profile_path.write_text(
         json.dumps(
@@ -50,9 +48,7 @@ def test_probe_returns_only_acquired_targets_awaiting_review(
     candidate = SimpleNamespace(
         coverage_gaps=(),
         provider_series_links=(
-            SimpleNamespace(
-                query_symbol="OLD", provider_id="tiingo", instrument_id=reviewed_id
-            ),
+            SimpleNamespace(query_symbol="OLD", provider_id="tiingo", instrument_id=reviewed_id),
         ),
     )
     monkeypatch.setattr(
