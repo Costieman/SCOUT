@@ -11,8 +11,16 @@ from trade_scout.patterns.consolidation_breakout import (
     TrendFilter,
     detect_consolidation_breakouts,
 )
-from trade_scout.risk.initial_stops import CostModel, evaluate_stop_policy_grid, initial_stop_policy_grid
-from trade_scout.statistics.stop_research import StopResearchComparison, summarize_stop_policy_results
+from trade_scout.risk.initial_stops import (
+    CostModel,
+    RiskPolicyResult,
+    evaluate_stop_policy_grid,
+    initial_stop_policy_grid,
+)
+from trade_scout.statistics.stop_research import (
+    StopResearchComparison,
+    summarize_stop_policy_results,
+)
 
 
 class RiskResearchError(RuntimeError):
@@ -92,7 +100,7 @@ class RiskResearchService:
             exit_slippage_bps=request.cost_bps_per_side,
         )
         policies = initial_stop_policy_grid()
-        results = []
+        results: list[RiskPolicyResult] = []
         event_count = 0
         dataset_versions: set[str] = set()
         for bars in series.values():
