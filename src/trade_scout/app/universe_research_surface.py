@@ -48,10 +48,10 @@ def render_universe_research_html(
         + f">{label}</option>"
         for value, ratio, label in (
             ("none", None, "No breakout-volume gate"),
-            ("1.0", 1.0, "At least 1.0× prior 20-session average"),
-            ("1.25", 1.25, "At least 1.25× prior 20-session average"),
-            ("1.5", 1.5, "At least 1.5× prior 20-session average"),
-            ("2.0", 2.0, "At least 2.0× prior 20-session average"),
+            ("1.0", 1.0, "At least 1.0x prior 20-session average"),
+            ("1.25", 1.25, "At least 1.25x prior 20-session average"),
+            ("1.5", 1.5, "At least 1.5x prior 20-session average"),
+            ("2.0", 2.0, "At least 2.0x prior 20-session average"),
         )
     )
     warning = (
@@ -104,7 +104,7 @@ ul {{ padding-left:19px; }} details {{ margin-top:10px; }} code {{ color:#d9e3ef
 def _empty_state(error: str | None) -> str:
     if error:
         return ""
-    return """<div class="card" style="margin-top:14px"><h2>Define the baseline experiment</h2><div class="subtle">The analyzer will scan every available instrument, count historical setups by month, measure 2/3/5/10/20/40/60-session outcomes, compare with same-stock trend-context dates, show cross-sectional breadth and generate a nearby duration × consolidation-range surface.</div></div>"""
+    return """<div class="card" style="margin-top:14px"><h2>Define the baseline experiment</h2><div class="subtle">The analyzer will scan every available instrument, count historical setups by month, measure 2/3/5/10/20/40/60-session outcomes, compare with same-stock trend-context dates, show cross-sectional breadth and generate a nearby duration x consolidation-range surface.</div></div>"""
 
 
 def _render_report(report: UniverseResearchReport) -> str:
@@ -135,7 +135,7 @@ def _render_report(report: UniverseResearchReport) -> str:
     volume_gate = (
         "None"
         if report.selected_config.min_breakout_volume_ratio is None
-        else f"≥ {report.selected_config.min_breakout_volume_ratio:.2f}× prior 20-session average"
+        else f"≥ {report.selected_config.min_breakout_volume_ratio:.2f}x prior 20-session average"
     )
     return f"""
 <div class="grid" style="margin-top:14px">
@@ -154,7 +154,7 @@ def _render_report(report: UniverseResearchReport) -> str:
 
   <div class="card s12"><h2>Forward outcome profile</h2><div class="subtle">Each historical setup enters at the next session open. The table shows the same market-wide event population at several holding horizons.</div><div class="scroll"><table><thead><tr><th>Horizon</th><th>n</th><th>Mean</th><th>Median</th><th>P(return&gt;0)</th><th>P25</th><th>P75</th><th>Median MFE</th><th>Median MAE</th></tr></thead><tbody>{horizon_rows}</tbody></table></div></div>
 
-  <div class="card s12"><h2>Where does the apparent edge live?</h2><div class="subtle">Duration × consolidation tightness under the selected moving-average and breakout-volume filters. Each cell shows excess mean return versus the same-stock trend-context baseline, complete-outcome n, contributing stocks and mean setup frequency per month. Broad stable regions matter more than isolated maxima.</div><div class="scroll">{_surface_table(report)}</div></div>
+  <div class="card s12"><h2>Where does the apparent edge live?</h2><div class="subtle">Duration x consolidation tightness under the selected moving-average and breakout-volume filters. Each cell shows excess mean return versus the same-stock trend-context baseline, complete-outcome n, contributing stocks and mean setup frequency per month. Broad stable regions matter more than isolated maxima.</div><div class="scroll">{_surface_table(report)}</div></div>
 
   <div class="card s6"><h2>Opportunity availability by month</h2><div class="subtle">This is the practical setup-frequency view: how many qualifying historical plays appeared across the whole research universe each month.</div><div class="scroll"><table><thead><tr><th>Month</th><th>Setups</th><th>Stocks</th><th>Relative activity</th></tr></thead><tbody>{monthly_rows}</tbody></table></div></div>
   <div class="card s6"><h2>Instrument contribution</h2><div class="subtle">Top 25 stocks by setup count. A credible market-wide effect should not depend entirely on a handful of names.</div><div class="scroll"><table><thead><tr><th>Stock</th><th>Events</th><th>Complete n</th><th>Mean</th><th>Median</th><th>P(&gt;0)</th></tr></thead><tbody>{instrument_rows}</tbody></table></div></div>
