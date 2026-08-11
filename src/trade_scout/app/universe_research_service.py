@@ -23,10 +23,11 @@ from trade_scout.data.contracts import (
 )
 from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
-from trade_scout.statistics.universe_research import (
-    UniverseResearchReport,
-    build_universe_research_report,
+from trade_scout.patterns.timeframes import PatternTimeframe
+from trade_scout.statistics.timeframe_universe_research import (
+    build_timeframe_universe_research_report,
 )
+from trade_scout.statistics.universe_research import UniverseResearchReport
 
 
 class UniverseResearchError(RuntimeError):
@@ -48,6 +49,7 @@ class UniverseResearchRequest:
 
     universe_id: str = "reviewed_canonical"
     strategy_id: str = "consolidation_breakout"
+    pattern_timeframe: PatternTimeframe = PatternTimeframe.DAILY
     lookback_years: int = 2
     horizon: int = 20
     duration: int = 20
@@ -56,6 +58,11 @@ class UniverseResearchRequest:
     min_breakout_volume_ratio: float | None = None
 
     def __post_init__(self) -> None:
+        encoded_prefix = "consolidation_breakout@"
+        if self.strategy_id.startswith(encoded_prefix):
+            timeframe_value = self.strategy_id.removeprefix(encoded_prefix)
+            object.__setattr__(self, "pattern_timeframe", PatternTimeframe(timeframe_value))
+            object.__setattr__(self, "strategy_id", "consolidation_breakout")
         if self.universe_id != "reviewed_canonical":
             raise ValueError(f"unsupported universe_id {self.universe_id!r}")
         if self.strategy_id != "consolidation_breakout":
@@ -65,7 +72,7 @@ class UniverseResearchRequest:
         if self.horizon not in {2, 3, 5, 10, 20, 40, 60}:
             raise ValueError("horizon must be one of 2, 3, 5, 10, 20, 40, 60")
         if not 5 <= self.duration <= 252:
-            raise ValueError("duration must be between 5 and 252 sessions")
+            raise ValueError("duration must be between 5 and 252 pattern bars")
         if not 0 < self.max_range_pct <= 1:
             raise ValueError("max_range_pct must be in (0, 1]")
         if self.min_breakout_volume_ratio is not None and self.min_breakout_volume_ratio <= 0:
@@ -178,13 +185,14 @@ class UniverseResearchService:
             volume_lookback_sessions=20,
         )
         horizons = tuple(sorted({2, 3, 5, 10, 20, 40, 60, request.horizon}))
-        return build_universe_research_report(
+        return build_timeframe_universe_research_report(
             series,
             universe_id=option.universe_id,
             universe_label=option.label,
             config=config,
             analysis_start=start,
             analysis_end=latest,
+            pattern_timeframe=request.pattern_timeframe,
             selected_horizon=request.horizon,
             horizons=horizons,
         )
