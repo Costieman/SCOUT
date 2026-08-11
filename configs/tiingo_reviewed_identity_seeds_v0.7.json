@@ -1,0 +1,6 @@
+{
+  "schema_version": "reviewed-identity-seed-composition-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-candidate-v0.7",
+  "base": "tiingo_reviewed_identity_seeds_v0.6.json",
+  "additions": "tiingo_reviewed_identity_seed_additions_v0.7.json"
+}
