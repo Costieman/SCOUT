@@ -14,6 +14,7 @@ import sys
 from dataclasses import asdict, dataclass
 from datetime import date, timedelta
 from pathlib import Path
+from time import sleep
 from typing import cast
 
 from trade_scout.data.composite_evidence import (
@@ -35,6 +36,7 @@ from trade_scout.data.session_completeness import expected_exchange_sessions
 _DEFAULT_CONFIG = Path("configs/tiingo_alpha_complementarity_cases_v0.1.json")
 _OUTPUT = Path("runtime/tiingo-alpha-complementarity/report.json")
 _SCHEMA_VERSION = "tiingo-alpha-complementarity-cases-v0.1"
+_ALPHA_INTER_REQUEST_DELAY_SECONDS = 15.0
 _TOLERANCE = ReconciliationTolerance(
     price_relative=1e-6,
     volume_relative=1e-6,
@@ -115,6 +117,9 @@ def main() -> int:
             stopped_on_provider_failure = True
             break
 
+        if case_reports:
+            sleep(_ALPHA_INTER_REQUEST_DELAY_SECONDS)
+
         try:
             alpha_bars = tuple(alpha.get_daily_bars(request))
         except AlphaVantageApiError as exc:
@@ -191,6 +196,7 @@ def main() -> int:
         "requested_max_cases": args.max_cases,
         "selected_case_count": len(selected),
         "completed_case_count": sum(report.get("status") == "COMPARED" for report in case_reports),
+        "alpha_inter_request_delay_seconds": _ALPHA_INTER_REQUEST_DELAY_SECONDS,
         "stopped_on_provider_failure": stopped_on_provider_failure,
         "aggregate": aggregate,
         "cases": case_reports,
