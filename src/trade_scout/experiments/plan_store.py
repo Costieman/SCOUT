@@ -39,7 +39,9 @@ class FileBatchPlanStore:
         raw = cast(dict[str, object], json.loads(self._path(plan_id).read_text(encoding="utf-8")))
         stored_plan_id = str(raw["plan_id"])
         if stored_plan_id != plan_id:
-            raise ValueError(f"batch plan file identity mismatch: expected {plan_id}, got {stored_plan_id}")
+            raise ValueError(
+                f"batch plan file identity mismatch: expected {plan_id}, got {stored_plan_id}"
+            )
 
         definition_raw = cast(dict[str, object], raw["parent_definition"])
         definition = _definition_from_mapping(definition_raw)
