@@ -33,7 +33,7 @@ def render_historical_strategy_research_html(
 <a href="/">← Research console</a><h1>Historical Strategy Research</h1>
 <div class="subtle">Point-in-time cross-sectional signals with next-session split-adjusted-open forward outcomes. This is descriptive research, not a portfolio backtest: position sizing, overlap rules, transaction costs, taxes and capital constraints are not modeled.</div>
 <div class="card"><form action="/research/strategies" method="get"><label>Named strategy<select name="strategy">{_strategy_options(selected)}</select></label><button type="submit">Run historical research</button></form></div>
-<div class="card"><h2>{escape(strategy.name)}</h2><div>{escape(strategy.description)}</div><div class="subtle">Rank: {escape(strategy.sort_by)} · {'descending' if strategy.descending else 'ascending'} · maximum {strategy.limit} symbols/session</div><code>{escape(strategy.expression)}</code></div>
+<div class="card"><h2>{escape(strategy.name)}</h2><div>{escape(strategy.description)}</div><div class="subtle">Rank: {escape(strategy.sort_by)} · {"descending" if strategy.descending else "ascending"} · maximum {strategy.limit} symbols/session</div><code>{escape(strategy.expression)}</code></div>
 {warning}{body}
 </div></body></html>"""
 
