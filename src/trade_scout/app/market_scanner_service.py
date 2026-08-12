@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol, cast
 
+from trade_scout.app.feature_expression import (
+    CompiledFeatureExpression,
+    FeatureExpressionError,
+    compile_feature_expression,
+)
 from trade_scout.app.market_analysis_service import MarketAnalysisSource
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
 from trade_scout.data.contracts import DailyBar, DatasetVersion, QualityStatus
@@ -34,6 +39,9 @@ _SORT_KEYS: frozenset[str] = frozenset(
         "distance_sma_200_pct",
     }
 )
+_EXPRESSION_NAMES = frozenset(
+    item.feature_name for item in MARKET_ANALYSIS_FEATURE_SET.definitions
+)
 _LATEST_STATE_OBSERVATIONS = max(
     item.minimum_observations for item in MARKET_ANALYSIS_FEATURE_SET.definitions
 )
@@ -51,6 +59,7 @@ class MarketScannerRequest:
     max_realized_volatility_20: float | None = None
     max_atr_pct_14: float | None = None
     min_distance_sma_200_pct: float | None = None
+    expression: str | None = None
     sort_by: ScannerSortKey = "return_20"
     descending: bool = True
     limit: int = 100
@@ -64,6 +73,8 @@ class MarketScannerRequest:
             raise ValueError("max_realized_volatility_20 must be non-negative")
         if self.max_atr_pct_14 is not None and self.max_atr_pct_14 < 0:
             raise ValueError("max_atr_pct_14 must be non-negative")
+        if self.expression is not None and not self.expression.strip():
+            raise ValueError("scanner expression must be non-empty when supplied")
         if not 1 <= self.limit <= 500:
             raise ValueError("limit must be between 1 and 500")
 
@@ -90,6 +101,17 @@ class MarketScannerRow:
             "distance_sma_200_pct": self.distance_sma_200_pct,
         }
         return values[name]
+
+    def feature_values(self) -> dict[str, float | None]:
+        return {
+            "return_20": self.return_20,
+            "return_252": self.return_252,
+            "relative_volume_20": self.relative_volume_20,
+            "realized_volatility_20": self.realized_volatility_20,
+            "atr_pct_14": self.atr_pct_14,
+            "distance_sma_50_pct": self.distance_sma_50_pct,
+            "distance_sma_200_pct": self.distance_sma_200_pct,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +180,7 @@ class MarketScannerService:
             raise MarketScannerError("scanner source does not support bulk canonical access")
         bulk_source = cast(MarketScannerSource, self.source)
         series = bulk_source.canonical_series()
+        expression = _compile_expression(request.expression)
 
         rows: list[MarketScannerRow] = []
         unavailable = 0
@@ -178,7 +201,7 @@ class MarketScannerService:
             if not _has_required_values(row, request):
                 unavailable += 1
                 continue
-            if _matches(row, request):
+            if _matches(row, request, expression):
                 rows.append(row)
 
         rows.sort(
@@ -193,6 +216,15 @@ class MarketScannerService:
             request=request,
             rows=tuple(rows[: request.limit]),
         )
+
+
+def _compile_expression(source: str | None) -> CompiledFeatureExpression | None:
+    if source is None:
+        return None
+    try:
+        return compile_feature_expression(source, allowed_names=_EXPRESSION_NAMES)
+    except FeatureExpressionError as exc:
+        raise MarketScannerError(f"invalid scanner expression: {exc}") from exc
 
 
 def _latest_feature_values(bars: tuple[DailyBar, ...]) -> dict[str, FeatureValue]:
@@ -229,7 +261,11 @@ def _has_required_values(row: MarketScannerRow, request: MarketScannerRequest) -
     return all(getattr(row, name) is not None for name in required)
 
 
-def _matches(row: MarketScannerRow, request: MarketScannerRequest) -> bool:
+def _matches(
+    row: MarketScannerRow,
+    request: MarketScannerRequest,
+    expression: CompiledFeatureExpression | None,
+) -> bool:
     checks = (
         _minimum(row.return_20, request.min_return_20),
         _minimum(row.return_252, request.min_return_252),
@@ -238,7 +274,14 @@ def _matches(row: MarketScannerRow, request: MarketScannerRequest) -> bool:
         _maximum(row.atr_pct_14, request.max_atr_pct_14),
         _minimum(row.distance_sma_200_pct, request.min_distance_sma_200_pct),
     )
-    return all(checks)
+    if not all(checks):
+        return False
+    if expression is None:
+        return True
+    try:
+        return expression.evaluate(row.feature_values())
+    except FeatureExpressionError as exc:
+        raise MarketScannerError(f"scanner expression evaluation failed: {exc}") from exc
 
 
 def _minimum(value: float | None, threshold: float | None) -> bool:
