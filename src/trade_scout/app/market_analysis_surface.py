@@ -28,10 +28,14 @@ def render_market_analysis_html(
     report: MarketAnalysisReport | None = None,
     error: str | None = None,
 ) -> str:
-    selected_symbol = request.symbol.upper() if request is not None else (symbols[0] if symbols else "")
+    selected_symbol = (
+        request.symbol.upper() if request is not None else (symbols[0] if symbols else "")
+    )
     chart_sessions = request.chart_sessions if request is not None else 120
     symbol_options = "".join(
-        f'<option value="{escape(symbol)}"' + (" selected" if symbol == selected_symbol else "") + f">{escape(symbol)}</option>"
+        f'<option value="{escape(symbol)}"'
+        + (" selected" if symbol == selected_symbol else "")
+        + f">{escape(symbol)}</option>"
         for symbol in symbols
     )
     warning = (
@@ -49,7 +53,7 @@ def render_market_analysis_html(
 @media(max-width:900px) {{ form {{ grid-template-columns:1fr; }} .s3 {{ grid-column:1/-1; }} }}
 </style></head><body><div class="wrap">
 <header><div><a href="/">← Research console</a><h1>Market Analysis</h1><div class="subtle">Point-in-time price, momentum, volatility, volume and trend context from reviewed canonical data.</div></div><span class="pill">FEATURE PACK v0.1</span></header>
-<div class="card"><h2>Analyze a reviewed symbol</h2><form action="/research/market" method="get"><label>Symbol<select name="symbol">{symbol_options}</select></label><label>Chart window<select name="chart_sessions"><option value="60"{' selected' if chart_sessions == 60 else ''}>60 sessions</option><option value="120"{' selected' if chart_sessions == 120 else ''}>120 sessions</option><option value="252"{' selected' if chart_sessions == 252 else ''}>252 sessions</option></select></label><button type="submit">Analyze</button></form></div>
+<div class="card"><h2>Analyze a reviewed symbol</h2><form action="/research/market" method="get"><label>Symbol<select name="symbol">{symbol_options}</select></label><label>Chart window<select name="chart_sessions"><option value="60"{" selected" if chart_sessions == 60 else ""}>60 sessions</option><option value="120"{" selected" if chart_sessions == 120 else ""}>120 sessions</option><option value="252"{" selected" if chart_sessions == 252 else ""}>252 sessions</option></select></label><button type="submit">Analyze</button></form></div>
 {warning}{body}
 </div></body></html>"""
 
@@ -61,14 +65,19 @@ def _empty_state(error: str | None) -> str:
 
 
 def _render_report(report: MarketAnalysisReport) -> str:
-    metrics = "".join(_metric_card(item.feature_name, item.value, item.units, item.availability_status) for item in report.metrics)
+    metrics = "".join(
+        _metric_card(item.feature_name, item.value, item.units, item.availability_status)
+        for item in report.metrics
+    )
     chart = _sparkline(report)
     first = report.price_history[0]
     last = report.price_history[-1]
     return f"""<div class="grid" style="margin-top:14px">{metrics}<div class="card s12"><div class="metric-label">Split-adjusted close · {escape(report.symbol)} · as of {report.as_of.isoformat()}</div>{chart}<div class="axis"><span>{first.trade_date.isoformat()} · {first.close:.2f}</span><span>{last.trade_date.isoformat()} · {last.close:.2f}</span></div><div class="subtle" style="margin-top:10px">Dataset: {escape(report.dataset_version)} · feature set: {escape(report.feature_set_version)}</div></div></div>"""
 
 
-def _metric_card(name: str, value: float | None, units: str, status: FeatureAvailabilityStatus) -> str:
+def _metric_card(
+    name: str, value: float | None, units: str, status: FeatureAvailabilityStatus
+) -> str:
     label = _LABELS.get(name, name)
     if status is not FeatureAvailabilityStatus.AVAILABLE or value is None:
         rendered = status.value
@@ -92,7 +101,13 @@ def _format_value(value: float, units: str) -> str:
 
 
 def _value_class(name: str, value: float) -> str:
-    if name in {"return_5", "return_20", "return_252", "distance_sma_50_pct", "distance_sma_200_pct"}:
+    if name in {
+        "return_5",
+        "return_20",
+        "return_252",
+        "distance_sma_50_pct",
+        "distance_sma_200_pct",
+    }:
         return "good" if value >= 0 else "bad"
     return "blue"
 
