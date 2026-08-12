@@ -10,7 +10,7 @@ from trade_scout.data.contracts import (
     QualityStatus,
     ResearchBar,
 )
-from trade_scout.events.breakout import generate_close_breakout_events
+from trade_scout.events.breakout import CloseBreakoutDefinition, generate_close_breakout_events
 from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_consolidation_states
 from trade_scout.patterns.consolidation_breakout import TrendFilter as ExploratoryTrendFilter
 from trade_scout.patterns.contracts import PatternLifecycleState
@@ -150,30 +150,37 @@ def test_prefix_recomputation_matches_batch_state_and_event() -> None:
     assert prefix_events == batch_events
 
 
-def test_typed_engine_reuses_exploratory_trend_filter_contract() -> None:
+def test_typed_engine_reuses_exploratory_trend_filter_on_signal_session() -> None:
     assert ExploratoryTrendFilter is TrendFilter
 
     qualifying_bars = tuple(
-        [_bar(index, close=80.0 + index * 0.1) for index in range(195)]
-        + [_bar(index, close=100.5, high=101.0, low=100.0) for index in range(195, 205)]
+        [_bar(index, close=80.0 + index * 0.1) for index in range(200)]
+        + [_bar(index, close=100.0, high=101.0, low=99.0) for index in range(200, 210)]
+        + [_bar(210, close=102.0, high=102.5, low=100.5)]
     )
     blocked_bars = tuple(
-        [_bar(index, close=110.0) for index in range(195)]
-        + [_bar(index, close=100.0, high=100.5, low=99.5) for index in range(195, 205)]
+        [_bar(index, close=110.0) for index in range(200)]
+        + [_bar(index, close=100.0, high=101.0, low=99.0) for index in range(200, 210)]
+        + [_bar(210, close=102.0, high=102.5, low=100.5)]
     )
-    definition = ConsolidationDefinition(
-        duration_sessions=10,
-        max_range_pct=0.03,
-        trigger_ready_distance_pct=0.02,
-        trend_filter=TrendFilter.ABOVE_SMA_200,
+    event_definition = CloseBreakoutDefinition(trend_filter=TrendFilter.ABOVE_SMA_200)
+
+    qualifying_states = detect_consolidation_states(qualifying_bars, _definition())
+    blocked_states = detect_consolidation_states(blocked_bars, _definition())
+    qualifying_events = generate_close_breakout_events(
+        qualifying_bars,
+        qualifying_states,
+        event_definition,
+    )
+    blocked_events = generate_close_breakout_events(
+        blocked_bars,
+        blocked_states,
+        event_definition,
     )
 
-    qualifying = detect_consolidation_states(qualifying_bars, definition)
-    blocked = detect_consolidation_states(blocked_bars, definition)
-
-    assert qualifying[-1].state is PatternLifecycleState.TRIGGER_READY
-    assert blocked[-1].state is PatternLifecycleState.NONE
+    assert len(qualifying_events) == 1
+    assert blocked_events == ()
     assert any(
         item.name == "trend_filter" and item.value == TrendFilter.ABOVE_SMA_200.value
-        for item in qualifying[-1].resolved_parameters
+        for item in qualifying_events[0].resolved_parameters
     )
