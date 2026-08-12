@@ -17,6 +17,14 @@ from trade_scout.experiments.contracts import (
     ResearchStage,
     StageResult,
 )
+from trade_scout.experiments.decision_ledger import FileResearchDecisionLedger
+from trade_scout.experiments.decisions import (
+    ProductionEligibilityAttestation,
+    ResearchDecision,
+    ResearchDecisionError,
+    ResearchDecisionState,
+    validate_decision_supersession,
+)
 from trade_scout.experiments.first_research_program import (
     FIRST_RESEARCH_PROGRAM,
     FirstProgramExperiment,
@@ -70,16 +78,21 @@ __all__ = [
     "ExperimentStatus",
     "FileBatchPlanStore",
     "FileManifestStore",
+    "FileResearchDecisionLedger",
     "FirstProgramExperiment",
     "FirstProgramGrid",
     "FirstResearchProgramProgress",
     "IndexedManifestStore",
     "PlannedExperiment",
+    "ProductionEligibilityAttestation",
     "ProgramAssignment",
     "ProgramProgressionError",
     "ProgramStep",
     "ProgramStepProgress",
     "ProgramStepState",
+    "ResearchDecision",
+    "ResearchDecisionError",
+    "ResearchDecisionState",
     "ResearchMode",
     "ResearchStage",
     "StageFactory",
@@ -88,6 +101,7 @@ __all__ = [
     "expand_grid",
     "first_program_step",
     "plan_experiment_batch",
+    "validate_decision_supersession",
     "validate_first_research_program",
     "validate_plan_unchanged",
 ]
