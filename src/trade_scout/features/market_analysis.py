@@ -101,7 +101,9 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="distance_sma_50_pct",
             feature_version="v0.1",
-            description="Current split-adjusted close relative to trailing SMA50, expressed as percent.",
+            description=(
+                "Current split-adjusted close relative to trailing SMA50, expressed as percent."
+            ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=50),
             units="percent",
@@ -110,7 +112,9 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="distance_sma_200_pct",
             feature_version="v0.1",
-            description="Current split-adjusted close relative to trailing SMA200, expressed as percent.",
+            description=(
+                "Current split-adjusted close relative to trailing SMA200, expressed as percent."
+            ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=200),
             units="percent",
@@ -131,12 +135,18 @@ def compute_market_analysis_feature_frame(
         sorted(bars, key=lambda item: (str(item.instrument_id), item.trade_date, item.provider_id))
     )
     if not materialized:
-        raise MarketAnalysisFeatureInputError("market analysis features require canonical daily bars")
+        raise MarketAnalysisFeatureInputError(
+            "market analysis features require canonical daily bars"
+        )
     versions = {item.dataset_version for item in materialized}
     if len(versions) != 1:
-        raise MarketAnalysisFeatureInputError("market analysis features cannot mix dataset versions")
+        raise MarketAnalysisFeatureInputError(
+            "market analysis features cannot mix dataset versions"
+        )
     if any(item.quality_status is not QualityStatus.PASS for item in materialized):
-        raise MarketAnalysisFeatureInputError("market analysis features require PASS canonical input")
+        raise MarketAnalysisFeatureInputError(
+            "market analysis features require PASS canonical input"
+        )
 
     by_instrument: dict[str, list[DailyBar]] = {}
     seen: set[tuple[str, date]] = set()
@@ -207,7 +217,9 @@ def compute_incremental_market_analysis_feature_frame(
             )
         row_key = (key, bar.trade_date)
         if row_key in new_keys:
-            raise MarketAnalysisFeatureInputError(f"duplicate incremental instrument/date: {row_key}")
+            raise MarketAnalysisFeatureInputError(
+                f"duplicate incremental instrument/date: {row_key}"
+            )
         new_keys.add(row_key)
     all_values = compute_market_analysis_feature_frame((*history, *new), feature_set=feature_set)
     return tuple(
