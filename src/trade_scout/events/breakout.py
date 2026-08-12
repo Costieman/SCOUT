@@ -24,14 +24,17 @@ class CloseBreakoutDefinition:
     trend_filter: TrendFilter = TrendFilter.NONE
     min_breakout_volume_ratio: float | None = None
     volume_lookback_sessions: int = 20
+    cooldown_sessions: int = 0
     event_type: str = "upside_close_breakout"
-    event_version: str = "upside-close-breakout-v0.3"
+    event_version: str = "upside-close-breakout-v0.4"
 
     def __post_init__(self) -> None:
         if self.min_breakout_volume_ratio is not None and self.min_breakout_volume_ratio <= 0:
             raise ValueError("min_breakout_volume_ratio must be positive when supplied")
         if not 2 <= self.volume_lookback_sessions <= 252:
             raise ValueError("volume_lookback_sessions must be between 2 and 252")
+        if not 0 <= self.cooldown_sessions <= 252:
+            raise ValueError("cooldown_sessions must be between 0 and 252")
 
 
 def generate_close_breakout_events(
@@ -43,8 +46,8 @@ def generate_close_breakout_events(
 
     The trigger on session t is evaluated against the resistance boundary stored in the pattern
     state from session t-1, preventing the trigger bar from redefining its own boundary. Optional
-    trend and volume context are evaluated on the breakout session itself, matching the exploratory
-    detector's point-in-time semantics.
+    trend and volume context are evaluated on the breakout session itself. Cooldown is applied only
+    between distinct pattern instances; it never permits repeated events from one unchanged base.
     """
 
     if len(bars) != len(states):
@@ -56,6 +59,7 @@ def generate_close_breakout_events(
 
     events: list[EventRecord] = []
     consumed_instances: set[str] = set()
+    last_event_index: int | None = None
     eligible_states = {PatternLifecycleState.QUALIFIED, PatternLifecycleState.TRIGGER_READY}
 
     for index in range(1, len(bars)):
@@ -64,6 +68,8 @@ def generate_close_breakout_events(
         if prior.state not in eligible_states:
             continue
         if prior.pattern_instance_id in consumed_instances:
+            continue
+        if last_event_index is not None and index - last_event_index <= definition.cooldown_sessions:
             continue
         if not bar.eligibility or bar.quality_status is not QualityStatus.PASS:
             continue
@@ -99,6 +105,7 @@ def generate_close_breakout_events(
                 "trend_filter": definition.trend_filter.value,
                 "volume_gate": volume_gate,
                 "volume_lookback_sessions": str(definition.volume_lookback_sessions),
+                "cooldown_sessions": str(definition.cooldown_sessions),
             },
         )
         events.append(
@@ -125,6 +132,7 @@ def generate_close_breakout_events(
                         "observed_breakout_volume_ratio",
                         "unavailable" if volume_ratio is None else f"{volume_ratio:.12g}",
                     ),
+                    ResolvedPatternParameter("cooldown_sessions", str(definition.cooldown_sessions)),
                 ),
                 event_family_id=prior.pattern_instance_id,
                 feature_set_version=prior.feature_set_version,
@@ -133,6 +141,7 @@ def generate_close_breakout_events(
             )
         )
         consumed_instances.add(prior.pattern_instance_id)
+        last_event_index = index
 
     return tuple(events)
 
