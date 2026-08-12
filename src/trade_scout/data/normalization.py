@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
+from datetime import date
 from enum import StrEnum
 
 from trade_scout.data.contracts import (
@@ -13,6 +14,10 @@ from trade_scout.data.contracts import (
     InstrumentRecord,
     QualityStatus,
     SymbolHistoryRecord,
+)
+from trade_scout.data.instrument_master import (
+    InstrumentIdentityConflictError,
+    SymbolHistoryConflictError,
 )
 from trade_scout.data.provider import ProviderDailyBar
 from trade_scout.data.quality import QualityIssue, validate_daily_bars
@@ -252,7 +257,7 @@ def _provider_identity_index(
             key = (provider_id, provider_instrument_id)
             existing = result.get(key)
             if existing is not None and existing != instrument.instrument_id:
-                raise ValueError(
+                raise InstrumentIdentityConflictError(
                     f"{provider_id}:{provider_instrument_id} maps to multiple instruments"
                 )
             result[key] = instrument.instrument_id
@@ -273,7 +278,7 @@ def _symbol_history_index(
 
 def _symbol_as_of_indexed(
     records: tuple[SymbolHistoryRecord, ...],
-    as_of,
+    as_of: date,
 ) -> SymbolHistoryRecord | None:
     match: SymbolHistoryRecord | None = None
     for record in records:
@@ -281,7 +286,7 @@ def _symbol_as_of_indexed(
             break
         if record.effective_to is None or as_of <= record.effective_to:
             if match is not None:
-                raise ValueError(
+                raise SymbolHistoryConflictError(
                     f"multiple symbol assignments for {record.instrument_id} on {as_of.isoformat()}"
                 )
             match = record
