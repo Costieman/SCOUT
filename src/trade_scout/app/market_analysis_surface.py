@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from html import escape
 
-from trade_scout.app.market_analysis_service import MarketAnalysisReport, MarketAnalysisRequest
+from trade_scout.app.market_analysis_service import (
+    MarketAnalysisReport,
+    MarketAnalysisRequest,
+)
 from trade_scout.features.contracts import FeatureAvailabilityStatus
 
 
