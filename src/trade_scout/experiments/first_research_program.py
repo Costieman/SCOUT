@@ -60,7 +60,10 @@ FIRST_RESEARCH_PROGRAM: tuple[ProgramStep, ...] = (
     ProgramStep(
         FirstProgramExperiment.B_DURATION,
         "Consolidation duration",
-        "Map consolidation duration against forward outcomes without simultaneous tightness search.",
+        (
+            "Map consolidation duration against forward outcomes without simultaneous "
+            "tightness search."
+        ),
         (FirstProgramExperiment.A_TREND_BASELINE,),
         ("data", "features", "patterns", "events", "outcomes", "statistics"),
     ),
@@ -95,7 +98,10 @@ FIRST_RESEARCH_PROGRAM: tuple[ProgramStep, ...] = (
     ProgramStep(
         FirstProgramExperiment.G_VOLATILITY_AGE,
         "Stock volatility and age",
-        "Assess stock volatility and trading-history effects without hard-coding unvalidated filters.",
+        (
+            "Assess stock volatility and trading-history effects without hard-coding "
+            "unvalidated filters."
+        ),
         (FirstProgramExperiment.F_REGIME,),
         ("features", "outcomes", "statistics"),
     ),
@@ -140,9 +146,11 @@ def validate_first_research_program(
         missing = set(step.depends_on) - completed
         if missing:
             names = ", ".join(sorted(item.value for item in missing))
-            raise ValueError(
-                f"experiment {step.experiment.value} depends on incomplete prior experiments: {names}"
+            message = (
+                f"experiment {step.experiment.value} depends on incomplete prior "
+                f"experiments: {names}"
             )
+            raise ValueError(message)
         if not step.required_domains:
             raise ValueError(f"experiment {step.experiment.value} declares no required domains")
         completed.add(step.experiment)
