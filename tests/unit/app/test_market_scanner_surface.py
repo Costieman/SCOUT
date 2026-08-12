@@ -13,6 +13,7 @@ def test_market_scanner_surface_renders_cross_section_and_links_to_analysis() ->
         min_return_20=0.05,
         min_relative_volume_20=1.5,
         min_distance_sma_200_pct=0.0,
+        expression="return_20 >= 0.05 and relative_volume_20 >= 1.5",
         limit=25,
     )
     report = MarketScannerReport(
@@ -53,6 +54,9 @@ def test_market_scanner_surface_renders_cross_section_and_links_to_analysis() ->
     assert "Matched before limit" in html
     assert "+12.00%" in html
     assert "2.10x" in html
+    assert "Mathematical condition" in html
+    assert "return_20 &gt;= 0.05 and relative_volume_20 &gt;= 1.5" in html
+    assert "Calls, attribute access, indexing, assignment, and arbitrary Python are rejected" in html
     assert "/research/market?symbol=AAA&amp;chart_sessions=120" not in html
     assert "/research/market?symbol=AAA&chart_sessions=120" in html
 
@@ -61,4 +65,5 @@ def test_market_scanner_surface_has_safe_empty_state() -> None:
     html = render_market_scanner_html()
 
     assert "Ready" in html
+    assert 'name="expression"' in html
     assert "descriptive screen, not a validated trading rule" in html
