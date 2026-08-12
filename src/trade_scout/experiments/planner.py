@@ -7,7 +7,7 @@ frozen confirmatory research.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Iterable
 
 from trade_scout.experiments.contracts import ExperimentDefinition, JSONValue, ResearchMode
@@ -61,23 +61,19 @@ def plan_experiment_batch(
     frozen_grid = _freeze_grid(parameter_grid or {})
     _validate_grid_governance(definition.mode, frozen_grid)
 
-    if frozen_grid:
-        materialized = expand_grid(definition, frozen_grid)
-    else:
-        materialized = (definition,)
-
+    materialized = expand_grid(definition, frozen_grid) if frozen_grid else (definition,)
     children = tuple(
         PlannedExperiment(
             ordinal=index,
             label=f"{definition.name}__{index:04d}",
-            definition=replace(child, parent_experiment_id=definition.parent_experiment_id),
+            definition=child,
             configuration_checksum=sha256_json(child.resolved_configuration),
         )
         for index, child in enumerate(materialized, start=1)
     )
-    search_payload = {
-        "parent": definition,
-        "parameter_grid": frozen_grid,
+    search_payload: dict[str, JSONValue] = {
+        "parent_definition_checksum": sha256_json(definition),
+        "parameter_grid": {path: list(values) for path, values in frozen_grid.items()},
         "child_configuration_checksums": [item.configuration_checksum for item in children],
     }
     search_space_checksum = sha256_json(search_payload)
