@@ -81,6 +81,7 @@ def test_index_is_evidence_backed_and_auto_refreshes(tmp_path: Path) -> None:
     assert "Cross-provider reconciliation evidence has not been supplied." in html
     assert "No explicitly selected canonical Phase 1 dataset is available." in html
     assert "Market Analysis (not configured)" in html
+    assert "Strategy Research (not configured)" in html
     assert ("Cache-Control", "no-store") in response.headers
     assert any(name == "Content-Security-Policy" for name, _ in response.headers)
 
@@ -91,6 +92,17 @@ def test_market_analysis_route_fails_closed_when_not_configured(tmp_path: Path) 
 
     assert response.status_code == 503
     assert "Market Analysis is not configured" in html
+
+
+def test_strategy_research_route_exists_and_fails_closed_when_not_configured(
+    tmp_path: Path,
+) -> None:
+    response = build_console_response("/research/strategies", _config(tmp_path))
+    html = response.body.decode("utf-8")
+
+    assert response.status_code == 503
+    assert "Historical Strategy Research" in html
+    assert "not configured" in html
 
 
 def test_data_health_json_preserves_unknown_metrics_as_null(tmp_path: Path) -> None:
