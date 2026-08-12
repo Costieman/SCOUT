@@ -13,14 +13,16 @@ from trade_scout.patterns.contracts import (
     PatternState,
     ResolvedPatternParameter,
 )
+from trade_scout.patterns.trend import TrendFilter, trend_qualified
 
 
 @dataclass(frozen=True, slots=True)
 class CloseBreakoutDefinition:
     """Resolved close-breakout event definition."""
 
+    trend_filter: TrendFilter = TrendFilter.NONE
     event_type: str = "upside_close_breakout"
-    event_version: str = "upside-close-breakout-v0.1"
+    event_version: str = "upside-close-breakout-v0.2"
 
 
 def generate_close_breakout_events(
@@ -31,7 +33,8 @@ def generate_close_breakout_events(
     """Generate at most one close breakout per qualified pattern instance.
 
     The trigger on session t is evaluated against the resistance boundary stored in the pattern
-    state from session t-1, preventing the trigger bar from redefining its own boundary.
+    state from session t-1, preventing the trigger bar from redefining its own boundary. Optional
+    trend context is evaluated on the breakout session itself, matching the exploratory detector.
     """
 
     if len(bars) != len(states):
@@ -57,6 +60,8 @@ def generate_close_breakout_events(
         boundary = _boundary(prior, "resistance")
         if boundary is None or bar.close <= boundary:
             continue
+        if not trend_qualified(bars, index, definition.trend_filter):
+            continue
 
         event_id = _stable_id(
             "evt",
@@ -66,6 +71,7 @@ def generate_close_breakout_events(
                 "pattern_instance_id": prior.pattern_instance_id,
                 "signal_date": bar.trade_date.isoformat(),
                 "trigger_boundary": f"{boundary:.12g}",
+                "trend_filter": definition.trend_filter.value,
             },
         )
         events.append(
@@ -83,6 +89,7 @@ def generate_close_breakout_events(
                 resolved_parameters=(
                     ResolvedPatternParameter("confirmation", "daily_close"),
                     ResolvedPatternParameter("boundary_source", "prior_pattern_state"),
+                    ResolvedPatternParameter("trend_filter", definition.trend_filter.value),
                 ),
                 event_family_id=prior.pattern_instance_id,
                 feature_set_version=prior.feature_set_version,
