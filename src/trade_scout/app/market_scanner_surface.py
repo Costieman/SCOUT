@@ -83,7 +83,9 @@ def _sort_options(selected: str) -> str:
         ("distance_sma_200_pct", "Distance from SMA200"),
     )
     return "".join(
-        f'<option value="{value}"' + (" selected" if value == selected else "") + f">{label}</option>"
+        f'<option value="{value}"'
+        + (" selected" if value == selected else "")
+        + f">{label}</option>"
         for value, label in options
     )
 
