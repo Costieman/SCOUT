@@ -10,11 +10,12 @@ from trade_scout.data.contracts import (
     QualityStatus,
     ResearchBar,
 )
-from trade_scout.events.breakout import generate_close_breakout_events
+from trade_scout.events.breakout import CloseBreakoutDefinition, generate_close_breakout_events
 from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_consolidation_states
 from trade_scout.patterns.consolidation_breakout import TrendFilter as ExploratoryTrendFilter
 from trade_scout.patterns.contracts import PatternLifecycleState
 from trade_scout.patterns.trend import TrendFilter
+from trade_scout.patterns.volume import trailing_volume_ratio
 
 
 def _bar(
@@ -23,6 +24,7 @@ def _bar(
     close: float,
     high: float | None = None,
     low: float | None = None,
+    volume: float = 1_000_000.0,
     quality_status: QualityStatus = QualityStatus.PASS,
 ) -> ResearchBar:
     return ResearchBar(
@@ -32,7 +34,7 @@ def _bar(
         high=high if high is not None else close + 0.5,
         low=low if low is not None else close - 0.5,
         close=close,
-        volume=1_000_000.0,
+        volume=volume,
         eligibility=True,
         quality_status=quality_status,
         dataset_version=DatasetVersion("synthetic-v1"),
@@ -177,3 +179,43 @@ def test_typed_engine_reuses_exploratory_trend_filter_contract() -> None:
         item.name == "trend_filter" and item.value == TrendFilter.ABOVE_SMA_200.value
         for item in qualifying[-1].resolved_parameters
     )
+
+
+def test_typed_breakout_volume_gate_excludes_signal_from_baseline() -> None:
+    bars = tuple(
+        [_bar(index, close=100.0, high=101.0, low=99.0, volume=1_000.0) for index in range(10)]
+        + [_bar(10, close=102.0, high=102.5, low=100.5, volume=2_000.0)]
+    )
+    states = detect_consolidation_states(bars, _definition())
+    definition = CloseBreakoutDefinition(
+        min_breakout_volume_ratio=1.5,
+        volume_lookback_sessions=10,
+    )
+
+    events = generate_close_breakout_events(bars, states, definition)
+
+    assert trailing_volume_ratio(bars, signal_index=10, lookback_sessions=10) == 2.0
+    assert len(events) == 1
+    assert any(
+        item.name == "observed_breakout_volume_ratio" and item.value == "2"
+        for item in events[0].resolved_parameters
+    )
+
+
+def test_typed_breakout_volume_gate_fails_closed_below_threshold() -> None:
+    bars = tuple(
+        [_bar(index, close=100.0, high=101.0, low=99.0, volume=1_000.0) for index in range(10)]
+        + [_bar(10, close=102.0, high=102.5, low=100.5, volume=1_200.0)]
+    )
+    states = detect_consolidation_states(bars, _definition())
+
+    events = generate_close_breakout_events(
+        bars,
+        states,
+        CloseBreakoutDefinition(
+            min_breakout_volume_ratio=1.5,
+            volume_lookback_sessions=10,
+        ),
+    )
+
+    assert events == ()
