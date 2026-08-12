@@ -74,22 +74,6 @@
       ]
     },
     {
-      "source_symbol": "BLDR",
-      "current_symbol_effective_date": "2005-06-22",
-      "regular_way_start": "2005-06-22",
-      "when_issued_start": null,
-      "lineage_events": [
-        {
-          "effective_date": "2005-06-22",
-          "from_symbol": null,
-          "to_symbol": "BLDR",
-          "event_type": "IPO_PUBLIC_TRADING_START",
-          "source_title": "Builders FirstSource Form 10-K: Nasdaq BLDR trading began June 22, 2005",
-          "source_url": "https://www.sec.gov/Archives/edgar/data/1316835/000095013408004136/d54408e10vk.htm"
-        }
-      ]
-    },
-    {
       "source_symbol": "BLK",
       "current_symbol_effective_date": "2024-10-02",
       "regular_way_start": "1999-10-01",
