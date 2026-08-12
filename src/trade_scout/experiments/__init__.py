@@ -25,6 +25,7 @@ from trade_scout.experiments.first_research_program import (
     first_program_step,
     validate_first_research_program,
 )
+from trade_scout.experiments.plan_store import FileBatchPlanStore
 from trade_scout.experiments.planner import (
     ExperimentBatchPlan,
     ExperimentPlanningError,
@@ -57,6 +58,7 @@ __all__ = [
     "ExperimentPlanningError",
     "ExperimentRunner",
     "ExperimentStatus",
+    "FileBatchPlanStore",
     "FileManifestStore",
     "FirstProgramExperiment",
     "FirstProgramGrid",
