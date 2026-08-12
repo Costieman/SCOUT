@@ -8,6 +8,7 @@ from pathlib import Path
 
 from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig, serve_local_console
+from trade_scout.app.market_analysis_service import CanonicalMarketAnalysisSource
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
 from trade_scout.app.universe_research_service import CanonicalUniverseResearchSource
 
@@ -53,23 +54,31 @@ def main() -> int:
         dataset_version=dataset_version,
         identity_candidate_path=identity_candidate,
     )
+    market_source = CanonicalMarketAnalysisSource(
+        canonical_root=workspace.canonical_root,
+        dataset_version=dataset_version,
+        identity_candidate_path=identity_candidate,
+    )
     config = LocalConsoleConfig(
         sources=workspace.data_health_sources(repository_root=repository_root),
         build_label=f"research-workbench:{workspace.manifest.workspace_id}",
         refresh_seconds=15,
         edge_explorer_source=edge_source,
         universe_research_source=universe_source,
+        market_analysis_source=market_source,
     )
     base_url = f"http://{args.host}:{args.port}/"
+    market_url = f"{base_url}research/market"
     universe_url = f"{base_url}research/universe"
     edge_url = f"{base_url}research/edge"
     print(f"Trade Scout research console: {base_url}")
+    print(f"Market Analysis: {market_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     if args.open_browser:
-        webbrowser.open(universe_url)
+        webbrowser.open(market_url)
     try:
         serve_local_console(
             config,
