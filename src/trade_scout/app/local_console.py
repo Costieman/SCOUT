@@ -27,6 +27,13 @@ from trade_scout.app.edge_explorer_service import (
     EdgeExplorerSource,
 )
 from trade_scout.app.edge_explorer_surface import render_edge_explorer_html
+from trade_scout.app.market_analysis_service import (
+    MarketAnalysisError,
+    MarketAnalysisRequest,
+    MarketAnalysisService,
+    MarketAnalysisSource,
+)
+from trade_scout.app.market_analysis_surface import render_market_analysis_html
 from trade_scout.app.operational_surface import render_operational_application_html
 from trade_scout.app.risk_research_service import (
     RiskResearchError,
@@ -57,6 +64,7 @@ class LocalConsoleConfig:
     refresh_seconds: int = 15
     edge_explorer_source: EdgeExplorerSource | None = None
     universe_research_source: UniverseResearchSource | None = None
+    market_analysis_source: MarketAnalysisSource | None = None
 
     def __post_init__(self) -> None:
         if not self.build_label.strip():
@@ -101,6 +109,7 @@ def build_console_response(
         "/",
         "/index.html",
         "/research/edge",
+        "/research/market",
         "/research/universe",
         "/research/risk",
         "/api/snapshot.json",
@@ -115,6 +124,8 @@ def build_console_response(
 
     if path == "/research/edge":
         return _edge_explorer_response(parsed_target.query, config)
+    if path == "/research/market":
+        return _market_analysis_response(parsed_target.query, config)
     if path == "/research/universe":
         return _universe_research_response(parsed_target.query, config)
     if path == "/research/risk":
@@ -130,6 +141,7 @@ def build_console_response(
     if path in {"/", "/index.html"}:
         html = render_operational_application_html(snapshot)
         html = _with_edge_explorer_link(html, enabled=config.edge_explorer_source is not None)
+        html = _with_market_analysis_link(html, enabled=config.market_analysis_source is not None)
         html = _with_universe_research_link(
             html,
             enabled=config.universe_research_source is not None,
@@ -295,6 +307,50 @@ def _edge_explorer_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
         return _html_response(HTTPStatus.OK, html)
     except (ValueError, EdgeExplorerError) as exc:
         html = render_edge_explorer_html(
+            symbols=symbols,
+            request=request,
+            error=str(exc),
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+
+def _market_analysis_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
+    source = config.market_analysis_source
+    if source is None:
+        html = render_market_analysis_html(
+            symbols=(),
+            error=(
+                "Market Analysis is not configured for this console. Use an operator workspace "
+                "with a selected canonical dataset and reviewed identity candidate."
+            ),
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    try:
+        symbols = source.available_symbols()
+    except Exception as exc:
+        html = render_market_analysis_html(
+            symbols=(),
+            error=f"Cannot load reviewed symbol scope: {type(exc).__name__}: {exc}",
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    parameters = parse_qs(query, keep_blank_values=False)
+    if "symbol" not in parameters:
+        html = render_market_analysis_html(symbols=symbols)
+        return _html_response(HTTPStatus.OK, html)
+
+    request: MarketAnalysisRequest | None = None
+    try:
+        request = MarketAnalysisRequest(
+            symbol=_one(parameters, "symbol"),
+            chart_sessions=int(_one(parameters, "chart_sessions", default="120")),
+        )
+        report = MarketAnalysisService(source).run(request)
+        html = render_market_analysis_html(symbols=symbols, request=request, report=report)
+        return _html_response(HTTPStatus.OK, html)
+    except (ValueError, MarketAnalysisError) as exc:
+        html = render_market_analysis_html(
             symbols=symbols,
             request=request,
             error=str(exc),
@@ -492,6 +548,14 @@ def _with_edge_explorer_link(html: str, *, enabled: bool) -> str:
         raise RuntimeError("application renderer omitted Research navigation marker")
     label = "Edge Explorer" if enabled else "Edge Explorer (not configured)"
     return html.replace(marker, marker + f'<a href="/research/edge">{label}</a>', 1)
+
+
+def _with_market_analysis_link(html: str, *, enabled: bool) -> str:
+    marker = '<a href="#research">Research</a>'
+    if marker not in html:
+        raise RuntimeError("application renderer omitted Research navigation marker")
+    label = "Market Analysis" if enabled else "Market Analysis (not configured)"
+    return html.replace(marker, marker + f'<a href="/research/market">{label}</a>', 1)
 
 
 def _with_universe_research_link(html: str, *, enabled: bool) -> str:
