@@ -17,6 +17,13 @@ from trade_scout.features.initial import (
     compute_initial_feature_frame,
     initial_feature_definition_sha256,
 )
+from trade_scout.features.market_analysis import (
+    MARKET_ANALYSIS_FEATURE_SET,
+    MARKET_ANALYSIS_FEATURE_SET_VERSION,
+    MarketAnalysisFeatureInputError,
+    compute_incremental_market_analysis_feature_frame,
+    compute_market_analysis_feature_frame,
+)
 from trade_scout.features.storage import (
     FeatureSnapshotConflictError,
     FeatureSnapshotIntegrityError,
@@ -32,6 +39,8 @@ __all__ = [
     "ATR_PERIOD",
     "INITIAL_FEATURE_SET",
     "INITIAL_FEATURE_SET_VERSION",
+    "MARKET_ANALYSIS_FEATURE_SET",
+    "MARKET_ANALYSIS_FEATURE_SET_VERSION",
     "FeatureAvailabilityStatus",
     "FeatureDefinition",
     "FeatureInputError",
@@ -43,7 +52,10 @@ __all__ = [
     "FeatureSnapshotPromotionRequest",
     "FeatureSnapshotStore",
     "FeatureValue",
+    "MarketAnalysisFeatureInputError",
     "compute_incremental_initial_feature_frame",
+    "compute_incremental_market_analysis_feature_frame",
     "compute_initial_feature_frame",
+    "compute_market_analysis_feature_frame",
     "initial_feature_definition_sha256",
 ]
