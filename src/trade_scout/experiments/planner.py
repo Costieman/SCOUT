@@ -104,10 +104,10 @@ def _freeze_grid(
     parameter_grid: Mapping[str, Iterable[JSONValue]],
 ) -> dict[str, tuple[JSONValue, ...]]:
     frozen: dict[str, tuple[JSONValue, ...]] = {}
-    for path, candidates in parameter_grid.items():
+    for path in sorted(parameter_grid):
         if not path.strip():
             raise ExperimentPlanningError("parameter paths must be non-empty")
-        values = tuple(candidates)
+        values = tuple(parameter_grid[path])
         if not values:
             raise ExperimentPlanningError(
                 f"parameter grid dimension {path!r} must contain at least one value"
