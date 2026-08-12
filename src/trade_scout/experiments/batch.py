@@ -1,7 +1,8 @@
 """Execution orchestration for pre-materialized experiment batch plans.
 
-Batch execution never chooses parameter combinations or analytical winners. It executes the complete declared
-plan and records terminal state for every attempted child, including failed/null experiments.
+Batch execution never chooses parameter combinations or analytical winners. It executes the
+complete declared plan and records terminal state for every attempted child, including failed/null
+experiments.
 """
 
 from __future__ import annotations
