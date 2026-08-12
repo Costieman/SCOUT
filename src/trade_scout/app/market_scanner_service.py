@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Literal, Protocol, cast
 
+from trade_scout.app.market_analysis_service import MarketAnalysisSource
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
 from trade_scout.data.contracts import DailyBar, DatasetVersion, QualityStatus
 from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
@@ -136,10 +137,13 @@ class CanonicalMarketScannerSource:
 
 @dataclass(frozen=True, slots=True)
 class MarketScannerService:
-    source: MarketScannerSource
+    source: MarketScannerSource | MarketAnalysisSource
 
     def run(self, request: MarketScannerRequest) -> MarketScannerReport:
-        series = self.source.canonical_series()
+        if not hasattr(self.source, "canonical_series"):
+            raise MarketScannerError("scanner source does not support bulk canonical access")
+        bulk_source = cast(MarketScannerSource, self.source)
+        series = bulk_source.canonical_series()
         all_bars = tuple(bar for bars in series.values() for bar in bars)
         all_values = compute_market_analysis_feature_frame(all_bars)
         values_by_instrument_date: dict[tuple[str, str], dict[str, FeatureValue]] = {}
