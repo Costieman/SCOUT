@@ -25,6 +25,7 @@ from trade_scout.data.reviewed_identity_snapshot import (
     load_reviewed_identity_snapshot_candidate,
 )
 
+# fmt: off
 _DEFERRED_SYMBOLS = frozenset(
     {
         "ALGN",
@@ -184,3 +185,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+# fmt: on
