@@ -42,11 +42,10 @@ def _bar(
     )
 
 
-def _bars(*, breakout_close: float = 103.0, breakout_volume: float = 100.0) -> tuple[ResearchBar, ...]:
-    base = tuple(
-        _bar(index, close=100.0, high=102.0, low=98.0, volume=100.0)
-        for index in range(5)
-    )
+def _bars(
+    *, breakout_close: float = 103.0, breakout_volume: float = 100.0
+) -> tuple[ResearchBar, ...]:
+    base = tuple(_bar(index, close=100.0, high=102.0, low=98.0, volume=100.0) for index in range(5))
     return (
         *base,
         _bar(
@@ -92,4 +91,6 @@ def test_new_pattern_event_pipeline_matches_legacy_event_semantics(
     assert [event.instrument_id for event in migrated] == [event.instrument_id for event in legacy]
     assert [event.trigger_boundary for event in migrated] == [event.boundary for event in legacy]
     assert [event.trigger_value for event in migrated] == [event.signal_close for event in legacy]
-    assert [event.dataset_version for event in migrated] == [event.dataset_version for event in legacy]
+    assert [event.dataset_version for event in migrated] == [
+        event.dataset_version for event in legacy
+    ]
