@@ -14,15 +14,21 @@ from trade_scout.features.contracts import FeatureAvailabilityStatus
 
 def _report() -> MarketAnalysisReport:
     metrics = (
-        MarketAnalysisMetric("return_5", 0.031, "decimal_return", FeatureAvailabilityStatus.AVAILABLE),
-        MarketAnalysisMetric("return_20", -0.012, "decimal_return", FeatureAvailabilityStatus.AVAILABLE),
+        MarketAnalysisMetric(
+            "return_5", 0.031, "decimal_return", FeatureAvailabilityStatus.AVAILABLE
+        ),
+        MarketAnalysisMetric(
+            "return_20", -0.012, "decimal_return", FeatureAvailabilityStatus.AVAILABLE
+        ),
         MarketAnalysisMetric(
             "realized_volatility_20",
             0.245,
             "annualized_decimal_volatility",
             FeatureAvailabilityStatus.AVAILABLE,
         ),
-        MarketAnalysisMetric("relative_volume_20", 1.8, "ratio", FeatureAvailabilityStatus.AVAILABLE),
+        MarketAnalysisMetric(
+            "relative_volume_20", 1.8, "ratio", FeatureAvailabilityStatus.AVAILABLE
+        ),
     )
     history = tuple(
         MarketAnalysisPricePoint(date(2026, 1, 1) + timedelta(days=index), 100.0 + index)
