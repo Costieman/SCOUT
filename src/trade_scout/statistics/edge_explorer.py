@@ -16,8 +16,9 @@ from trade_scout.events.breakout import CloseBreakoutDefinition, generate_close_
 from trade_scout.events.contracts import EventRecord
 from trade_scout.outcomes.forward_returns import (
     HorizonSummary,
+    OutcomeEventRef,
     measure_baseline_outcomes,
-    measure_event_record_forward_outcomes,
+    measure_forward_outcomes,
     summarize_outcomes,
 )
 from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_consolidation_states
@@ -94,7 +95,11 @@ def build_consolidation_edge_report(
     if selected_horizon not in horizons:
         raise ValueError("selected_horizon must be included in horizons")
     events = _typed_breakout_events(bars, config)
-    outcomes = measure_event_record_forward_outcomes(bars, events, horizons=horizons)
+    outcomes = measure_forward_outcomes(
+        bars,
+        _outcome_event_refs(bars, events),
+        horizons=horizons,
+    )
     summaries = summarize_outcomes(outcomes, horizons)
     selected = next(item for item in summaries if item.horizon == selected_horizon)
 
@@ -169,6 +174,28 @@ def _typed_breakout_events(
     )
 
 
+def _outcome_event_refs(
+    bars: tuple[ResearchBar, ...],
+    events: tuple[EventRecord, ...],
+) -> tuple[OutcomeEventRef, ...]:
+    index_by_date = {bar.trade_date: index for index, bar in enumerate(bars)}
+    refs: list[OutcomeEventRef] = []
+    for event in events:
+        signal_index = index_by_date.get(event.signal_date)
+        if signal_index is None:
+            raise ValueError(
+                f"event {event.event_id} signal date {event.signal_date} is absent from supplied bars"
+            )
+        refs.append(
+            OutcomeEventRef(
+                event_id=event.event_id,
+                instrument_id=event.instrument_id,
+                signal_index=signal_index,
+            )
+        )
+    return tuple(refs)
+
+
 def _parameter_surface(
     bars: tuple[ResearchBar, ...],
     *,
@@ -198,9 +225,9 @@ def _parameter_surface(
                 cooldown_sessions=5,
             )
             events = _typed_breakout_events(bars, config)
-            outcomes = measure_event_record_forward_outcomes(
+            outcomes = measure_forward_outcomes(
                 bars,
-                events,
+                _outcome_event_refs(bars, events),
                 horizons=(selected_horizon,),
             )
             returns = tuple(item.forward_return for item in outcomes)
