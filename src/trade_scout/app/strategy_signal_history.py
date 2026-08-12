@@ -50,9 +50,7 @@ def evaluate_strategy_signal_history(
         key = (item.instrument_id, item.trade_date)
         values = by_instrument_date.setdefault(key, {})
         values[item.feature_name] = (
-            item.value
-            if item.availability_status is FeatureAvailabilityStatus.AVAILABLE
-            else None
+            item.value if item.availability_status is FeatureAvailabilityStatus.AVAILABLE else None
         )
         metadata[key] = (item.dataset_version, item.feature_set_version)
 
