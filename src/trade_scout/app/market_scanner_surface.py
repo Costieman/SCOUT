@@ -26,7 +26,7 @@ def render_market_scanner_html(
 <title>Trade Scout — Market Scanner</title>
 <style>
 :root {{ color-scheme:dark; --bg:#0b0e13; --panel:#121720; --panel2:#171d27; --border:#293241; --text:#edf1f7; --muted:#98a6b8; --accent:#f1c84b; --good:#63d39a; --bad:#ef7b7b; --blue:#7fc8ff; }}
-* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1700px,96vw); margin:auto; padding:28px 0 70px; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} form {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} input,select,button {{ border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:10px 11px; font:inherit; }} button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }} table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:right; }} th:first-child,td:first-child {{ text-align:left; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin:14px 0; }} .metrics {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }} .metric {{ font-size:24px; font-weight:760; }} @media(max-width:1000px) {{ form,.metrics {{ grid-template-columns:1fr 1fr; }} }}
+* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1700px,96vw); margin:auto; padding:28px 0 70px; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} form {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} input,select,button {{ border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:10px 11px; font:inherit; }} .expression {{ grid-column:1/-1; }} .expression input {{ width:100%; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; text-transform:none; letter-spacing:0; }} button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }} table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:right; }} th:first-child,td:first-child {{ text-align:left; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin:14px 0; }} .metrics {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }} .metric {{ font-size:24px; font-weight:760; }} @media(max-width:1000px) {{ form,.metrics {{ grid-template-columns:1fr 1fr; }} }}
 </style></head><body><div class="wrap">
 <a href="/">← Research console</a><h1>Market Scanner</h1><div class="subtle">Cross-sectional filtering of the latest reviewed canonical market state. Percent-return inputs use percentage points in the form below.</div>
 <div class="card"><h2>Filters</h2><form action="/research/scanner" method="get">
@@ -38,8 +38,10 @@ def render_market_scanner_html(
 <label>Min distance SMA200 %<input name="min_sma200" type="number" step="1" value="{_raw_input(selected.min_distance_sma_200_pct)}"></label>
 <label>Sort by<select name="sort_by">{_sort_options(selected.sort_by)}</select></label>
 <label>Limit<input name="limit" type="number" min="1" max="500" value="{selected.limit}"></label>
+<label class="expression">Mathematical condition (optional)<input name="expression" type="text" value="{_expression_input(selected.expression)}" placeholder="return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"></label>
 <button type="submit">Run scanner</button>
 </form></div>
+<div class="card"><strong>Expression language:</strong> feature names, finite numbers, arithmetic, comparisons, and boolean <code>and/or/not</code>. Calls, attribute access, indexing, assignment, and arbitrary Python are rejected. Fixed form filters and the expression are combined with AND.</div>
 <div class="card"><strong>Useful starting preset:</strong> 20-session return ≥ 5%, RVOL ≥ 1.5x, above SMA200, sorted by 20-session return. This is a descriptive screen, not a validated trading rule.</div>
 {warning}{body}
 </div></body></html>"""
@@ -48,7 +50,7 @@ def render_market_scanner_html(
 def _empty_state(error: str | None) -> str:
     if error:
         return ""
-    return '<div class="card"><h2>Ready</h2><div class="subtle">Set any combination of momentum, volume, volatility, ATR and long-term trend filters, then scan the complete reviewed canonical scope.</div></div>'
+    return '<div class="card"><h2>Ready</h2><div class="subtle">Set fixed filters, a mathematical condition, or both, then scan the complete reviewed canonical scope.</div></div>'
 
 
 def _render_report(report: MarketScannerReport) -> str:
@@ -71,6 +73,10 @@ def _pct_input(value: float | None) -> str:
 
 def _raw_input(value: float | None) -> str:
     return "" if value is None else f"{value:.4g}"
+
+
+def _expression_input(value: str | None) -> str:
+    return "" if value is None else escape(value, quote=True)
 
 
 def _sort_options(selected: str) -> str:
