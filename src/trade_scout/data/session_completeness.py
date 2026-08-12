@@ -11,8 +11,8 @@ from types import MappingProxyType
 
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, InstrumentRecord
 
-US_EQUITY_SESSION_CALENDAR_VERSION = "us-equities-core-full-day-v0.2"
-_SUPPORTED_EXCHANGES = frozenset({"XNYS", "XNAS"})
+US_EQUITY_SESSION_CALENDAR_VERSION = "us-equities-core-full-day-v0.3"
+_SUPPORTED_EXCHANGES = frozenset({"XNYS", "XNAS", "BATS"})
 _SEC_911_URL = (
     "https://www.sec.gov/rules-regulations/2001/09/"
     "emergency-order-pursuant-section-12k2-securities-exchange-act-1934-"
@@ -20,6 +20,7 @@ _SEC_911_URL = (
 )
 _NYSE_HOLIDAY_URL = "https://www.nyse.com/markets/hours-calendars"
 _NASDAQ_STATUS_URL = "https://www.nasdaqtrader.com/Trader.aspx?id=MarketSystemStatusSearch"
+_CBOE_HOLIDAY_URL = "https://www.cboe.com/about/hours/"
 _FINRA_1996_CALENDAR_URL = "https://www.finra.org/rules-guidance/notices/95-107"
 _FINRA_1997_CALENDAR_URL = "https://www.finra.org/rules-guidance/notices/96-90"
 _FINRA_1998_CALENDAR_URL = "https://www.finra.org/rules-guidance/notices/97-93"
@@ -122,7 +123,7 @@ class DatasetSessionCompletenessAudit:
 
 
 def default_us_equity_session_calendar() -> ExchangeSessionCalendar:
-    """Return the pinned historical full-day XNYS/XNAS session policy used by Trade Scout."""
+    """Return the pinned historical XNYS/XNAS/BATS full-day session policy."""
 
     closures = (
         _closure(date(2001, 9, 11), "September 11 attacks market closure", _SEC_911_URL),
@@ -167,6 +168,7 @@ def default_us_equity_session_calendar() -> ExchangeSessionCalendar:
         evidence_refs=(
             _NYSE_HOLIDAY_URL,
             _NASDAQ_STATUS_URL,
+            _CBOE_HOLIDAY_URL,
             _FINRA_1996_CALENDAR_URL,
             _FINRA_1997_CALENDAR_URL,
             _FINRA_1998_CALENDAR_URL,
