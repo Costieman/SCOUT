@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
+from trade_scout.features.volume import relative_volume
 from trade_scout.patterns.trend import (
     TrendFilter,
     required_trend_history_sessions,
@@ -127,7 +128,7 @@ def current_consolidation_state(
     signal_index = len(bars) - 1
     trend_ok = trend_qualified(bars, signal_index, config.trend_filter)
     distance = (boundary - latest.close) / boundary if boundary else None
-    volume_ratio = _volume_ratio(
+    volume_ratio = relative_volume(
         bars,
         signal_index=signal_index,
         lookback_sessions=config.volume_lookback_sessions,
@@ -197,7 +198,7 @@ def _event_at(
     if signal.close <= boundary:
         return None
 
-    volume_ratio = _volume_ratio(
+    volume_ratio = relative_volume(
         bars,
         signal_index=signal_index,
         lookback_sessions=config.volume_lookback_sessions,
@@ -231,23 +232,6 @@ def _event_at(
         dataset_version=str(signal.dataset_version),
         breakout_volume_ratio=volume_ratio,
     )
-
-
-def _volume_ratio(
-    bars: tuple[ResearchBar, ...],
-    *,
-    signal_index: int,
-    lookback_sessions: int,
-) -> float | None:
-    if signal_index < lookback_sessions:
-        return None
-    trailing = bars[signal_index - lookback_sessions : signal_index]
-    if any(item.volume < 0 for item in trailing) or bars[signal_index].volume < 0:
-        return None
-    average = sum(item.volume for item in trailing) / lookback_sessions
-    if average <= 0:
-        return None
-    return bars[signal_index].volume / average
 
 
 def _range_pct(high: float, low: float) -> float:
