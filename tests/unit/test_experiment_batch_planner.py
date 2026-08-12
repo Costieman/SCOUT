@@ -15,6 +15,7 @@ from trade_scout.experiments.contracts import (
     ResearchMode,
     StageResult,
 )
+from trade_scout.experiments.plan_store import FileBatchPlanStore
 from trade_scout.experiments.planner import (
     ExperimentPlanningError,
     plan_experiment_batch,
@@ -113,6 +114,36 @@ def test_plan_validation_detects_modified_search_identity() -> None:
     tampered = replace(plan, search_space_checksum="not-the-real-checksum")
     with pytest.raises(ExperimentPlanningError, match="search space has changed"):
         validate_plan_unchanged(tampered)
+
+
+def test_batch_plan_store_round_trips_complete_declared_search_space(tmp_path: Path) -> None:
+    plan = plan_experiment_batch(
+        _definition(),
+        {"pattern.duration": (10, 20, 30), "outcome.horizon": (20, 60)},
+    )
+    store = FileBatchPlanStore(tmp_path / "plans")
+    path = store.write(plan)
+
+    restored = store.read(plan.plan_id)
+
+    assert path.name == f"{plan.plan_id}.json"
+    assert restored.plan_id == plan.plan_id
+    assert restored.search_space_checksum == plan.search_space_checksum
+    assert restored.parameter_grid == plan.parameter_grid
+    assert tuple(child.configuration_checksum for child in restored.children) == tuple(
+        child.configuration_checksum for child in plan.children
+    )
+
+
+def test_batch_plan_store_rejects_tampered_search_space(tmp_path: Path) -> None:
+    plan = plan_experiment_batch(_definition(), {"pattern.duration": (10, 20)})
+    store = FileBatchPlanStore(tmp_path / "plans")
+    path = store.write(plan)
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace("[10,20]", "[10,30]"), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="batch plan checksum mismatch"):
+        store.read(plan.plan_id)
 
 
 def test_batch_continue_policy_retains_failed_child_and_completes_plan(tmp_path: Path) -> None:
