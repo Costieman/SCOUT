@@ -17,7 +17,16 @@ def to_json_value(value: Any) -> JSONValue:
     if is_dataclass(value) and not isinstance(value, type):
         return to_json_value(asdict(value))
     if isinstance(value, Enum):
-        return ensure_json_value(value.value)
+        return to_json_value(value.value)
+    if isinstance(value, dict):
+        result: dict[str, JSONValue] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise TypeError("manifest/configuration mapping keys must be strings")
+            result[key] = to_json_value(item)
+        return result
+    if isinstance(value, list | tuple):
+        return [to_json_value(item) for item in value]
     return ensure_json_value(value)
 
 
