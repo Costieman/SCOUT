@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from statistics import median
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
-from trade_scout.events.contracts import EventRecord
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutEvent
 
 
@@ -50,66 +49,14 @@ class HorizonSummary:
     median_mae: float | None
 
 
-@dataclass(frozen=True, slots=True)
-class _OutcomeEventRef:
-    event_id: str
-    instrument_id: InstrumentId
-    signal_index: int
-
-
 def measure_forward_outcomes(
     bars: tuple[ResearchBar, ...],
     events: tuple[ConsolidationBreakoutEvent, ...],
     *,
     horizons: tuple[int, ...] = (5, 10, 20, 40, 60),
 ) -> tuple[ForwardOutcome, ...]:
-    """Measure all complete exploratory event/horizon paths."""
+    """Measure all complete event/horizon paths; truncated horizons remain absent."""
 
-    refs = tuple(
-        _OutcomeEventRef(
-            event_id=event.event_id,
-            instrument_id=event.instrument_id,
-            signal_index=event.signal_index,
-        )
-        for event in events
-    )
-    return _measure_forward_outcomes(bars, refs, horizons=horizons)
-
-
-def measure_event_record_forward_outcomes(
-    bars: tuple[ResearchBar, ...],
-    events: tuple[EventRecord, ...],
-    *,
-    horizons: tuple[int, ...] = (5, 10, 20, 40, 60),
-) -> tuple[ForwardOutcome, ...]:
-    """Measure typed EventRecord outcomes by resolving signal dates against immutable bars."""
-
-    index_by_date = {bar.trade_date: index for index, bar in enumerate(bars)}
-    refs: list[_OutcomeEventRef] = []
-    for event in events:
-        signal_index = index_by_date.get(event.signal_date)
-        if signal_index is None:
-            raise ValueError(
-                f"event {event.event_id} signal date {event.signal_date} is absent from supplied bars"
-            )
-        if bars[signal_index].instrument_id != event.instrument_id:
-            raise ValueError(f"event {event.event_id} instrument does not match supplied bars")
-        refs.append(
-            _OutcomeEventRef(
-                event_id=event.event_id,
-                instrument_id=event.instrument_id,
-                signal_index=signal_index,
-            )
-        )
-    return _measure_forward_outcomes(bars, tuple(refs), horizons=horizons)
-
-
-def _measure_forward_outcomes(
-    bars: tuple[ResearchBar, ...],
-    events: tuple[_OutcomeEventRef, ...],
-    *,
-    horizons: tuple[int, ...],
-) -> tuple[ForwardOutcome, ...]:
     _validate_inputs(bars, horizons)
     outcomes: list[ForwardOutcome] = []
     for event in events:
