@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import replace
 from itertools import product
 
@@ -11,7 +11,7 @@ from trade_scout.experiments.contracts import ExperimentDefinition, JSONValue
 
 def expand_grid(
     definition: ExperimentDefinition,
-    parameter_grid: dict[str, Iterable[JSONValue]],
+    parameter_grid: Mapping[str, Iterable[JSONValue]],
 ) -> tuple[ExperimentDefinition, ...]:
     """Expand a declared Cartesian grid into child experiment definitions.
 
