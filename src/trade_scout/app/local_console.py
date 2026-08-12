@@ -34,6 +34,13 @@ from trade_scout.app.market_analysis_service import (
     MarketAnalysisSource,
 )
 from trade_scout.app.market_analysis_surface import render_market_analysis_html
+from trade_scout.app.market_scanner_service import (
+    MarketScannerError,
+    MarketScannerRequest,
+    MarketScannerService,
+    ScannerSortKey,
+)
+from trade_scout.app.market_scanner_surface import render_market_scanner_html
 from trade_scout.app.operational_surface import render_operational_application_html
 from trade_scout.app.risk_research_service import (
     RiskResearchError,
@@ -110,6 +117,7 @@ def build_console_response(
         "/index.html",
         "/research/edge",
         "/research/market",
+        "/research/scanner",
         "/research/universe",
         "/research/risk",
         "/api/snapshot.json",
@@ -126,6 +134,8 @@ def build_console_response(
         return _edge_explorer_response(parsed_target.query, config)
     if path == "/research/market":
         return _market_analysis_response(parsed_target.query, config)
+    if path == "/research/scanner":
+        return _market_scanner_response(parsed_target.query, config)
     if path == "/research/universe":
         return _universe_research_response(parsed_target.query, config)
     if path == "/research/risk":
@@ -142,6 +152,7 @@ def build_console_response(
         html = render_operational_application_html(snapshot)
         html = _with_edge_explorer_link(html, enabled=config.edge_explorer_source is not None)
         html = _with_market_analysis_link(html, enabled=config.market_analysis_source is not None)
+        html = _with_market_scanner_link(html, enabled=config.market_analysis_source is not None)
         html = _with_universe_research_link(
             html,
             enabled=config.universe_research_source is not None,
@@ -358,6 +369,40 @@ def _market_analysis_response(query: str, config: LocalConsoleConfig) -> Console
         return _html_response(HTTPStatus.BAD_REQUEST, html)
 
 
+def _market_scanner_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
+    source = config.market_analysis_source
+    if source is None:
+        html = render_market_scanner_html(error="Market Scanner is not configured for this console.")
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    parameters = parse_qs(query, keep_blank_values=False)
+    if not parameters:
+        return _html_response(HTTPStatus.OK, render_market_scanner_html())
+
+    request: MarketScannerRequest | None = None
+    try:
+        request = MarketScannerRequest(
+            min_return_20=_optional_percent(parameters, "min_return_20"),
+            min_return_252=_optional_percent(parameters, "min_return_252"),
+            min_relative_volume_20=_optional_float(parameters, "min_rvol"),
+            max_realized_volatility_20=_optional_percent(parameters, "max_vol"),
+            max_atr_pct_14=_optional_float(parameters, "max_atr"),
+            min_distance_sma_200_pct=_optional_float(parameters, "min_sma200"),
+            sort_by=cast(ScannerSortKey, _one(parameters, "sort_by", default="return_20")),
+            limit=int(_one(parameters, "limit", default="100")),
+        )
+        report = MarketScannerService(source).run(request)
+        return _html_response(
+            HTTPStatus.OK,
+            render_market_scanner_html(request=request, report=report),
+        )
+    except (ValueError, MarketScannerError) as exc:
+        return _html_response(
+            HTTPStatus.BAD_REQUEST,
+            render_market_scanner_html(request=request, error=str(exc)),
+        )
+
+
 def _universe_research_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
     source = config.universe_research_source
     if source is None:
@@ -483,6 +528,18 @@ def _optional_volume_ratio(value: str) -> float | None:
     return result
 
 
+def _optional_float(parameters: dict[str, list[str]], name: str) -> float | None:
+    values = parameters.get(name)
+    if not values or values == [""]:
+        return None
+    return float(_one(parameters, name))
+
+
+def _optional_percent(parameters: dict[str, list[str]], name: str) -> float | None:
+    value = _optional_float(parameters, name)
+    return None if value is None else value / 100.0
+
+
 def _one(parameters: dict[str, list[str]], name: str, *, default: str | None = None) -> str:
     values = parameters.get(name)
     if not values:
@@ -556,6 +613,14 @@ def _with_market_analysis_link(html: str, *, enabled: bool) -> str:
         raise RuntimeError("application renderer omitted Research navigation marker")
     label = "Market Analysis" if enabled else "Market Analysis (not configured)"
     return html.replace(marker, marker + f'<a href="/research/market">{label}</a>', 1)
+
+
+def _with_market_scanner_link(html: str, *, enabled: bool) -> str:
+    marker = '<a href="#research">Research</a>'
+    if marker not in html:
+        raise RuntimeError("application renderer omitted Research navigation marker")
+    label = "Market Scanner" if enabled else "Market Scanner (not configured)"
+    return html.replace(marker, marker + f'<a href="/research/scanner">{label}</a>', 1)
 
 
 def _with_universe_research_link(html: str, *, enabled: bool) -> str:
