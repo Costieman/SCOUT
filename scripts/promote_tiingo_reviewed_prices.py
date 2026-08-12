@@ -1,4 +1,4 @@
-"""Promote the bounded reviewed Tiingo price slice into immutable canonical storage."""
+"""Promote the bounded reviewed Tiingo identity and price slice into canonical storage."""
 
 from __future__ import annotations
 
@@ -22,6 +22,10 @@ from trade_scout.data.providers.tiingo_canonical_promotion import (
 from trade_scout.data.providers.tiingo_sp500_campaign import (
     TiingoSp500CampaignError,
     load_tiingo_sp500_campaign_plan,
+)
+from trade_scout.data.reviewed_identity_promotion import (
+    ReviewedIdentityPromotionError,
+    promote_reviewed_identity_candidate,
 )
 from trade_scout.data.reviewed_identity_snapshot import (
     ReviewedIdentitySnapshotError,
@@ -61,7 +65,7 @@ def main() -> int:
         )
         if not candidate_path.is_file():
             raise OperatorWorkspaceError(
-                "reviewed Tiingo identity candidate is missing; build and promote identity first"
+                "reviewed Tiingo identity candidate is missing; build identity first"
             )
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
         dataset_version = _OPERATOR_DATASET_VERSION_BY_IDENTITY.get(candidate.snapshot_version)
@@ -70,6 +74,22 @@ def main() -> int:
                 "reviewed Tiingo identity snapshot has no explicit canonical dataset mapping: "
                 f"{candidate.snapshot_version}"
             )
+
+        audit_path = workspace.root / "evidence" / "tiingo-lineage" / "audit.json"
+        if not audit_path.is_file():
+            raise OperatorWorkspaceError("Tiingo lineage audit is missing")
+        seed_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.11.json"
+        identity_result = promote_reviewed_identity_candidate(
+            candidate_path=candidate_path,
+            seed_path=seed_path,
+            lineage_audit_path=audit_path,
+            store_root=workspace.canonical_root,
+        )
+        if identity_result.candidate.snapshot_version != candidate.snapshot_version:
+            raise OperatorWorkspaceError(
+                "promoted identity snapshot does not match the price-promotion candidate"
+            )
+
         campaign_plan = load_tiingo_sp500_campaign_plan(
             repository_root / "configs" / "tiingo_sp500_campaign_v0.1.json"
         )
@@ -93,6 +113,7 @@ def main() -> int:
         persist_tiingo_canonical_promotion_report(output, result)
     except (
         OperatorWorkspaceError,
+        ReviewedIdentityPromotionError,
         ReviewedIdentitySnapshotError,
         TiingoCanonicalPromotionError,
         TiingoSp500CampaignError,
@@ -108,6 +129,7 @@ def main() -> int:
                 "dataset_id": manifest.dataset_id,
                 "dataset_version": str(manifest.dataset_version),
                 "identity_snapshot_version": result.identity_snapshot_version,
+                "identity_already_registered": identity_result.already_registered,
                 "promotion_scope": result.promotion_scope,
                 "already_registered": result.already_registered,
                 "symbol_count": result.symbol_count,
