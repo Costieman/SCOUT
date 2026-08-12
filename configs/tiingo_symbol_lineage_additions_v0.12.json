@@ -1,0 +1,117 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "ADBE",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "ADBE",
+          "to_symbol": "ADBE",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Adobe 1996 SEC filing: same registrant and Nasdaq-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/796343/000091205796002896/0000912057-96-002896-index.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "ADM",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "ADM",
+          "to_symbol": "ADM",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Archer Daniels Midland 1996 SEC filing: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/7084/000000708496000006/0000007084-96-000006-index.html"
+        }
+      ]
+    },
+    {
+      "source_symbol": "APD",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "APD",
+          "to_symbol": "APD",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Air Products 1996 SEC filing: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/2969/0000950123-96-004289-index.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "AXP",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "AXP",
+          "to_symbol": "AXP",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "American Express 1996 SEC filing: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/4962/0000004962-96-000021-index.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BAX",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "BAX",
+          "to_symbol": "BAX",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Baxter 1996 Form 10-K: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/10456/0000912057-96-004966-index.html"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BMY",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "BMY",
+          "to_symbol": "BMY",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Bristol-Myers Squibb 1996 SEC filing: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/14272/0000950117-96-000804-index.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "CAH",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "CAH",
+          "to_symbol": "CAH",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Cardinal Health 1996 Form 10-K: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/721371/0000950152-96-004334-index.html"
+        }
+      ]
+    }
+  ]
+}
