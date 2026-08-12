@@ -39,9 +39,7 @@ _SORT_KEYS: frozenset[str] = frozenset(
         "distance_sma_200_pct",
     }
 )
-_EXPRESSION_NAMES = frozenset(
-    item.feature_name for item in MARKET_ANALYSIS_FEATURE_SET.definitions
-)
+_EXPRESSION_NAMES = frozenset(item.feature_name for item in MARKET_ANALYSIS_FEATURE_SET.definitions)
 _LATEST_STATE_OBSERVATIONS = max(
     item.minimum_observations for item in MARKET_ANALYSIS_FEATURE_SET.definitions
 )
