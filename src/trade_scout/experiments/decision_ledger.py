@@ -52,8 +52,10 @@ class FileResearchDecisionLedger:
         if actual != expected:
             raise ResearchDecisionError(f"decision checksum mismatch: {decision_id}")
         if decision.decision_id != decision_id:
+            expected_id = decision_id
+            actual_id = decision.decision_id
             raise ResearchDecisionError(
-                f"decision file identity mismatch: expected {decision_id}, got {decision.decision_id}"
+                f"decision file identity mismatch: expected {expected_id}, got {actual_id}"
             )
         return decision
 
