@@ -35,7 +35,7 @@ class ConsolidationEventConfig:
             raise ValueError("volume_lookback_sessions must be between 2 and 252")
 
     @classmethod
-    def from_legacy_config(cls, config: ConsolidationBreakoutConfig) -> "ConsolidationEventConfig":
+    def from_legacy_config(cls, config: ConsolidationBreakoutConfig) -> ConsolidationEventConfig:
         """Preserve current exploratory event semantics during migration."""
 
         return cls(
