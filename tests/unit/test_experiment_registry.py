@@ -12,7 +12,8 @@ from trade_scout.experiments.contracts import (
     ExperimentStatus,
     ResearchMode,
 )
-from trade_scout.experiments.registry import DuckDBExperimentRegistry
+from trade_scout.experiments.registry import DuckDBExperimentRegistry, IndexedManifestStore
+from trade_scout.experiments.store import FileManifestStore
 
 
 def _manifest(
@@ -96,6 +97,18 @@ def test_registry_uses_reproduction_link_when_parent_is_absent(tmp_path: Path) -
 
     lineage = registry.lineage("exp_repro")
     assert tuple(item.experiment_id for item in lineage) == ("exp_source", "exp_repro")
+
+
+def test_indexed_store_registers_checksum_verified_manifest(tmp_path: Path) -> None:
+    registry = DuckDBExperimentRegistry(tmp_path / "registry.duckdb")
+    store = IndexedManifestStore(FileManifestStore(tmp_path / "runs"), registry)
+
+    store.write_manifest(_manifest("exp_indexed"))
+
+    indexed = registry.get("exp_indexed")
+    persisted = store.read_manifest("exp_indexed")
+    assert indexed.manifest_checksum == persisted.manifest_checksum
+    assert indexed.manifest_checksum is not None
 
 
 def test_registry_unknown_experiment_fails_explicitly(tmp_path: Path) -> None:
