@@ -15,7 +15,7 @@ _COMPOSITION_SCHEMA = "tiingo-lineage-audit-case-composition-v0.1"
 
 
 def load_lineage_case_source(path: Path) -> tuple[LineageCase, ...]:
-    """Load a full lineage case file or immutable-base composition."""
+    """Load a full lineage case file or recursively composed immutable case set."""
 
     payload = _load_object(path)
     if payload.get("schema_version") != _COMPOSITION_SCHEMA:
@@ -29,8 +29,8 @@ def load_lineage_case_source(path: Path) -> tuple[LineageCase, ...]:
         path,
         _required_text(payload.get("additions"), "additions"),
     )
-    base = load_lineage_cases(base_path)
-    additions = load_lineage_cases(additions_path)
+    base = load_lineage_case_source(base_path)
+    additions = load_lineage_case_source(additions_path)
     combined = tuple(sorted((*base, *additions), key=lambda item: item.source_symbol))
     symbols = [item.source_symbol for item in combined]
     if len(symbols) != len(set(symbols)):
