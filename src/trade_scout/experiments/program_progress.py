@@ -1,8 +1,8 @@
 """Progression gates for the controlled consolidation-breakout A-J research program.
 
-This module does not decide whether evidence is economically persuasive. It only prevents later program
-steps from being treated as eligible when their declared prerequisites are missing, failed, or executed
-under an incompatible research-governance mode.
+This module does not decide whether evidence is economically persuasive. It only prevents later
+program steps from being treated as eligible when their declared prerequisites are missing, failed,
+or executed under an incompatible research-governance mode.
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ class FirstResearchProgramProgress:
 
     @property
     def next_step(self) -> ProgramStep | None:
-        """Return the first step not yet successfully completed, or None when the program is complete."""
+        """Return the first incomplete step, or None when the program is complete."""
 
         for item in self.steps:
             if item.state is not ProgramStepState.SUCCEEDED:
@@ -83,7 +83,7 @@ class FirstResearchProgramProgress:
 
     @property
     def blocked(self) -> bool:
-        """Return true when progression is stopped by failure/incomplete/invalid governance state."""
+        """Return true when failure, incompleteness, or invalid governance blocks progression."""
 
         next_progress = next(
             (item for item in self.steps if item.state is not ProgramStepState.SUCCEEDED),
@@ -109,8 +109,10 @@ class FirstResearchProgramProgress:
                 f"program progression is blocked at {expected.experiment.value}: {progress.reason}"
             )
         if expected.experiment is not requested_step:
+            expected_value = expected.experiment.value
+            requested_value = requested_step.value
             raise ProgramProgressionError(
-                f"next eligible experiment is {expected.experiment.value}, not {requested_step.value}"
+                f"next eligible experiment is {expected_value}, not {requested_value}"
             )
         return expected
 
