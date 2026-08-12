@@ -16,8 +16,8 @@ from trade_scout.patterns.trend import (
     TrendFilter,
     required_trend_history_sessions,
     trend_qualified,
-    trend_qualified_indices as _shared_trend_qualified_indices,
 )
+from trade_scout.patterns.trend import trend_qualified_indices as _shared_trend_qualified_indices
 
 
 @dataclass(frozen=True, slots=True)
