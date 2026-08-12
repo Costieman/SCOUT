@@ -69,7 +69,10 @@ def generate_close_breakout_events(
             continue
         if prior.pattern_instance_id in consumed_instances:
             continue
-        if last_event_index is not None and index - last_event_index <= definition.cooldown_sessions:
+        if (
+            last_event_index is not None
+            and index - last_event_index <= definition.cooldown_sessions
+        ):
             continue
         if not bar.eligibility or bar.quality_status is not QualityStatus.PASS:
             continue
@@ -132,7 +135,9 @@ def generate_close_breakout_events(
                         "observed_breakout_volume_ratio",
                         "unavailable" if volume_ratio is None else f"{volume_ratio:.12g}",
                     ),
-                    ResolvedPatternParameter("cooldown_sessions", str(definition.cooldown_sessions)),
+                    ResolvedPatternParameter(
+                        "cooldown_sessions", str(definition.cooldown_sessions)
+                    ),
                 ),
                 event_family_id=prior.pattern_instance_id,
                 feature_set_version=prior.feature_set_version,
