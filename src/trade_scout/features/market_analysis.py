@@ -33,7 +33,9 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="return_5",
             feature_version="v0.1",
-            description="Split-adjusted close return over five trading-session intervals ending at t.",
+            description=(
+                "Split-adjusted close return over five trading-session intervals ending at t."
+            ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(intervals=5),
             units="decimal_return",
@@ -42,7 +44,9 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="return_20",
             feature_version="v0.1",
-            description="Split-adjusted close return over 20 trading-session intervals ending at t.",
+            description=(
+                "Split-adjusted close return over 20 trading-session intervals ending at t."
+            ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(intervals=20),
             units="decimal_return",
@@ -51,7 +55,9 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="return_252",
             feature_version="v0.1",
-            description="Split-adjusted close return over 252 trading-session intervals ending at t.",
+            description=(
+                "Split-adjusted close return over 252 trading-session intervals ending at t."
+            ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(intervals=252),
             units="decimal_return",
