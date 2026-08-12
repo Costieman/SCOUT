@@ -92,12 +92,12 @@ def _validate_node(node: ast.AST, allowed_names: frozenset[str]) -> None:
     if isinstance(node, ast.Compare):
         for part in (node.left, *node.comparators):
             _validate_node(part, allowed_names)
-        if not all(isinstance(op, (ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for op in node.ops):
+        if not all(
+            isinstance(op, (ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for op in node.ops
+        ):
             raise FeatureExpressionError("unsupported comparison operator")
         return
-    raise FeatureExpressionError(
-        f"unsupported expression construct: {type(node).__name__}"
-    )
+    raise FeatureExpressionError(f"unsupported expression construct: {type(node).__name__}")
 
 
 def _evaluate_node(
