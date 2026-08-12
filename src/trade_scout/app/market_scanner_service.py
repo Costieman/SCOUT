@@ -11,7 +11,10 @@ from trade_scout.data.canonical_storage import CanonicalDailyBarStore
 from trade_scout.data.contracts import DailyBar, DatasetVersion, QualityStatus
 from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
 from trade_scout.features.contracts import FeatureAvailabilityStatus, FeatureValue
-from trade_scout.features.market_analysis import compute_market_analysis_feature_frame
+from trade_scout.features.market_analysis import (
+    MARKET_ANALYSIS_FEATURE_SET,
+    compute_market_analysis_feature_frame,
+)
 
 ScannerSortKey = Literal[
     "return_20",
@@ -30,6 +33,9 @@ _SORT_KEYS: frozenset[str] = frozenset(
         "realized_volatility_20",
         "distance_sma_200_pct",
     }
+)
+_LATEST_STATE_OBSERVATIONS = max(
+    item.minimum_observations for item in MARKET_ANALYSIS_FEATURE_SET.definitions
 )
 
 
@@ -152,21 +158,12 @@ class MarketScannerService:
             raise MarketScannerError("scanner source does not support bulk canonical access")
         bulk_source = cast(MarketScannerSource, self.source)
         series = bulk_source.canonical_series()
-        all_bars = tuple(bar for bars in series.values() for bar in bars)
-        all_values = compute_market_analysis_feature_frame(all_bars)
-        values_by_instrument_date: dict[tuple[str, str], dict[str, FeatureValue]] = {}
-        for item in all_values:
-            key = (str(item.instrument_id), item.trade_date.isoformat())
-            values_by_instrument_date.setdefault(key, {})[item.feature_name] = item
 
         rows: list[MarketScannerRow] = []
         unavailable = 0
         for symbol, bars in series.items():
             latest_bar = bars[-1]
-            latest = values_by_instrument_date.get(
-                (str(latest_bar.instrument_id), latest_bar.trade_date.isoformat()),
-                {},
-            )
+            latest = _latest_feature_values(bars)
             row = MarketScannerRow(
                 symbol=symbol,
                 as_of=latest_bar.trade_date.isoformat(),
@@ -196,6 +193,15 @@ class MarketScannerService:
             request=request,
             rows=tuple(rows[: request.limit]),
         )
+
+
+def _latest_feature_values(bars: tuple[DailyBar, ...]) -> dict[str, FeatureValue]:
+    """Compute only the bounded trailing history needed for the latest feature state."""
+
+    trailing = bars[-_LATEST_STATE_OBSERVATIONS:]
+    values = compute_market_analysis_feature_frame(trailing)
+    latest_date = bars[-1].trade_date
+    return {item.feature_name: item for item in values if item.trade_date == latest_date}
 
 
 def _available_value(value: FeatureValue | None) -> float | None:
