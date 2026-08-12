@@ -46,7 +46,9 @@ def _register(
             definition=definition,
             status=status,
             created_at="2026-08-13T00:00:00+00:00",
-            completed_at="2026-08-13T00:01:00+00:00" if status is not ExperimentStatus.RUNNING else None,
+            completed_at="2026-08-13T00:01:00+00:00"
+            if status is not ExperimentStatus.RUNNING
+            else None,
             manifest_checksum=f"checksum_{experiment_id}",
         )
     )
@@ -110,7 +112,9 @@ def test_assignment_cannot_skip_unfinished_prior_step(tmp_path: Path) -> None:
     registry = DuckDBExperimentRegistry(tmp_path / "registry.duckdb")
     _register(registry, "exp_b")
 
-    with pytest.raises(ProgramProgressionError, match="assigned before all prior A-J steps succeed"):
+    with pytest.raises(
+        ProgramProgressionError, match="assigned before all prior A-J steps succeed"
+    ):
         evaluate_first_research_program_progress(
             registry,
             (ProgramAssignment(FirstProgramExperiment.B_DURATION, "exp_b"),),
@@ -138,9 +142,7 @@ def test_validation_experiment_i_requires_confirmatory_mode(tmp_path: Path) -> N
         assignments.append(ProgramAssignment(step, experiment_id))
 
     _register(registry, "exp_i", mode=ResearchMode.EXPLORATORY)
-    assignments.append(
-        ProgramAssignment(FirstProgramExperiment.I_COMBINED_VALIDATION, "exp_i")
-    )
+    assignments.append(ProgramAssignment(FirstProgramExperiment.I_COMBINED_VALIDATION, "exp_i"))
     progress = evaluate_first_research_program_progress(registry, tuple(assignments))
 
     assert progress.blocked
