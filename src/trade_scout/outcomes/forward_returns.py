@@ -15,15 +15,6 @@ from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutEve
 
 
 @dataclass(frozen=True, slots=True)
-class OutcomeEventRef:
-    """Adapter from a dated event into the outcome engine's signal-index contract."""
-
-    event_id: str
-    instrument_id: InstrumentId
-    signal_index: int
-
-
-@dataclass(frozen=True, slots=True)
 class ForwardOutcome:
     """One event/horizon outcome under next-session-open entry."""
 
@@ -60,7 +51,7 @@ class HorizonSummary:
 
 def measure_forward_outcomes(
     bars: tuple[ResearchBar, ...],
-    events: tuple[ConsolidationBreakoutEvent | OutcomeEventRef, ...],
+    events: tuple[ConsolidationBreakoutEvent, ...],
     *,
     horizons: tuple[int, ...] = (5, 10, 20, 40, 60),
 ) -> tuple[ForwardOutcome, ...]:
