@@ -27,6 +27,10 @@ from trade_scout.app.edge_explorer_service import (
     EdgeExplorerSource,
 )
 from trade_scout.app.edge_explorer_surface import render_edge_explorer_html
+from trade_scout.app.historical_strategy_research_service import HistoricalStrategyResearchService
+from trade_scout.app.historical_strategy_research_surface import (
+    render_historical_strategy_research_html,
+)
 from trade_scout.app.market_analysis_service import (
     MarketAnalysisError,
     MarketAnalysisRequest,
@@ -38,6 +42,7 @@ from trade_scout.app.market_scanner_service import (
     MarketScannerError,
     MarketScannerRequest,
     MarketScannerService,
+    MarketScannerSource,
     ScannerSortKey,
 )
 from trade_scout.app.market_scanner_surface import render_market_scanner_html
@@ -48,6 +53,7 @@ from trade_scout.app.risk_research_service import (
     RiskResearchService,
 )
 from trade_scout.app.risk_research_surface import render_risk_research_html
+from trade_scout.app.strategy_definition import STRATEGY_LIBRARY, StrategyDefinition
 from trade_scout.app.universe_research_service import (
     UniverseResearchError,
     UniverseResearchRequest,
@@ -118,6 +124,7 @@ def build_console_response(
         "/research/edge",
         "/research/market",
         "/research/scanner",
+        "/research/strategies",
         "/research/universe",
         "/research/risk",
         "/api/snapshot.json",
@@ -136,6 +143,8 @@ def build_console_response(
         return _market_analysis_response(parsed_target.query, config)
     if path == "/research/scanner":
         return _market_scanner_response(parsed_target.query, config)
+    if path == "/research/strategies":
+        return _historical_strategy_research_response(parsed_target.query, config)
     if path == "/research/universe":
         return _universe_research_response(parsed_target.query, config)
     if path == "/research/risk":
@@ -153,6 +162,7 @@ def build_console_response(
         html = _with_edge_explorer_link(html, enabled=config.edge_explorer_source is not None)
         html = _with_market_analysis_link(html, enabled=config.market_analysis_source is not None)
         html = _with_market_scanner_link(html, enabled=config.market_analysis_source is not None)
+        html = _with_strategy_research_link(html, enabled=config.market_analysis_source is not None)
         html = _with_universe_research_link(
             html,
             enabled=config.universe_research_source is not None,
@@ -390,6 +400,7 @@ def _market_scanner_response(query: str, config: LocalConsoleConfig) -> ConsoleR
             max_realized_volatility_20=_optional_percent(parameters, "max_vol"),
             max_atr_pct_14=_optional_float(parameters, "max_atr"),
             min_distance_sma_200_pct=_optional_float(parameters, "min_sma200"),
+            expression=_optional_text(parameters, "expression"),
             sort_by=cast(ScannerSortKey, _one(parameters, "sort_by", default="return_20")),
             limit=int(_one(parameters, "limit", default="100")),
         )
@@ -403,6 +414,50 @@ def _market_scanner_response(query: str, config: LocalConsoleConfig) -> ConsoleR
             HTTPStatus.BAD_REQUEST,
             render_market_scanner_html(request=request, error=str(exc)),
         )
+
+
+def _historical_strategy_research_response(
+    query: str,
+    config: LocalConsoleConfig,
+) -> ConsoleResponse:
+    source = config.market_analysis_source
+    if source is None or not hasattr(source, "canonical_series"):
+        html = render_historical_strategy_research_html(
+            error="Historical Strategy Research is not configured for this console."
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+
+    parameters = parse_qs(query, keep_blank_values=False)
+    if "strategy" not in parameters:
+        return _html_response(HTTPStatus.OK, render_historical_strategy_research_html())
+
+    strategy_id = _one(parameters, "strategy")
+    strategy = _strategy_by_id(strategy_id)
+    if strategy is None:
+        html = render_historical_strategy_research_html(
+            selected_strategy_id=strategy_id,
+            error=f"unknown strategy {strategy_id!r}",
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+    try:
+        report = HistoricalStrategyResearchService(cast(MarketScannerSource, source)).run(strategy)
+        html = render_historical_strategy_research_html(
+            selected_strategy_id=strategy.strategy_id,
+            report=report,
+        )
+        return _html_response(HTTPStatus.OK, html)
+    except (ValueError, MarketScannerError) as exc:
+        html = render_historical_strategy_research_html(
+            selected_strategy_id=strategy.strategy_id,
+            error=str(exc),
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+
+def _strategy_by_id(strategy_id: str) -> StrategyDefinition | None:
+    normalized = strategy_id.strip()
+    return next((item for item in STRATEGY_LIBRARY if item.strategy_id == normalized), None)
 
 
 def _universe_research_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
@@ -542,6 +597,14 @@ def _optional_percent(parameters: dict[str, list[str]], name: str) -> float | No
     return None if value is None else value / 100.0
 
 
+def _optional_text(parameters: dict[str, list[str]], name: str) -> str | None:
+    values = parameters.get(name)
+    if not values:
+        return None
+    value = _one(parameters, name).strip()
+    return value or None
+
+
 def _one(parameters: dict[str, list[str]], name: str, *, default: str | None = None) -> str:
     values = parameters.get(name)
     if not values:
@@ -623,6 +686,14 @@ def _with_market_scanner_link(html: str, *, enabled: bool) -> str:
         raise RuntimeError("application renderer omitted Research navigation marker")
     label = "Market Scanner" if enabled else "Market Scanner (not configured)"
     return html.replace(marker, marker + f'<a href="/research/scanner">{label}</a>', 1)
+
+
+def _with_strategy_research_link(html: str, *, enabled: bool) -> str:
+    marker = '<a href="#research">Research</a>'
+    if marker not in html:
+        raise RuntimeError("application renderer omitted Research navigation marker")
+    label = "Strategy Research" if enabled else "Strategy Research (not configured)"
+    return html.replace(marker, marker + f'<a href="/research/strategies">{label}</a>', 1)
 
 
 def _with_universe_research_link(html: str, *, enabled: bool) -> str:
