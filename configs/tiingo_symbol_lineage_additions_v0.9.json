@@ -28,8 +28,8 @@
           "from_symbol": null,
           "to_symbol": "APO",
           "event_type": "IPO_PUBLIC_TRADING_START",
-          "source_title": "Apollo Global Management IPO and NYSE APO public trading start",
-          "source_url": "https://www.sec.gov/Archives/edgar/data/1411494/000119312511082478/d424b4.htm"
+          "source_title": "Apollo Global Management Form 10-K: Class A shares began NYSE trading March 30, 2011 under APO",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1411494/000141149419000016/apo-1231201810k.htm"
         },
         {
           "effective_date": "2019-09-05",
@@ -46,30 +46,6 @@
           "event_type": "SUCCESSOR_PARENT_MERGER_ONE_FOR_ONE",
           "source_title": "Apollo successor registration: old AGM shares converted one-for-one into new Apollo Global Management shares",
           "source_url": "https://www.sec.gov/Archives/edgar/data/1032681/000119312522006780/d637908dsc13d.htm"
-        }
-      ]
-    },
-    {
-      "source_symbol": "ARES",
-      "current_symbol_effective_date": "2018-11-26",
-      "regular_way_start": "2014-05-02",
-      "when_issued_start": null,
-      "lineage_events": [
-        {
-          "effective_date": "2014-05-02",
-          "from_symbol": null,
-          "to_symbol": "ARES",
-          "event_type": "IPO_PUBLIC_TRADING_START",
-          "source_title": "Ares Management Form 10-K: common units began NYSE trading May 2, 2014 under ARES",
-          "source_url": "https://www.sec.gov/Archives/edgar/data/1176948/000104746915002528/a2223704z10-k.htm"
-        },
-        {
-          "effective_date": "2018-11-26",
-          "from_symbol": "ARES",
-          "to_symbol": "ARES",
-          "event_type": "ENTITY_CONVERSION_ONE_FOR_ONE",
-          "source_title": "Ares Form 8-K: limited partnership converted to corporation one-for-one; ARES continued on NYSE",
-          "source_url": "https://www.sec.gov/Archives/edgar/data/1176948/000110465918069788/a18-40249_18k.htm"
         }
       ]
     }
