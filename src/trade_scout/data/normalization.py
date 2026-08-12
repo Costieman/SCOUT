@@ -9,11 +9,11 @@ from enum import StrEnum
 from trade_scout.data.contracts import (
     DailyBar,
     DatasetVersion,
+    InstrumentId,
     InstrumentRecord,
     QualityStatus,
     SymbolHistoryRecord,
 )
-from trade_scout.data.instrument_master import resolve_provider_identity, symbol_as_of
 from trade_scout.data.provider import ProviderDailyBar
 from trade_scout.data.quality import QualityIssue, validate_daily_bars
 
@@ -60,14 +60,13 @@ def normalize_provider_daily_bars(
     """Normalize provider bars without ticker matching, adjustment guessing, or silent repair."""
 
     instrument_records = tuple(instruments)
+    identity_index = _provider_identity_index(instrument_records)
     canonical: list[DailyBar] = []
     normalization_issues: list[NormalizationIssue] = []
 
     for provider_bar in provider_bars:
-        instrument_id = resolve_provider_identity(
-            instrument_records,
-            provider_id=provider_bar.provider_id,
-            provider_instrument_id=provider_bar.provider_instrument_id,
+        instrument_id = identity_index.get(
+            (provider_bar.provider_id, provider_bar.provider_instrument_id)
         )
         if instrument_id is None:
             normalization_issues.append(
@@ -191,24 +190,23 @@ def normalize_provider_daily_bars_identity_aware(
 
     instrument_records = tuple(instruments)
     history_records = tuple(symbol_history)
+    identity_index = _provider_identity_index(instrument_records)
+    history_by_instrument = _symbol_history_index(history_records)
     eligible_bars: list[ProviderDailyBar] = []
     identity_issues: list[NormalizationIssue] = []
 
     for provider_bar in provider_bars:
-        instrument_id = resolve_provider_identity(
-            instrument_records,
-            provider_id=provider_bar.provider_id,
-            provider_instrument_id=provider_bar.provider_instrument_id,
+        instrument_id = identity_index.get(
+            (provider_bar.provider_id, provider_bar.provider_instrument_id)
         )
         if instrument_id is None:
             # Preserve the existing unresolved-instrument classification in the common normalizer.
             eligible_bars.append(provider_bar)
             continue
 
-        historical_symbol = symbol_as_of(
-            history_records,
-            instrument_id=instrument_id,
-            as_of=provider_bar.trade_date,
+        historical_symbol = _symbol_as_of_indexed(
+            history_by_instrument.get(instrument_id, ()),
+            provider_bar.trade_date,
         )
         if historical_symbol is None:
             identity_issues.append(
@@ -241,6 +239,53 @@ def normalize_provider_daily_bars_identity_aware(
         quality_issues=normalized.quality_issues,
         status=status,
     )
+
+
+def _provider_identity_index(
+    instruments: tuple[InstrumentRecord, ...],
+) -> dict[tuple[str, str], InstrumentId]:
+    """Build an exact provider-identity lookup once per normalization call."""
+
+    result: dict[tuple[str, str], InstrumentId] = {}
+    for instrument in instruments:
+        for provider_id, provider_instrument_id in instrument.provider_ids.items():
+            key = (provider_id, provider_instrument_id)
+            existing = result.get(key)
+            if existing is not None and existing != instrument.instrument_id:
+                raise ValueError(
+                    f"{provider_id}:{provider_instrument_id} maps to multiple instruments"
+                )
+            result[key] = instrument.instrument_id
+    return result
+
+
+def _symbol_history_index(
+    records: tuple[SymbolHistoryRecord, ...],
+) -> dict[InstrumentId, tuple[SymbolHistoryRecord, ...]]:
+    grouped: dict[InstrumentId, list[SymbolHistoryRecord]] = {}
+    for record in records:
+        grouped.setdefault(record.instrument_id, []).append(record)
+    return {
+        instrument_id: tuple(sorted(items, key=lambda item: item.effective_from))
+        for instrument_id, items in grouped.items()
+    }
+
+
+def _symbol_as_of_indexed(
+    records: tuple[SymbolHistoryRecord, ...],
+    as_of,
+) -> SymbolHistoryRecord | None:
+    match: SymbolHistoryRecord | None = None
+    for record in records:
+        if record.effective_from > as_of:
+            break
+        if record.effective_to is None or as_of <= record.effective_to:
+            if match is not None:
+                raise ValueError(
+                    f"multiple symbol assignments for {record.instrument_id} on {as_of.isoformat()}"
+                )
+            match = record
+    return match
 
 
 def _normalization_issue(
