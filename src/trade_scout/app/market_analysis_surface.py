@@ -1,4 +1,4 @@
-# ruff: noqa: E501
+# ruff: noqa: E501,I001
 """Presentation-only HTML for one-symbol market analysis."""
 
 from __future__ import annotations
