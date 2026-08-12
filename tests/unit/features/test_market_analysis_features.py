@@ -134,9 +134,7 @@ def test_sma_distance_features_are_percentage_distance_from_trailing_average() -
     sma50 = sum(item.close_split_adjusted for item in bars[:50]) / 50
     sma200 = sum(item.close_split_adjusted for item in bars[:200]) / 200
 
-    assert sma50_distance.value == pytest.approx(
-        (bars[49].close_split_adjusted / sma50 - 1) * 100
-    )
+    assert sma50_distance.value == pytest.approx((bars[49].close_split_adjusted / sma50 - 1) * 100)
     assert sma200_distance.value == pytest.approx(
         (bars[199].close_split_adjusted / sma200 - 1) * 100
     )
