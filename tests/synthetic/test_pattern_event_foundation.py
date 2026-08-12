@@ -12,7 +12,9 @@ from trade_scout.data.contracts import (
 )
 from trade_scout.events.breakout import generate_close_breakout_events
 from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_consolidation_states
+from trade_scout.patterns.consolidation_breakout import TrendFilter as ExploratoryTrendFilter
 from trade_scout.patterns.contracts import PatternLifecycleState
+from trade_scout.patterns.trend import TrendFilter
 
 
 def _bar(
@@ -146,3 +148,32 @@ def test_prefix_recomputation_matches_batch_state_and_event() -> None:
     prefix_states = detect_consolidation_states(bars[:11], definition)
     prefix_events = generate_close_breakout_events(bars[:11], prefix_states)
     assert prefix_events == batch_events
+
+
+def test_typed_engine_reuses_exploratory_trend_filter_contract() -> None:
+    assert ExploratoryTrendFilter is TrendFilter
+
+    qualifying_bars = tuple(
+        [_bar(index, close=80.0 + index * 0.1) for index in range(195)]
+        + [_bar(index, close=100.5, high=101.0, low=100.0) for index in range(195, 205)]
+    )
+    blocked_bars = tuple(
+        [_bar(index, close=110.0) for index in range(195)]
+        + [_bar(index, close=100.0, high=100.5, low=99.5) for index in range(195, 205)]
+    )
+    definition = ConsolidationDefinition(
+        duration_sessions=10,
+        max_range_pct=0.03,
+        trigger_ready_distance_pct=0.02,
+        trend_filter=TrendFilter.ABOVE_SMA_200,
+    )
+
+    qualifying = detect_consolidation_states(qualifying_bars, definition)
+    blocked = detect_consolidation_states(blocked_bars, definition)
+
+    assert qualifying[-1].state is PatternLifecycleState.TRIGGER_READY
+    assert blocked[-1].state is PatternLifecycleState.NONE
+    assert any(
+        item.name == "trend_filter" and item.value == TrendFilter.ABOVE_SMA_200.value
+        for item in qualifying[-1].resolved_parameters
+    )
