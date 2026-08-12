@@ -12,18 +12,20 @@ from enum import StrEnum
 from statistics import median
 
 from trade_scout.data.contracts import ResearchBar
+from trade_scout.events.breakout import CloseBreakoutDefinition, generate_close_breakout_events
+from trade_scout.events.contracts import EventRecord
 from trade_scout.outcomes.forward_returns import (
     HorizonSummary,
     measure_baseline_outcomes,
-    measure_forward_outcomes,
+    measure_event_record_forward_outcomes,
     summarize_outcomes,
 )
+from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_consolidation_states
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
     CurrentConsolidationState,
     TrendFilter,
     current_consolidation_state,
-    detect_consolidation_breakouts,
     trend_qualified_indices,
 )
 
@@ -73,7 +75,7 @@ class EdgeExplorerReport:
     warnings: tuple[str, ...]
     research_state: str = "EXPLORATORY"
     comparator_definition: str = "same-stock trend-context dates sampled every 5 sessions"
-    event_definition_version: str = "consolidation-close-breakout-v0.1"
+    event_definition_version: str = "upside-close-breakout-v0.4"
     outcome_definition_version: str = "next-open-forward-path-v0.1"
 
 
@@ -87,12 +89,12 @@ def build_consolidation_edge_report(
     surface_durations: tuple[int, ...] = (10, 20, 30, 40, 60),
     surface_tightness: tuple[float, ...] = (0.06, 0.09, 0.12, 0.15, 0.18),
 ) -> EdgeExplorerReport:
-    """Build one exploratory report and nearby-parameter surface."""
+    """Build one exploratory report and nearby-parameter surface from typed pattern/events."""
 
     if selected_horizon not in horizons:
         raise ValueError("selected_horizon must be included in horizons")
-    events = detect_consolidation_breakouts(bars, config)
-    outcomes = measure_forward_outcomes(bars, events, horizons=horizons)
+    events = _typed_breakout_events(bars, config)
+    outcomes = measure_event_record_forward_outcomes(bars, events, horizons=horizons)
     summaries = summarize_outcomes(outcomes, horizons)
     selected = next(item for item in summaries if item.horizon == selected_horizon)
 
@@ -125,7 +127,7 @@ def build_consolidation_edge_report(
     return EdgeExplorerReport(
         symbol=symbol.upper(),
         strategy_id="consolidation_breakout",
-        strategy_version="consolidation-breakout-research-v0.1",
+        strategy_version="consolidation-breakout-research-v0.2",
         dataset_version=str(bars[0].dataset_version),
         selected_horizon=selected_horizon,
         selected_config=config,
@@ -140,6 +142,30 @@ def build_consolidation_edge_report(
         parameter_surface=surface,
         recent_event_dates=tuple(item.signal_date.isoformat() for item in events[-10:]),
         warnings=warnings,
+    )
+
+
+def _typed_breakout_events(
+    bars: tuple[ResearchBar, ...],
+    config: ConsolidationBreakoutConfig,
+) -> tuple[EventRecord, ...]:
+    states = detect_consolidation_states(
+        bars,
+        ConsolidationDefinition(
+            duration_sessions=config.duration,
+            max_range_pct=config.max_range_pct,
+            trigger_ready_distance_pct=1.0,
+        ),
+    )
+    return generate_close_breakout_events(
+        bars,
+        states,
+        CloseBreakoutDefinition(
+            trend_filter=config.trend_filter,
+            min_breakout_volume_ratio=config.min_breakout_volume_ratio,
+            volume_lookback_sessions=config.volume_lookback_sessions,
+            cooldown_sessions=config.cooldown_sessions,
+        ),
     )
 
 
@@ -171,8 +197,8 @@ def _parameter_surface(
                 trend_filter=trend_filter,
                 cooldown_sessions=5,
             )
-            events = detect_consolidation_breakouts(bars, config)
-            outcomes = measure_forward_outcomes(
+            events = _typed_breakout_events(bars, config)
+            outcomes = measure_event_record_forward_outcomes(
                 bars,
                 events,
                 horizons=(selected_horizon,),
