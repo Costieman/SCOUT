@@ -14,16 +14,27 @@ from trade_scout.data.contracts import InstrumentId
 
 
 class EventRecord(Protocol):
-    """Structural contract required by downstream post-event research.
+    """Read-only structural contract required by downstream post-event research.
 
     Concrete event families may carry additional pattern-specific geometry and metadata.
     Downstream modules depend only on this shared surface, so measuring an outcome never
     requires importing or reinterpreting the pattern implementation that created the event.
     """
 
-    event_id: str
-    instrument_id: InstrumentId
-    signal_date: date
-    signal_index: int
-    dataset_version: str
-    event_definition_version: str
+    @property
+    def event_id(self) -> str: ...
+
+    @property
+    def instrument_id(self) -> InstrumentId: ...
+
+    @property
+    def signal_date(self) -> date: ...
+
+    @property
+    def signal_index(self) -> int: ...
+
+    @property
+    def dataset_version(self) -> str: ...
+
+    @property
+    def event_definition_version(self) -> str: ...
