@@ -7,7 +7,7 @@ frozen confirmatory research.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 from trade_scout.experiments.contracts import ExperimentDefinition, JSONValue, ResearchMode
@@ -48,7 +48,7 @@ class ExperimentPlanningError(ValueError):
 
 def plan_experiment_batch(
     definition: ExperimentDefinition,
-    parameter_grid: dict[str, Iterable[JSONValue]] | None = None,
+    parameter_grid: Mapping[str, Iterable[JSONValue]] | None = None,
 ) -> ExperimentBatchPlan:
     """Materialize and validate an auditable experiment run plan.
 
@@ -101,7 +101,7 @@ def validate_plan_unchanged(plan: ExperimentBatchPlan) -> None:
 
 
 def _freeze_grid(
-    parameter_grid: dict[str, Iterable[JSONValue]],
+    parameter_grid: Mapping[str, Iterable[JSONValue]],
 ) -> dict[str, tuple[JSONValue, ...]]:
     frozen: dict[str, tuple[JSONValue, ...]] = {}
     for path, candidates in parameter_grid.items():
@@ -118,7 +118,7 @@ def _freeze_grid(
 
 def _validate_grid_governance(
     mode: ResearchMode,
-    parameter_grid: dict[str, tuple[JSONValue, ...]],
+    parameter_grid: Mapping[str, tuple[JSONValue, ...]],
 ) -> None:
     if mode is ResearchMode.EXPLORATORY:
         return
