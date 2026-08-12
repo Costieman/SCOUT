@@ -8,7 +8,9 @@ from trade_scout.app.strategy_signal_history import evaluate_strategy_signal_his
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
 
 
-def _series(symbol: str, growth: float, *, final_volume_multiplier: float = 1.0) -> tuple[DailyBar, ...]:
+def _series(
+    symbol: str, growth: float, *, final_volume_multiplier: float = 1.0
+) -> tuple[DailyBar, ...]:
     rows: list[DailyBar] = []
     for index in range(260):
         close = 100.0 * math.exp(index * growth)
@@ -54,7 +56,9 @@ def test_historical_strategy_signals_are_point_in_time_and_ranked_per_date() -> 
     assert {str(item.instrument_id) for item in signals} == {"tsi_fast"}
     assert len({item.trade_date for item in signals}) == len(signals)
     assert all(item.rank_feature == "return_20" for item in signals)
-    assert all(item.dataset_version == DatasetVersion("strategy-history-test-v1") for item in signals)
+    assert all(
+        item.dataset_version == DatasetVersion("strategy-history-test-v1") for item in signals
+    )
 
 
 def test_future_volume_spike_does_not_create_earlier_rvol_signal() -> None:
