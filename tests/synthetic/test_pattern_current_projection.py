@@ -14,7 +14,9 @@ from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_c
 from trade_scout.patterns.current_projection import project_latest_pattern_state
 
 
-def _bar(index: int, *, close: float, high: float, low: float, volume: float = 1_000.0) -> ResearchBar:
+def _bar(
+    index: int, *, close: float, high: float, low: float, volume: float = 1_000.0
+) -> ResearchBar:
     return ResearchBar(
         instrument_id=InstrumentId("tsi_projection"),
         trade_date=date(2024, 1, 1) + timedelta(days=index),
