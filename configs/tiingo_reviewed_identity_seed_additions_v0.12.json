@@ -1,0 +1,205 @@
+{
+  "schema_version": "reviewed-identity-seeds-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-additions-v0.12",
+  "primary_provider_id": "trade_scout_review",
+  "identity_definition_version": "reviewed-permanent-identity-v0.1",
+  "symbol_history_definition_version": "explicit-dated-symbol-history-v0.1",
+  "seeds": [
+    {
+      "review_id": "rir-000060",
+      "primary_symbol": "ADBE",
+      "name": "Adobe Inc.",
+      "exchange": "XNAS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000060", "tiingo": "tiingo-series:rir-000060"},
+      "provider_query_symbols": {"tiingo": "ADBE"},
+      "symbol_history": [
+        {
+          "symbol": "ADBE",
+          "exchange": "XNAS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/796343/000091205796002896/0000912057-96-002896-index.htm",
+            "https://www.sec.gov/edgar/browse/?CIK=0000796343"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/796343/000091205796002896/0000912057-96-002896-index.htm",
+        "https://www.sec.gov/edgar/browse/?CIK=0000796343"
+      ]
+    },
+    {
+      "review_id": "rir-000061",
+      "primary_symbol": "ADM",
+      "name": "Archer-Daniels-Midland Company",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000061", "tiingo": "tiingo-series:rir-000061"},
+      "provider_query_symbols": {"tiingo": "ADM"},
+      "symbol_history": [
+        {
+          "symbol": "ADM",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/7084/000000708496000006/0000007084-96-000006-index.html",
+            "https://www.sec.gov/edgar/browse/?CIK=0000007084"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/7084/000000708496000006/0000007084-96-000006-index.html",
+        "https://www.sec.gov/edgar/browse/?CIK=0000007084"
+      ]
+    },
+    {
+      "review_id": "rir-000062",
+      "primary_symbol": "APD",
+      "name": "Air Products and Chemicals, Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000062", "tiingo": "tiingo-series:rir-000062"},
+      "provider_query_symbols": {"tiingo": "APD"},
+      "symbol_history": [
+        {
+          "symbol": "APD",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/2969/0000950123-96-004289-index.htm",
+            "https://www.sec.gov/Archives/edgar/data/2969/000000296926000020/0000002969-26-000020-index.html"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/2969/0000950123-96-004289-index.htm",
+        "https://www.sec.gov/Archives/edgar/data/2969/000000296926000020/0000002969-26-000020-index.html"
+      ]
+    },
+    {
+      "review_id": "rir-000063",
+      "primary_symbol": "AXP",
+      "name": "American Express Company",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000063", "tiingo": "tiingo-series:rir-000063"},
+      "provider_query_symbols": {"tiingo": "AXP"},
+      "symbol_history": [
+        {
+          "symbol": "AXP",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/4962/0000004962-96-000021-index.htm",
+            "https://www.sec.gov/edgar/browse/?CIK=CIK0000004962"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/4962/0000004962-96-000021-index.htm",
+        "https://www.sec.gov/edgar/browse/?CIK=CIK0000004962"
+      ]
+    },
+    {
+      "review_id": "rir-000064",
+      "primary_symbol": "BAX",
+      "name": "Baxter International Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000064", "tiingo": "tiingo-series:rir-000064"},
+      "provider_query_symbols": {"tiingo": "BAX"},
+      "symbol_history": [
+        {
+          "symbol": "BAX",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/10456/0000912057-96-004966-index.html",
+            "https://www.sec.gov/edgar/browse/?CIK=CIK0000010456"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/10456/0000912057-96-004966-index.html",
+        "https://www.sec.gov/edgar/browse/?CIK=CIK0000010456"
+      ]
+    },
+    {
+      "review_id": "rir-000065",
+      "primary_symbol": "BMY",
+      "name": "Bristol-Myers Squibb Company",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000065", "tiingo": "tiingo-series:rir-000065"},
+      "provider_query_symbols": {"tiingo": "BMY"},
+      "symbol_history": [
+        {
+          "symbol": "BMY",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/14272/0000950117-96-000804-index.htm",
+            "https://www.sec.gov/edgar/browse/?CIK=CIK0000014272"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/14272/0000950117-96-000804-index.htm",
+        "https://www.sec.gov/edgar/browse/?CIK=CIK0000014272"
+      ]
+    },
+    {
+      "review_id": "rir-000066",
+      "primary_symbol": "CAH",
+      "name": "Cardinal Health, Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000066", "tiingo": "tiingo-series:rir-000066"},
+      "provider_query_symbols": {"tiingo": "CAH"},
+      "symbol_history": [
+        {
+          "symbol": "CAH",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/721371/0000950152-96-004334-index.html",
+            "https://www.sec.gov/Archives/edgar/data/721371/000072137126000003/0000721371-26-000003-index.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/721371/0000950152-96-004334-index.html",
+        "https://www.sec.gov/Archives/edgar/data/721371/000072137126000003/0000721371-26-000003-index.htm"
+      ]
+    }
+  ]
+}
