@@ -31,14 +31,21 @@ _EXPECTED_CLASSIFICATIONS = {
     "AAPL": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "ABBV": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ABNB": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ABT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ACN": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "AEE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AIZ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AKAM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ALL": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ALLE": "WHEN_ISSUED_START_MATCH",
+    "AMAT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AMCR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AMD": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "AMGN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AMP": "WHEN_ISSUED_START_MATCH",
     "AMZN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ANET": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "APO": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "APP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APTV": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "AVGO": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
@@ -48,7 +55,10 @@ _EXPECTED_CLASSIFICATIONS = {
     "BKR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "BLK": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "BR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BRK.B": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CAT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "CBOE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CBRE": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "CRM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CSCO": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
@@ -76,20 +86,37 @@ _EXPECTED_CLASSIFICATIONS = {
     "V": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "WMT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
 }
+
 _NEW_REVIEWED_SYMBOLS = frozenset(
     {
+        "ABT",
         "ACN",
+        "AEE",
+        "ALL",
+        "AMAT",
+        "AMCR",
+        "AMGN",
+        "APO",
         "BG",
         "BKR",
         "BLK",
         "BR",
+        "BRK.B",
+        "BX",
+        "CBOE",
         "CBRE",
     }
 )
+
 _DEFERRED_REASONS = {
     "ALGN": (
         "Tiingo begins 2001-01-30 after the sourced public-trading start 2001-01-26; "
         "canonical promotion remains blocked until the missing sessions are independently resolved."
+    ),
+    "ARES": (
+        "Accepted primary-source filings conflict on whether ARES public trading began "
+        "2014-05-01 or 2014-05-02; Tiingo begins 2014-05-02, so promotion remains blocked "
+        "until the boundary discrepancy is independently reconciled."
     ),
     "BAC": (
         "The Tiingo BAC series begins before the 1998 NationsBank/BankAmerica merger, while "
@@ -104,6 +131,11 @@ _DEFERRED_REASONS = {
         "Tiingo begins 2005-06-28 after the sourced Nasdaq BLDR public-trading start "
         "2005-06-22; canonical promotion remains blocked until the missing initial sessions "
         "are independently resolved."
+    ),
+    "CARR": (
+        "Tiingo begins a CARR-labelled series on 2020-03-19, but Carrier's SEC filing states "
+        "that when-issued trading used CARR WI and regular-way CARR trading began 2020-04-03; "
+        "provider alias ownership of the pre-regular-way observations must be resolved first."
     ),
     "COST": (
         "Tiingo COST begins in 1996 while Price/Costco traded under PCCW before the 1997 "
@@ -145,8 +177,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.8.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.8.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.11.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.11.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)
@@ -154,8 +186,7 @@ def main() -> int:
         verification = verify_operator_workspace(workspace)
         if not verification.is_consistent:
             raise OperatorWorkspaceError(
-                "durable evidence is inconsistent; reviewed identity expansion is blocked "
-                "fail-closed"
+                "durable evidence is inconsistent; reviewed identity expansion is blocked fail-closed"
             )
 
         profile_path = workspace.root / "evidence" / "tiingo-profile" / "profile.json"
