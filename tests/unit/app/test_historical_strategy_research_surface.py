@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from html import escape
+
 from trade_scout.app.historical_strategy_research_service import HistoricalStrategyResearchReport
 from trade_scout.app.historical_strategy_research_surface import (
     render_historical_strategy_research_html,
@@ -15,7 +17,7 @@ def test_strategy_research_surface_renders_named_strategy_and_empty_state() -> N
 
     assert "Historical Strategy Research" in html
     assert MOMENTUM_RVOL_TREND.name in html
-    assert MOMENTUM_RVOL_TREND.expression in html
+    assert escape(MOMENTUM_RVOL_TREND.expression) in html
     assert "descriptive research, not a portfolio backtest" in html
 
 
