@@ -12,6 +12,13 @@ class FeatureExpressionError(ValueError):
     """Raised when a feature expression is invalid or cannot be evaluated safely."""
 
 
+class _Unavailable:
+    """Typed sentinel for point-in-time feature values that are not available."""
+
+
+_UNAVAILABLE = _Unavailable()
+
+
 @dataclass(frozen=True, slots=True)
 class CompiledFeatureExpression:
     """Validated expression tree restricted to deterministic feature arithmetic."""
@@ -24,14 +31,13 @@ class CompiledFeatureExpression:
         """Evaluate against one point-in-time feature row; unavailable inputs fail closed."""
 
         result = _evaluate_node(self.tree.body, values, self.allowed_names)
-        if result is _UNAVAILABLE:
+        if isinstance(result, _Unavailable):
             return False
         if not isinstance(result, bool):
             raise FeatureExpressionError("feature expression must evaluate to a boolean condition")
         return result
 
 
-_UNAVAILABLE = object()
 _MAX_EXPRESSION_LENGTH = 1_000
 _MAX_AST_NODES = 100
 
@@ -104,7 +110,7 @@ def _evaluate_node(
     node: ast.AST,
     values: Mapping[str, float | None],
     allowed_names: frozenset[str],
-) -> float | bool | object:
+) -> float | bool | _Unavailable:
     if isinstance(node, ast.Name):
         if node.id not in allowed_names:
             raise FeatureExpressionError(f"unknown feature name {node.id!r}")
@@ -116,10 +122,12 @@ def _evaluate_node(
             return _UNAVAILABLE
         return numeric
     if isinstance(node, ast.Constant):
+        if isinstance(node.value, bool) or not isinstance(node.value, (int, float)):
+            raise FeatureExpressionError("only finite numeric constants are allowed")
         return float(node.value)
     if isinstance(node, ast.UnaryOp):
         value = _evaluate_node(node.operand, values, allowed_names)
-        if value is _UNAVAILABLE:
+        if isinstance(value, _Unavailable):
             return _UNAVAILABLE
         if isinstance(node.op, ast.Not):
             if not isinstance(value, bool):
@@ -130,14 +138,14 @@ def _evaluate_node(
     if isinstance(node, ast.BinOp):
         left = _evaluate_node(node.left, values, allowed_names)
         right = _evaluate_node(node.right, values, allowed_names)
-        if left is _UNAVAILABLE or right is _UNAVAILABLE:
+        if isinstance(left, _Unavailable) or isinstance(right, _Unavailable):
             return _UNAVAILABLE
         return _binary(node.op, _number(left), _number(right))
     if isinstance(node, ast.BoolOp):
         evaluated: list[bool] = []
         for child in node.values:
             value = _evaluate_node(child, values, allowed_names)
-            if value is _UNAVAILABLE:
+            if isinstance(value, _Unavailable):
                 return _UNAVAILABLE
             if not isinstance(value, bool):
                 raise FeatureExpressionError("boolean operators require boolean operands")
@@ -145,12 +153,12 @@ def _evaluate_node(
         return all(evaluated) if isinstance(node.op, ast.And) else any(evaluated)
     if isinstance(node, ast.Compare):
         left = _evaluate_node(node.left, values, allowed_names)
-        if left is _UNAVAILABLE:
+        if isinstance(left, _Unavailable):
             return _UNAVAILABLE
         current = _number(left)
         for operator, comparator in zip(node.ops, node.comparators, strict=True):
             right_value = _evaluate_node(comparator, values, allowed_names)
-            if right_value is _UNAVAILABLE:
+            if isinstance(right_value, _Unavailable):
                 return _UNAVAILABLE
             right = _number(right_value)
             if not _compare(operator, current, right):
@@ -160,8 +168,8 @@ def _evaluate_node(
     raise FeatureExpressionError(f"unsupported expression construct: {type(node).__name__}")
 
 
-def _number(value: float | bool | object) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+def _number(value: float | bool) -> float:
+    if isinstance(value, bool):
         raise FeatureExpressionError("arithmetic requires numeric operands")
     numeric = float(value)
     if not math.isfinite(numeric):
