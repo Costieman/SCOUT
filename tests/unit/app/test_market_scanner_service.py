@@ -42,11 +42,8 @@ def _series(symbol: str, growth: float, final_volume_multiplier: float) -> tuple
 class _Source:
     rows: dict[str, tuple[DailyBar, ...]]
 
-    def available_symbols(self) -> tuple[str, ...]:
-        return tuple(sorted(self.rows))
-
-    def canonical_bars(self, symbol: str) -> tuple[DailyBar, ...]:
-        return self.rows[symbol]
+    def canonical_series(self) -> dict[str, tuple[DailyBar, ...]]:
+        return dict(self.rows)
 
 
 def test_scanner_filters_and_ranks_latest_cross_section() -> None:
