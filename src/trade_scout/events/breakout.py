@@ -8,7 +8,11 @@ from dataclasses import dataclass
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
 from trade_scout.events.contracts import EventRecord
-from trade_scout.patterns.contracts import PatternLifecycleState, PatternState, ResolvedPatternParameter
+from trade_scout.patterns.contracts import (
+    PatternLifecycleState,
+    PatternState,
+    ResolvedPatternParameter,
+)
 from trade_scout.patterns.trend import TrendFilter, trend_qualified
 from trade_scout.patterns.volume import trailing_volume_ratio
 
@@ -89,7 +93,9 @@ def generate_close_breakout_events(
             ResolvedPatternParameter("boundary_source", "prior_pattern_state"),
             ResolvedPatternParameter("trend_filter", definition.trend_filter.value),
             ResolvedPatternParameter("min_breakout_volume_ratio", volume_gate),
-            ResolvedPatternParameter("volume_lookback_sessions", str(definition.volume_lookback_sessions)),
+            ResolvedPatternParameter(
+                "volume_lookback_sessions", str(definition.volume_lookback_sessions)
+            ),
         ]
         if volume_ratio is not None:
             params.append(
