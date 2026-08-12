@@ -47,9 +47,7 @@ def test_feature_expression_can_compare_derived_numeric_terms() -> None:
         allowed_names=_ALLOWED,
     )
 
-    assert expression.evaluate(
-        {"return_20": 0.08, "atr_pct_14": 4.0, "distance_sma_200_pct": 5.0}
-    )
+    assert expression.evaluate({"return_20": 0.08, "atr_pct_14": 4.0, "distance_sma_200_pct": 5.0})
     assert not expression.evaluate(
         {"return_20": 0.02, "atr_pct_14": 4.0, "distance_sma_200_pct": 5.0}
     )
