@@ -55,7 +55,9 @@ def detect_consolidation_events(
 
     if not bars:
         raise ValueError("at least one research bar is required")
-    resolved_event_config = event_config or ConsolidationEventConfig.from_legacy_config(pattern_config)
+    resolved_event_config = event_config or ConsolidationEventConfig.from_legacy_config(
+        pattern_config
+    )
     events: list[ConsolidationBreakoutEvent] = []
     last_event_index = -10_000
 
