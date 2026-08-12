@@ -17,7 +17,9 @@ from trade_scout.experiments.first_research_program import (
 
 def test_first_program_is_complete_and_ordered() -> None:
     validate_first_research_program()
-    assert tuple(step.experiment for step in FIRST_RESEARCH_PROGRAM) == tuple(FirstProgramExperiment)
+    assert tuple(step.experiment for step in FIRST_RESEARCH_PROGRAM) == tuple(
+        FirstProgramExperiment
+    )
 
 
 def test_first_program_grid_preserves_declared_v01_search_families() -> None:
