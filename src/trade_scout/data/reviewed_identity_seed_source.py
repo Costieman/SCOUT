@@ -17,12 +17,12 @@ _COMPOSITION_SCHEMA = "reviewed-identity-seed-composition-v0.1"
 
 
 def load_reviewed_identity_seed_source(path: Path) -> ReviewedIdentitySeedSet:
-    """Load a full seed set or a composition of immutable reviewed seed files.
+    """Load a full seed set or a recursive composition of immutable seed files.
 
-    Composition preserves prior reviewed seed files byte-for-byte while allowing a later
-    snapshot to add reviewed identities. Base and additions remain independently strict
-    ``reviewed-identity-seeds-v0.1`` files. The resolved checksum commits to both inputs
-    and the small composition manifest.
+    Composition preserves prior reviewed seed files byte-for-byte while allowing later
+    snapshots to add reviewed identities. Base compositions are resolved recursively;
+    additions remain strict ``reviewed-identity-seeds-v0.1`` files. The resolved checksum
+    commits to the resolved base, additions, and composition manifest.
     """
 
     raw = _read_bytes(path)
@@ -49,7 +49,7 @@ def load_reviewed_identity_seed_source(path: Path) -> ReviewedIdentitySeedSet:
         path,
         _required_text(payload.get("additions"), "additions"),
     )
-    base = load_reviewed_identity_seed_set(base_path)
+    base = load_reviewed_identity_seed_source(base_path)
     additions = load_reviewed_identity_seed_set(additions_path)
     if base.primary_provider_id != additions.primary_provider_id:
         raise ReviewedIdentitySnapshotError("composed seed sources use different primary providers")
