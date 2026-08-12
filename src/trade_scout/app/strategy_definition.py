@@ -49,10 +49,7 @@ MOMENTUM_RVOL_TREND = StrategyDefinition(
         "Descriptive screen for positive 20-session momentum, elevated relative volume, "
         "and price above the trailing 200-session moving average."
     ),
-    expression=(
-        "return_20 >= 0.05 and relative_volume_20 >= 1.5 "
-        "and distance_sma_200_pct > 0"
-    ),
+    expression=("return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"),
     sort_by="return_20",
     descending=True,
     limit=100,
@@ -65,10 +62,7 @@ LOW_VOL_TREND = StrategyDefinition(
         "Descriptive screen for positive annual momentum, below-threshold realized volatility, "
         "and price above the trailing 200-session moving average."
     ),
-    expression=(
-        "return_252 > 0 and realized_volatility_20 < 0.30 "
-        "and distance_sma_200_pct > 0"
-    ),
+    expression=("return_252 > 0 and realized_volatility_20 < 0.30 and distance_sma_200_pct > 0"),
     sort_by="return_252",
     descending=True,
     limit=100,
