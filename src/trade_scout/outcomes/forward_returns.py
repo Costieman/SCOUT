@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from statistics import median
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
-from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutEvent
+from trade_scout.events.contracts import EventRecord
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +51,7 @@ class HorizonSummary:
 
 def measure_forward_outcomes(
     bars: tuple[ResearchBar, ...],
-    events: tuple[ConsolidationBreakoutEvent, ...],
+    events: tuple[EventRecord, ...],
     *,
     horizons: tuple[int, ...] = (5, 10, 20, 40, 60),
 ) -> tuple[ForwardOutcome, ...]:
