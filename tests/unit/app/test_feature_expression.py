@@ -76,7 +76,9 @@ def test_unsupported_or_unknown_constructs_are_rejected(source: str) -> None:
 
 
 def test_expression_requires_boolean_result() -> None:
-    expression = feature_expression.compile_feature_expression("return_20 + 1", allowed_names=_ALLOWED)
+    expression = feature_expression.compile_feature_expression(
+        "return_20 + 1", allowed_names=_ALLOWED
+    )
 
     with pytest.raises(feature_expression.FeatureExpressionError, match="boolean"):
         expression.evaluate({"return_20": 0.1})
