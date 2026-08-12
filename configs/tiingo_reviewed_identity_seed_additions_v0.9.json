@@ -48,44 +48,16 @@
           "effective_from": "2011-03-30",
           "effective_to": null,
           "evidence_refs": [
-            "https://www.sec.gov/Archives/edgar/data/1411494/000119312511082478/d424b4.htm",
+            "https://www.sec.gov/Archives/edgar/data/1411494/000141149419000016/apo-1231201810k.htm",
             "https://www.sec.gov/Archives/edgar/data/1411494/000119312519238190/d777305d8k.htm",
             "https://www.sec.gov/Archives/edgar/data/1032681/000119312522006780/d637908dsc13d.htm"
           ]
         }
       ],
       "evidence_refs": [
-        "https://www.sec.gov/Archives/edgar/data/1411494/000119312511082478/d424b4.htm",
+        "https://www.sec.gov/Archives/edgar/data/1411494/000141149419000016/apo-1231201810k.htm",
         "https://www.sec.gov/Archives/edgar/data/1411494/000119312519238190/d777305d8k.htm",
         "https://www.sec.gov/Archives/edgar/data/1032681/000119312522006780/d637908dsc13d.htm"
-      ]
-    },
-    {
-      "review_id": "rir-000052",
-      "primary_symbol": "ARES",
-      "name": "Ares Management Corporation",
-      "exchange": "XNYS",
-      "security_type": "common_stock",
-      "currency": "USD",
-      "first_trade_date": "2014-05-02",
-      "delisting_date": null,
-      "provider_links": {"trade_scout_review": "rir-000052", "tiingo": "tiingo-series:rir-000052"},
-      "provider_query_symbols": {"tiingo": "ARES"},
-      "symbol_history": [
-        {
-          "symbol": "ARES",
-          "exchange": "XNYS",
-          "effective_from": "2014-05-02",
-          "effective_to": null,
-          "evidence_refs": [
-            "https://www.sec.gov/Archives/edgar/data/1176948/000104746915002528/a2223704z10-k.htm",
-            "https://www.sec.gov/Archives/edgar/data/1176948/000110465918069788/a18-40249_18k.htm"
-          ]
-        }
-      ],
-      "evidence_refs": [
-        "https://www.sec.gov/Archives/edgar/data/1176948/000104746915002528/a2223704z10-k.htm",
-        "https://www.sec.gov/Archives/edgar/data/1176948/000110465918069788/a18-40249_18k.htm"
       ]
     }
   ]
