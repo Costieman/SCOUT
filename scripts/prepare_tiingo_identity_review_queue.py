@@ -83,7 +83,12 @@ def main() -> int:
             raise OperatorWorkspaceError("durable workspace verification is inconsistent")
 
         profile_path = root / "evidence" / "tiingo-profile" / "profile.json"
-        candidate_path = root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
+        candidate_path = (
+            root
+            / "evidence"
+            / "instrument-identity"
+            / "tiingo-reviewed-candidate.json"
+        )
         profile = _load_profile(profile_path)
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
     except (OperatorWorkspaceError, ReviewedIdentitySnapshotError) as exc:
