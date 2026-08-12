@@ -67,7 +67,9 @@ def project_latest_pattern_state(
         message = "Latest session generated a typed breakout event from the prior pattern state."
     elif not latest.eligibility or latest.quality_status is not QualityStatus.PASS:
         status = "QUALITY_BLOCKED"
-        message = "Latest session cannot generate a normal event because eligibility/quality failed."
+        message = (
+            "Latest session cannot generate a normal event because eligibility/quality failed."
+        )
     elif signal_pattern is not None and boundary is not None:
         volume_ok = definition.min_breakout_volume_ratio is None or (
             volume_ratio is not None and volume_ratio >= definition.min_breakout_volume_ratio
@@ -83,7 +85,9 @@ def project_latest_pattern_state(
             message = "Price crossed the prior boundary without producing a canonical event."
         else:
             status = "TRIGGER_READY"
-            message = "Prior structure is active and the latest close remains below its stored boundary."
+            message = (
+                "Prior structure is active and the latest close remains below its stored boundary."
+            )
     elif structural.state is PatternLifecycleState.FORMING:
         status = "FORMING"
         message = "The structural detector is still accumulating the required formation history."
