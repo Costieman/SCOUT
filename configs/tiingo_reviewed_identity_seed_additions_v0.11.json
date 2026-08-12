@@ -1,0 +1,141 @@
+{
+  "schema_version": "reviewed-identity-seeds-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-additions-v0.11",
+  "primary_provider_id": "trade_scout_review",
+  "identity_definition_version": "reviewed-permanent-identity-v0.1",
+  "symbol_history_definition_version": "explicit-dated-symbol-history-v0.1",
+  "seeds": [
+    {
+      "review_id": "rir-000054",
+      "primary_symbol": "ABT",
+      "name": "Abbott Laboratories",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000054", "tiingo": "tiingo-series:rir-000054"},
+      "provider_query_symbols": {"tiingo": "ABT"},
+      "symbol_history": [
+        {
+          "symbol": "ABT",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1800/000091205796004305/0000912057-96-004305-index.htm"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1800/000091205796004305/0000912057-96-004305-index.htm"]
+    },
+    {
+      "review_id": "rir-000055",
+      "primary_symbol": "AEE",
+      "name": "Ameren Corporation",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "1998-01-02",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000055", "tiingo": "tiingo-series:rir-000055"},
+      "provider_query_symbols": {"tiingo": "AEE"},
+      "symbol_history": [
+        {
+          "symbol": "AEE",
+          "exchange": "XNYS",
+          "effective_from": "1998-01-02",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/18651/000119312509042636/d10k.htm"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/18651/000119312509042636/d10k.htm"]
+    },
+    {
+      "review_id": "rir-000056",
+      "primary_symbol": "ALL",
+      "name": "The Allstate Corporation",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000056", "tiingo": "tiingo-series:rir-000056"},
+      "provider_query_symbols": {"tiingo": "ALL"},
+      "symbol_history": [
+        {
+          "symbol": "ALL",
+          "exchange": "XNYS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/899051/0000950137-96-001555-index.html"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/899051/0000950137-96-001555-index.html"]
+    },
+    {
+      "review_id": "rir-000057",
+      "primary_symbol": "AMAT",
+      "name": "Applied Materials, Inc.",
+      "exchange": "XNAS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000057", "tiingo": "tiingo-series:rir-000057"},
+      "provider_query_symbols": {"tiingo": "AMAT"},
+      "symbol_history": [
+        {
+          "symbol": "AMAT",
+          "exchange": "XNAS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/6951/0000891618-97-000148-index.html"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/6951/0000891618-97-000148-index.html"]
+    },
+    {
+      "review_id": "rir-000058",
+      "primary_symbol": "AMGN",
+      "name": "Amgen Inc.",
+      "exchange": "XNAS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": null,
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000058", "tiingo": "tiingo-series:rir-000058"},
+      "provider_query_symbols": {"tiingo": "AMGN"},
+      "symbol_history": [
+        {
+          "symbol": "AMGN",
+          "exchange": "XNAS",
+          "effective_from": "1996-01-02",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/318154/000031815496000002/0000318154-96-000002-index.html"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/318154/000031815496000002/0000318154-96-000002-index.html"]
+    },
+    {
+      "review_id": "rir-000059",
+      "primary_symbol": "BRK.B",
+      "name": "Berkshire Hathaway Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "1996-05-09",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000059", "tiingo": "tiingo-series:rir-000059"},
+      "provider_query_symbols": {"tiingo": "BRK.B"},
+      "symbol_history": [
+        {
+          "symbol": "BRK.B",
+          "exchange": "XNYS",
+          "effective_from": "1996-05-09",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1067983/000119312511144314/d424b3.htm"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1067983/000119312511144314/d424b3.htm"]
+    }
+  ]
+}
