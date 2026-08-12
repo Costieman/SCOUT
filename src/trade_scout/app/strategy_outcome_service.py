@@ -92,10 +92,7 @@ def measure_strategy_forward_outcomes(
                 )
                 for item in path
             )
-            if any(
-                high is None or low is None or close is None
-                for high, low, close in adjusted
-            ):
+            if any(high is None or low is None or close is None for high, low, close in adjusted):
                 continue
             highs = tuple(float(high) for high, _, _ in adjusted if high is not None)
             lows = tuple(float(low) for _, low, _ in adjusted if low is not None)
