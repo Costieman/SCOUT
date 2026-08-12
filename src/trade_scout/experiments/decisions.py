@@ -87,7 +87,9 @@ class ResearchDecision:
                     "production-eligible decision requires a complete production attestation"
                 )
         elif self.production_attestation is not None:
-            raise ValueError("production attestation is only valid for PRODUCTION-ELIGIBLE decisions")
+            raise ValueError(
+                "production attestation is only valid for PRODUCTION-ELIGIBLE decisions"
+            )
 
 
 class ResearchDecisionError(RuntimeError):
@@ -118,7 +120,9 @@ def validate_decision_supersession(
     if prior.subject_id != decision.subject_id:
         raise ResearchDecisionError("decision supersession cannot cross analytical subjects")
     if decision.supersedes_decision_id != prior.decision_id:
-        raise ResearchDecisionError("new decision must explicitly supersede the current subject decision")
+        raise ResearchDecisionError(
+            "new decision must explicitly supersede the current subject decision"
+        )
     if decision.decision_id == prior.decision_id:
         raise ResearchDecisionError("decision ID must change when a decision is superseded")
     if (
