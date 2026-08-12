@@ -261,18 +261,18 @@ def _calculate(
 
     if definition.feature_name == "relative_volume_20":
         period = _integer_parameter(definition, "period")
-        current = bars[index].volume_raw
-        prior = [item.volume_raw for item in bars[index - period : index]]
+        current_volume = bars[index].volume_raw
+        prior_volumes = [item.volume_raw for item in bars[index - period : index]]
         if (
-            not math.isfinite(current)
-            or current < 0
-            or any(not math.isfinite(value) or value < 0 for value in prior)
+            not math.isfinite(current_volume)
+            or current_volume < 0
+            or any(not math.isfinite(value) or value < 0 for value in prior_volumes)
         ):
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
-        denominator = math.fsum(prior) / period
+        denominator = math.fsum(prior_volumes) / period
         if denominator <= 0:
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
-        return FeatureAvailabilityStatus.AVAILABLE, current / denominator
+        return FeatureAvailabilityStatus.AVAILABLE, current_volume / denominator
 
     if definition.feature_name == "atr_pct_14":
         period = _integer_parameter(definition, "period")
