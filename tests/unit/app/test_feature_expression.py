@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from trade_scout.app.feature_expression import (
-    FeatureExpressionError,
-    compile_feature_expression,
-)
+from trade_scout.app import feature_expression
 
 
 _ALLOWED = frozenset(
@@ -20,7 +17,7 @@ _ALLOWED = frozenset(
 
 
 def test_feature_expression_supports_boolean_arithmetic_and_comparisons() -> None:
-    expression = compile_feature_expression(
+    expression = feature_expression.compile_feature_expression(
         "return_20 >= 0.05 and relative_volume_20 >= 1.5 and atr_pct_14 < 4",
         allowed_names=_ALLOWED,
     )
@@ -42,7 +39,7 @@ def test_feature_expression_supports_boolean_arithmetic_and_comparisons() -> Non
 
 
 def test_feature_expression_can_compare_derived_numeric_terms() -> None:
-    expression = compile_feature_expression(
+    expression = feature_expression.compile_feature_expression(
         "return_20 / atr_pct_14 > 0.015 or distance_sma_200_pct > 20",
         allowed_names=_ALLOWED,
     )
@@ -54,7 +51,7 @@ def test_feature_expression_can_compare_derived_numeric_terms() -> None:
 
 
 def test_unavailable_feature_fails_closed() -> None:
-    expression = compile_feature_expression(
+    expression = feature_expression.compile_feature_expression(
         "return_252 > 0 and relative_volume_20 > 1",
         allowed_names=_ALLOWED,
     )
@@ -74,22 +71,22 @@ def test_unavailable_feature_fails_closed() -> None:
     ],
 )
 def test_unsupported_or_unknown_constructs_are_rejected(source: str) -> None:
-    with pytest.raises(FeatureExpressionError):
-        compile_feature_expression(source, allowed_names=_ALLOWED)
+    with pytest.raises(feature_expression.FeatureExpressionError):
+        feature_expression.compile_feature_expression(source, allowed_names=_ALLOWED)
 
 
 def test_expression_requires_boolean_result() -> None:
-    expression = compile_feature_expression("return_20 + 1", allowed_names=_ALLOWED)
+    expression = feature_expression.compile_feature_expression("return_20 + 1", allowed_names=_ALLOWED)
 
-    with pytest.raises(FeatureExpressionError, match="boolean"):
+    with pytest.raises(feature_expression.FeatureExpressionError, match="boolean"):
         expression.evaluate({"return_20": 0.1})
 
 
 def test_division_by_zero_is_explicit_error() -> None:
-    expression = compile_feature_expression(
+    expression = feature_expression.compile_feature_expression(
         "return_20 / atr_pct_14 > 1",
         allowed_names=_ALLOWED,
     )
 
-    with pytest.raises(FeatureExpressionError, match="arithmetic failed"):
+    with pytest.raises(feature_expression.FeatureExpressionError, match="arithmetic failed"):
         expression.evaluate({"return_20": 0.1, "atr_pct_14": 0.0})
