@@ -33,6 +33,8 @@ _EXPECTED_CLASSIFICATIONS = {
     "ABNB": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ABT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ACN": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "ADBE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ADM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AEE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AIZ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AKAM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
@@ -45,18 +47,23 @@ _EXPECTED_CLASSIFICATIONS = {
     "AMP": "WHEN_ISSUED_START_MATCH",
     "AMZN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ANET": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "APD": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APO": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "APP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APTV": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "AVGO": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AWK": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AXON": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "AXP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BAX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "BG": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "BKR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "BLK": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "BMY": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "BR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "BRK.B": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "BX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "CAH": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CAT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "CBOE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CBRE": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
@@ -87,26 +94,7 @@ _EXPECTED_CLASSIFICATIONS = {
     "WMT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
 }
 
-_NEW_REVIEWED_SYMBOLS = frozenset(
-    {
-        "ABT",
-        "ACN",
-        "AEE",
-        "ALL",
-        "AMAT",
-        "AMCR",
-        "AMGN",
-        "APO",
-        "BG",
-        "BKR",
-        "BLK",
-        "BR",
-        "BRK.B",
-        "BX",
-        "CBOE",
-        "CBRE",
-    }
-)
+_NEW_REVIEWED_SYMBOLS = frozenset({"ADBE", "ADM", "APD", "AXP", "BAX", "BMY", "CAH"})
 
 _DEFERRED_REASONS = {
     "ALGN": (
@@ -177,8 +165,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.11.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.11.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.12.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.12.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)
@@ -198,9 +186,7 @@ def main() -> int:
         audit = audit_tiingo_profile_lineage(profile_path=profile_path, cases=cases)
         if audit.profiled_case_count != audit.case_count:
             missing = sorted(
-                item.source_symbol
-                for item in audit.observations
-                if item.observed_first_date is None
+                item.source_symbol for item in audit.observations if item.observed_first_date is None
             )
             raise OperatorWorkspaceError(
                 "one or more reviewed expansion symbols are absent from the durable Tiingo "
