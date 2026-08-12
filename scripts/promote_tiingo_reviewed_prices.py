@@ -32,6 +32,11 @@ _OPERATOR_DATASET_VERSION_BY_IDENTITY = {
     "tiingo-reviewed-identity-candidate-v0.4": DatasetVersion("tiingo-reviewed-split-only-v0.3"),
     "tiingo-reviewed-identity-candidate-v0.5": DatasetVersion("tiingo-reviewed-split-only-v0.4"),
     "tiingo-reviewed-identity-candidate-v0.6": DatasetVersion("tiingo-reviewed-split-only-v0.5"),
+    "tiingo-reviewed-identity-candidate-v0.7": DatasetVersion("tiingo-reviewed-split-only-v0.6"),
+    "tiingo-reviewed-identity-candidate-v0.8": DatasetVersion("tiingo-reviewed-split-only-v0.7"),
+    "tiingo-reviewed-identity-candidate-v0.9": DatasetVersion("tiingo-reviewed-split-only-v0.8"),
+    "tiingo-reviewed-identity-candidate-v0.10": DatasetVersion("tiingo-reviewed-split-only-v0.9"),
+    "tiingo-reviewed-identity-candidate-v0.11": DatasetVersion("tiingo-reviewed-split-only-v0.10"),
 }
 
 
@@ -60,6 +65,11 @@ def main() -> int:
             )
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
         dataset_version = _OPERATOR_DATASET_VERSION_BY_IDENTITY.get(candidate.snapshot_version)
+        if dataset_version is None:
+            raise OperatorWorkspaceError(
+                "reviewed Tiingo identity snapshot has no explicit canonical dataset mapping: "
+                f"{candidate.snapshot_version}"
+            )
         campaign_plan = load_tiingo_sp500_campaign_plan(
             repository_root / "configs" / "tiingo_sp500_campaign_v0.1.json"
         )
