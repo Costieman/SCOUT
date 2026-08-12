@@ -144,7 +144,7 @@ class IdFactory(Protocol):
 
 
 class ManifestStore(Protocol):
-    """Persistence boundary used by the runner."""
+    """Persistence boundary used by the runner and integrity auditor."""
 
     def write_manifest(self, manifest: ExperimentManifest) -> None: ...
 
@@ -153,6 +153,8 @@ class ManifestStore(Protocol):
     ) -> str: ...
 
     def read_manifest(self, experiment_id: str) -> ExperimentManifest: ...
+
+    def read_stage_output(self, experiment_id: str, stage_name: str) -> dict[str, JSONValue]: ...
 
 
 class ExperimentExecutionError(RuntimeError):
