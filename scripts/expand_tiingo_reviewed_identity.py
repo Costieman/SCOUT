@@ -186,7 +186,9 @@ def main() -> int:
         audit = audit_tiingo_profile_lineage(profile_path=profile_path, cases=cases)
         if audit.profiled_case_count != audit.case_count:
             missing = sorted(
-                item.source_symbol for item in audit.observations if item.observed_first_date is None
+                item.source_symbol
+                for item in audit.observations
+                if item.observed_first_date is None
             )
             raise OperatorWorkspaceError(
                 "one or more reviewed expansion symbols are absent from the durable Tiingo "
