@@ -372,7 +372,9 @@ def _market_analysis_response(query: str, config: LocalConsoleConfig) -> Console
 def _market_scanner_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
     source = config.market_analysis_source
     if source is None:
-        html = render_market_scanner_html(error="Market Scanner is not configured for this console.")
+        html = render_market_scanner_html(
+            error="Market Scanner is not configured for this console."
+        )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
 
     parameters = parse_qs(query, keep_blank_values=False)
