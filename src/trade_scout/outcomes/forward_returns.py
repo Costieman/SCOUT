@@ -9,17 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from statistics import median
-from typing import Protocol
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
-
-
-class OutcomeEvent(Protocol):
-    """Minimal event contract required for next-session-open outcome measurement."""
-
-    event_id: str
-    instrument_id: InstrumentId
-    signal_index: int
+from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutEvent
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,7 +60,7 @@ class HorizonSummary:
 
 def measure_forward_outcomes(
     bars: tuple[ResearchBar, ...],
-    events: tuple[OutcomeEvent, ...],
+    events: tuple[ConsolidationBreakoutEvent | OutcomeEventRef, ...],
     *,
     horizons: tuple[int, ...] = (5, 10, 20, 40, 60),
 ) -> tuple[ForwardOutcome, ...]:
