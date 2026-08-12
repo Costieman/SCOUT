@@ -13,6 +13,8 @@ from datetime import date
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
 from trade_scout.features.volume import relative_volume
+from trade_scout.patterns.consolidation import ConsolidationDefinition, detect_consolidation_states
+from trade_scout.patterns.contracts import PatternLifecycleState, PatternState
 from trade_scout.patterns.trend import (
     TrendFilter,
     required_trend_history_sessions,
@@ -106,7 +108,7 @@ def current_consolidation_state(
     bars: tuple[ResearchBar, ...],
     config: ConsolidationBreakoutConfig,
 ) -> CurrentConsolidationState:
-    """Classify the latest bar using only information available as of that bar."""
+    """Classify the latest bar using typed prior-pattern state and signal-date filters."""
 
     _validate_bars(bars)
     latest = bars[-1]
@@ -121,10 +123,13 @@ def current_consolidation_state(
             message=f"Need at least {config.duration + 1} sessions for this definition.",
         )
 
-    base = bars[-config.duration - 1 : -1]
-    boundary = max(item.high for item in base)
-    base_low = min(item.low for item in base)
-    range_pct = _range_pct(boundary, base_low)
+    prior_state = _typed_prior_state(bars, config)
+    boundary = _state_boundary(prior_state, "resistance")
+    support = _state_boundary(prior_state, "support")
+    if boundary is None or support is None:
+        raise ValueError("typed consolidation state did not provide structural boundaries")
+
+    range_pct = _range_pct(boundary, support)
     signal_index = len(bars) - 1
     trend_ok = trend_qualified(bars, signal_index, config.trend_filter)
     distance = (boundary - latest.close) / boundary if boundary else None
@@ -136,10 +141,14 @@ def current_consolidation_state(
     volume_ok = config.min_breakout_volume_ratio is None or (
         volume_ratio is not None and volume_ratio >= config.min_breakout_volume_ratio
     )
+    prior_qualified = prior_state.state in {
+        PatternLifecycleState.QUALIFIED,
+        PatternLifecycleState.TRIGGER_READY,
+    }
 
-    if range_pct > config.max_range_pct:
+    if not prior_qualified:
         state = "NOT_QUALIFIED"
-        message = "Latest prior window is wider than the configured consolidation threshold."
+        message = "Latest prior window is not a qualified typed consolidation state."
     elif not trend_ok:
         state = "TREND_FILTER_FAIL"
         message = "Consolidation is tight enough, but the configured trend condition is not met."
@@ -173,6 +182,26 @@ def trend_qualified_indices(
 
     _validate_bars(bars)
     return _shared_trend_qualified_indices(bars, trend_filter)
+
+
+def _typed_prior_state(
+    bars: tuple[ResearchBar, ...],
+    config: ConsolidationBreakoutConfig,
+) -> PatternState:
+    definition = ConsolidationDefinition(
+        duration_sessions=config.duration,
+        max_range_pct=config.max_range_pct,
+        trigger_ready_distance_pct=1.0,
+        pattern_version="consolidation-current-state-compat-v0.1",
+    )
+    return detect_consolidation_states(bars[:-1], definition)[-1]
+
+
+def _state_boundary(state: PatternState, name: str) -> float | None:
+    for boundary in state.structural_boundaries:
+        if boundary.name == name:
+            return boundary.value
+    return None
 
 
 def _event_at(
