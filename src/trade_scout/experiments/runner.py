@@ -7,6 +7,7 @@ inside the registered research stages supplied to it.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime
 from uuid import uuid4
@@ -24,6 +25,7 @@ from trade_scout.experiments.contracts import (
     StageRecord,
     utc_now,
 )
+from trade_scout.experiments.serialization import sha256_json
 
 
 class ExperimentRunner:
@@ -56,10 +58,19 @@ class ExperimentRunner:
         ordered_stages = tuple(stages)
         _validate_stage_sequence(ordered_stages)
         experiment_id = self._id_factory()
+        run_definition = replace(
+            definition,
+            resolved_configuration=deepcopy(definition.resolved_configuration),
+        )
+        pristine_definition = replace(
+            run_definition,
+            resolved_configuration=deepcopy(run_definition.resolved_configuration),
+        )
+        config_checksum = sha256_json(pristine_definition.resolved_configuration)
         created = _timestamp(self._clock())
         manifest = ExperimentManifest(
             experiment_id=experiment_id,
-            definition=definition,
+            definition=pristine_definition,
             status=ExperimentStatus.PENDING,
             created_at=created,
             reproduction_of=reproduction_of,
@@ -73,7 +84,7 @@ class ExperimentRunner:
         )
         self._store.write_manifest(manifest)
 
-        context = ExperimentContext(experiment_id=experiment_id, definition=definition)
+        context = ExperimentContext(experiment_id=experiment_id, definition=run_definition)
         stage_records: list[StageRecord] = []
         warnings: list[str] = []
 
@@ -81,6 +92,10 @@ class ExperimentRunner:
             for stage in ordered_stages:
                 started_at = _timestamp(self._clock())
                 result = stage.run(context)
+                if sha256_json(run_definition.resolved_configuration) != config_checksum:
+                    raise RuntimeError(
+                        f"research stage {stage.name!r} mutated the resolved experiment configuration"
+                    )
                 if result.stage_name != stage.name:
                     raise ValueError(
                         f"stage {stage.name!r} returned mismatched result name {result.stage_name!r}"
@@ -108,6 +123,7 @@ class ExperimentRunner:
         except Exception as cause:
             failed = replace(
                 manifest,
+                definition=pristine_definition,
                 status=ExperimentStatus.FAILED,
                 completed_at=_timestamp(self._clock()),
                 stages=tuple(stage_records),
@@ -120,6 +136,7 @@ class ExperimentRunner:
 
         succeeded = replace(
             manifest,
+            definition=pristine_definition,
             status=ExperimentStatus.SUCCEEDED,
             completed_at=_timestamp(self._clock()),
             stages=tuple(stage_records),
