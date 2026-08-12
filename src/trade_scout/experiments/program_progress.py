@@ -200,9 +200,13 @@ def _validate_assignments(
 def _mode_error(step: FirstProgramExperiment, mode: ResearchMode) -> str | None:
     if mode is ResearchMode.PRODUCTION_MONITORING:
         return "A-J research-program experiments cannot run in PRODUCTION_MONITORING mode"
-    if step in {
-        FirstProgramExperiment.I_COMBINED_VALIDATION,
-        FirstProgramExperiment.J_WALK_FORWARD_HOLDOUT,
-    } and mode is not ResearchMode.CONFIRMATORY:
+    if (
+        step
+        in {
+            FirstProgramExperiment.I_COMBINED_VALIDATION,
+            FirstProgramExperiment.J_WALK_FORWARD_HOLDOUT,
+        }
+        and mode is not ResearchMode.CONFIRMATORY
+    ):
         return f"experiment {step.value} requires CONFIRMATORY mode with a frozen definition"
     return None
