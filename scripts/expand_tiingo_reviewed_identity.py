@@ -31,6 +31,7 @@ _EXPECTED_CLASSIFICATIONS = {
     "AAPL": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "ABBV": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ABNB": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ACN": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "AIZ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AKAM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ALLE": "WHEN_ISSUED_START_MATCH",
@@ -43,7 +44,12 @@ _EXPECTED_CLASSIFICATIONS = {
     "AVGO": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AWK": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AXON": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "BG": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "BKR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BLK": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "BR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CAT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "CBRE": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "CRM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CSCO": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "CVX": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
@@ -72,30 +78,12 @@ _EXPECTED_CLASSIFICATIONS = {
 }
 _NEW_REVIEWED_SYMBOLS = frozenset(
     {
-        "CSCO",
-        "CVX",
-        "GE",
-        "GOOGL",
-        "GS",
-        "HD",
-        "JNJ",
-        "LLY",
-        "MA",
-        "MCD",
-        "META",
-        "MSFT",
-        "NEE",
-        "NFLX",
-        "NVDA",
-        "ORCL",
-        "PG",
-        "RTX",
-        "SCHW",
-        "TMUS",
-        "TSLA",
-        "UNH",
-        "V",
-        "WMT",
+        "ACN",
+        "BG",
+        "BKR",
+        "BLK",
+        "BR",
+        "CBRE",
     }
 )
 _DEFERRED_REASONS = {
@@ -111,6 +99,11 @@ _DEFERRED_REASONS = {
     "BKNG": (
         "Tiingo begins 1999-03-31 after the sourced Priceline public-trading start 1999-03-29; "
         "canonical promotion remains blocked until the missing initial sessions are resolved."
+    ),
+    "BLDR": (
+        "Tiingo begins 2005-06-28 after the sourced Nasdaq BLDR public-trading start "
+        "2005-06-22; canonical promotion remains blocked until the missing initial sessions "
+        "are independently resolved."
     ),
     "COST": (
         "Tiingo COST begins in 1996 while Price/Costco traded under PCCW before the 1997 "
@@ -152,8 +145,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.6.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.7.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.8.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.8.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)
