@@ -41,6 +41,7 @@ _OPERATOR_DATASET_VERSION_BY_IDENTITY = {
     "tiingo-reviewed-identity-candidate-v0.9": DatasetVersion("tiingo-reviewed-split-only-v0.8"),
     "tiingo-reviewed-identity-candidate-v0.10": DatasetVersion("tiingo-reviewed-split-only-v0.9"),
     "tiingo-reviewed-identity-candidate-v0.11": DatasetVersion("tiingo-reviewed-split-only-v0.10"),
+    "tiingo-reviewed-identity-candidate-v0.12": DatasetVersion("tiingo-reviewed-split-only-v0.11"),
 }
 
 
@@ -78,7 +79,7 @@ def main() -> int:
         audit_path = workspace.root / "evidence" / "tiingo-lineage" / "audit.json"
         if not audit_path.is_file():
             raise OperatorWorkspaceError("Tiingo lineage audit is missing")
-        seed_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.11.json"
+        seed_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.12.json"
         identity_result = promote_reviewed_identity_candidate(
             candidate_path=candidate_path,
             seed_path=seed_path,
