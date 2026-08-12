@@ -1,0 +1,101 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "ABT",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "ABT",
+          "to_symbol": "ABT",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Abbott Laboratories 1996 SEC filing: same registrant and NYSE-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1800/000091205796004305/0000912057-96-004305-index.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "AEE",
+      "current_symbol_effective_date": "1998-01-02",
+      "regular_way_start": "1998-01-02",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1998-01-02",
+          "from_symbol": null,
+          "to_symbol": "AEE",
+          "event_type": "POST_MERGER_PUBLIC_TRADING_START",
+          "source_title": "Ameren Form 10-K: AEE began NYSE trading January 2, 1998 following the UE/CIPSCO merger",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/18651/000119312509042636/d10k.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "ALL",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "ALL",
+          "to_symbol": "ALL",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "The Allstate Corporation 1996 Form 10-K amendment: same Delaware registrant at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/899051/0000950137-96-001555-index.html"
+        }
+      ]
+    },
+    {
+      "source_symbol": "AMAT",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "AMAT",
+          "to_symbol": "AMAT",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Applied Materials Form 10-K for fiscal 1996: same Delaware registrant and Nasdaq-listed issuer",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/6951/0000891618-97-000148-index.html"
+        }
+      ]
+    },
+    {
+      "source_symbol": "AMGN",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-01-02",
+          "from_symbol": "AMGN",
+          "to_symbol": "AMGN",
+          "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL",
+          "source_title": "Amgen 1995 Form 10-K filed March 1996: same Delaware registrant and Nasdaq-listed issuer at campaign start",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/318154/000031815496000002/0000318154-96-000002-index.html"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BRK.B",
+      "current_symbol_effective_date": "1996-05-09",
+      "regular_way_start": "1996-05-09",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1996-05-09",
+          "from_symbol": null,
+          "to_symbol": "BRK.B",
+          "event_type": "CLASS_B_PUBLIC_TRADING_START",
+          "source_title": "Berkshire Hathaway SEC prospectus: Class B common stock began trading May 9, 1996",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1067983/000119312511144314/d424b3.htm"
+        }
+      ]
+    }
+  ]
+}
