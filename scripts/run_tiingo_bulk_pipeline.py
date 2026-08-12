@@ -19,7 +19,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from trade_scout.app.operator_workspace import (
+    OperatorWorkspace,
     OperatorWorkspaceError,
+    WorkspaceVerification,
     configure_operator_workspace,
     load_operator_workspace,
     validate_workspace_location,
@@ -98,7 +100,7 @@ def _parse_single_json(text: str, stage: str) -> dict[str, object]:
     return payload
 
 
-def _verify_or_raise(workspace_root: Path) -> tuple[object, object]:
+def _verify_or_raise(workspace_root: Path) -> tuple[OperatorWorkspace, WorkspaceVerification]:
     workspace = load_operator_workspace(workspace_root)
     verification = verify_operator_workspace(workspace)
     if not verification.is_consistent:
@@ -122,13 +124,14 @@ def main() -> int:
     log_root = root / "evidence" / "bulk-tiingo" / run_id
     log_root.mkdir(parents=True, exist_ok=False)
 
+    stages: dict[str, object] = {}
     summary: dict[str, object] = {
         "schema_version": "tiingo-bulk-operator-run-v0.1",
         "run_id": run_id,
         "started_at": datetime.now(UTC).isoformat(),
         "requested_acquire_max_symbols": args.acquire_max_symbols,
         "durable_symbols_before": before.durable_completed_symbol_count,
-        "stages": {},
+        "stages": stages,
     }
 
     try:
@@ -142,18 +145,18 @@ def main() -> int:
                 "--max-symbols",
                 str(args.acquire_max_symbols),
             ]
-            code, stdout, stderr = _run_stage(
+            code, _stdout, _stderr = _run_stage(
                 name="01-acquire",
                 command=acquire_command,
                 cwd=repository_root,
                 log_root=log_root,
             )
-            summary["stages"]["acquire"] = {
+            stages["acquire"] = {
                 "returncode": code,
                 "stdout_log": str(log_root / "01-acquire.stdout.txt"),
                 "stderr_log": str(log_root / "01-acquire.stderr.txt"),
             }
-            if code not in (0,):
+            if code != 0:
                 raise BulkTiingoPipelineError(
                     "Tiingo acquisition returned a hard failure; inspect the saved stage logs"
                 )
@@ -168,7 +171,7 @@ def main() -> int:
         )
         profile_path = root / "evidence" / "tiingo-profile" / "profile.json"
         persist_tiingo_durable_profile(profile_path, profile)
-        summary["stages"]["profile"] = {
+        stages["profile"] = {
             "symbol_count": profile.symbol_count,
             "row_count": profile.total_row_count,
             "profile_path": str(profile_path),
@@ -180,13 +183,13 @@ def main() -> int:
             "--root",
             str(root),
         ]
-        code, stdout, stderr = _run_stage(
+        code, stdout, _stderr = _run_stage(
             name="02-expand-identity",
             command=expand_command,
             cwd=repository_root,
             log_root=log_root,
         )
-        summary["stages"]["expand_identity"] = {
+        stages["expand_identity"] = {
             "returncode": code,
             "stdout_log": str(log_root / "02-expand-identity.stdout.txt"),
             "stderr_log": str(log_root / "02-expand-identity.stderr.txt"),
@@ -197,7 +200,9 @@ def main() -> int:
         summary["reviewed_instrument_count"] = identity_payload.get("instrument_count")
         summary["deferred_symbols"] = identity_payload.get("deferred_symbols", [])
 
-        candidate_path = root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
+        candidate_path = (
+            root / "evidence" / "instrument-identity" / "tiingo-reviewed-candidate.json"
+        )
         candidate = load_reviewed_identity_snapshot_candidate(candidate_path)
         reviewed_query_symbols = {
             item.query_symbol
@@ -235,13 +240,13 @@ def main() -> int:
             "--root",
             str(root),
         ]
-        code, stdout, stderr = _run_stage(
+        code, stdout, _stderr = _run_stage(
             name="03-promote-reviewed",
             command=promote_command,
             cwd=repository_root,
             log_root=log_root,
         )
-        summary["stages"]["promote_reviewed"] = {
+        stages["promote_reviewed"] = {
             "returncode": code,
             "stdout_log": str(log_root / "03-promote-reviewed.stdout.txt"),
             "stderr_log": str(log_root / "03-promote-reviewed.stderr.txt"),
