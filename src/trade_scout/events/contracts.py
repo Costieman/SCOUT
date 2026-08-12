@@ -7,21 +7,18 @@ pattern implementation in order to measure what happened after an event.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
+from typing import Protocol
 
 from trade_scout.data.contracts import InstrumentId
 
 
-@dataclass(frozen=True, slots=True)
-class EventRecord:
-    """Minimum stable contract required by downstream post-event research.
+class EventRecord(Protocol):
+    """Structural contract required by downstream post-event research.
 
-    ``signal_index`` is retained as a deterministic daily-bar locator for the current
-    implementation. The scientific identity of the event remains the immutable event ID,
-    instrument, signal date, dataset version, and registered event-definition version.
-    Pattern-specific geometry belongs in a pattern/event subtype or resolved metadata, not
-    in downstream outcome logic.
+    Concrete event families may carry additional pattern-specific geometry and metadata.
+    Downstream modules depend only on this shared surface, so measuring an outcome never
+    requires importing or reinterpreting the pattern implementation that created the event.
     """
 
     event_id: str
