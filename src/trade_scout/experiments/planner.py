@@ -7,8 +7,8 @@ frozen confirmatory research.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from trade_scout.experiments.contracts import ExperimentDefinition, JSONValue, ResearchMode
 from trade_scout.experiments.serialization import sha256_json
