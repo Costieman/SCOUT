@@ -92,8 +92,8 @@ def _validate_node(node: ast.AST, allowed_names: frozenset[str]) -> None:
         _validate_node(node.right, allowed_names)
         return
     if isinstance(node, ast.BoolOp) and isinstance(node.op, (ast.And, ast.Or)):
-        for value in node.values:
-            _validate_node(value, allowed_names)
+        for child in node.values:
+            _validate_node(child, allowed_names)
         return
     if isinstance(node, ast.Compare):
         for part in (node.left, *node.comparators):
@@ -114,10 +114,10 @@ def _evaluate_node(
     if isinstance(node, ast.Name):
         if node.id not in allowed_names:
             raise FeatureExpressionError(f"unknown feature name {node.id!r}")
-        value = values.get(node.id)
-        if value is None:
+        feature_value = values.get(node.id)
+        if feature_value is None:
             return _UNAVAILABLE
-        numeric = float(value)
+        numeric = float(feature_value)
         if not math.isfinite(numeric):
             return _UNAVAILABLE
         return numeric
@@ -126,41 +126,41 @@ def _evaluate_node(
             raise FeatureExpressionError("only finite numeric constants are allowed")
         return float(node.value)
     if isinstance(node, ast.UnaryOp):
-        value = _evaluate_node(node.operand, values, allowed_names)
-        if isinstance(value, _Unavailable):
+        operand_value = _evaluate_node(node.operand, values, allowed_names)
+        if isinstance(operand_value, _Unavailable):
             return _UNAVAILABLE
         if isinstance(node.op, ast.Not):
-            if not isinstance(value, bool):
+            if not isinstance(operand_value, bool):
                 raise FeatureExpressionError("not requires a boolean operand")
-            return not value
-        numeric = _number(value)
+            return not operand_value
+        numeric = _number(operand_value)
         return numeric if isinstance(node.op, ast.UAdd) else -numeric
     if isinstance(node, ast.BinOp):
-        left = _evaluate_node(node.left, values, allowed_names)
-        right = _evaluate_node(node.right, values, allowed_names)
-        if isinstance(left, _Unavailable) or isinstance(right, _Unavailable):
+        left_value = _evaluate_node(node.left, values, allowed_names)
+        right_value = _evaluate_node(node.right, values, allowed_names)
+        if isinstance(left_value, _Unavailable) or isinstance(right_value, _Unavailable):
             return _UNAVAILABLE
-        return _binary(node.op, _number(left), _number(right))
+        return _binary(node.op, _number(left_value), _number(right_value))
     if isinstance(node, ast.BoolOp):
         evaluated: list[bool] = []
         for child in node.values:
-            value = _evaluate_node(child, values, allowed_names)
-            if isinstance(value, _Unavailable):
+            child_value = _evaluate_node(child, values, allowed_names)
+            if isinstance(child_value, _Unavailable):
                 return _UNAVAILABLE
-            if not isinstance(value, bool):
+            if not isinstance(child_value, bool):
                 raise FeatureExpressionError("boolean operators require boolean operands")
-            evaluated.append(value)
+            evaluated.append(child_value)
         return all(evaluated) if isinstance(node.op, ast.And) else any(evaluated)
     if isinstance(node, ast.Compare):
-        left = _evaluate_node(node.left, values, allowed_names)
-        if isinstance(left, _Unavailable):
+        left_value = _evaluate_node(node.left, values, allowed_names)
+        if isinstance(left_value, _Unavailable):
             return _UNAVAILABLE
-        current = _number(left)
+        current = _number(left_value)
         for operator, comparator in zip(node.ops, node.comparators, strict=True):
-            right_value = _evaluate_node(comparator, values, allowed_names)
-            if isinstance(right_value, _Unavailable):
+            comparator_value = _evaluate_node(comparator, values, allowed_names)
+            if isinstance(comparator_value, _Unavailable):
                 return _UNAVAILABLE
-            right = _number(right_value)
+            right = _number(comparator_value)
             if not _compare(operator, current, right):
                 return False
             current = right
