@@ -75,7 +75,15 @@ class MarketScannerRow:
     distance_sma_200_pct: float | None
 
     def value(self, name: ScannerSortKey) -> float | None:
-        return getattr(self, name)
+        values: dict[ScannerSortKey, float | None] = {
+            "return_20": self.return_20,
+            "return_252": self.return_252,
+            "relative_volume_20": self.relative_volume_20,
+            "atr_pct_14": self.atr_pct_14,
+            "realized_volatility_20": self.realized_volatility_20,
+            "distance_sma_200_pct": self.distance_sma_200_pct,
+        }
+        return values[name]
 
 
 @dataclass(frozen=True, slots=True)
