@@ -13,7 +13,8 @@ meaning itself.
 - aggregate warnings without suppressing failure;
 - record dataset, universe, code, schema, hypothesis, mode, seed, and lineage metadata;
 - reproduce a successful experiment from its stored definition;
-- materialize explicit Cartesian parameter grids before sweep execution.
+- materialize explicit Cartesian parameter grids before sweep execution;
+- expose the accepted first consolidation-breakout Experiment A-J sequence as planning metadata.
 
 ## Non-responsibilities
 
@@ -27,6 +28,18 @@ markets, or deliver alerts. Those responsibilities remain in their domain module
 artifacts. Manifests are canonicalized and SHA-256 verified on read. Large analytical tables should be
 persisted by their owning module using the project data/artifact policy and referenced from stage output
 metadata rather than embedded in the manifest.
+
+## First research-program plan
+
+`FIRST_RESEARCH_PROGRAM` encodes the controlled A-J sequence from the Version 0.1 consolidation-
+breakout research specification. `FirstProgramGrid` records the initially declared trend IDs, duration
+values, breakout IDs, outcome horizons, and baseline stop grids. These objects are planning contracts,
+not evidence and not permission to skip the data-foundation gate or validation requirements.
+
+The sequence is deliberately dependency-ordered: trend baseline -> duration -> tightness -> breakout ->
+volume -> market regime -> stock volatility/age -> simple stops -> frozen combined validation -> walk-
+forward/final holdout. Validation rejects reordered or incomplete plans instead of silently accepting an
+ad hoc combinatorial search.
 
 ## Integrity rules
 
