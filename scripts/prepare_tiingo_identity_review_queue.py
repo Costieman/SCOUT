@@ -120,7 +120,7 @@ def main() -> int:
         )
 
     rows.sort(key=lambda item: _priority(item["first_date"], item["row_count"]))
-    selected = rows[: args.limit]
+    selected = rows[:args.limit]
     output_dir = root / "evidence" / "identity-review-queue"
     output_dir.mkdir(parents=True, exist_ok=True)
     json_path = output_dir / "tiingo-unreviewed-durable.json"
