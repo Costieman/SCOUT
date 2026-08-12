@@ -23,6 +23,7 @@ def _bar(
     close: float,
     high: float | None = None,
     low: float | None = None,
+    volume: float = 1_000_000.0,
     quality_status: QualityStatus = QualityStatus.PASS,
 ) -> ResearchBar:
     return ResearchBar(
@@ -32,7 +33,7 @@ def _bar(
         high=high if high is not None else close + 0.5,
         low=low if low is not None else close - 0.5,
         close=close,
-        volume=1_000_000.0,
+        volume=volume,
         eligibility=True,
         quality_status=quality_status,
         dataset_version=DatasetVersion("synthetic-v1"),
@@ -183,4 +184,30 @@ def test_typed_engine_reuses_exploratory_trend_filter_on_signal_session() -> Non
     assert any(
         item.name == "trend_filter" and item.value == TrendFilter.ABOVE_SMA_200.value
         for item in qualifying_events[0].resolved_parameters
+    )
+
+
+def test_typed_breakout_volume_gate_uses_prior_trailing_baseline() -> None:
+    low_volume_bars = tuple(
+        [_bar(index, close=100.0, high=101.0, low=99.0) for index in range(10)]
+        + [_bar(10, close=102.0, high=102.5, low=100.5, volume=1_400_000.0)]
+    )
+    high_volume_bars = tuple(
+        [_bar(index, close=100.0, high=101.0, low=99.0) for index in range(10)]
+        + [_bar(10, close=102.0, high=102.5, low=100.5, volume=1_600_000.0)]
+    )
+    event_definition = CloseBreakoutDefinition(
+        min_breakout_volume_ratio=1.5,
+        volume_lookback_sessions=10,
+    )
+
+    low_states = detect_consolidation_states(low_volume_bars, _definition())
+    high_states = detect_consolidation_states(high_volume_bars, _definition())
+
+    assert generate_close_breakout_events(low_volume_bars, low_states, event_definition) == ()
+    high_events = generate_close_breakout_events(high_volume_bars, high_states, event_definition)
+    assert len(high_events) == 1
+    assert any(
+        item.name == "observed_breakout_volume_ratio" and item.value == "1.6"
+        for item in high_events[0].resolved_parameters
     )
