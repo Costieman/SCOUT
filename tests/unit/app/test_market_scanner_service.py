@@ -6,7 +6,11 @@ from datetime import date, timedelta
 
 import pytest
 
-from trade_scout.app.market_scanner_service import MarketScannerRequest, MarketScannerService
+from trade_scout.app.market_scanner_service import (
+    MarketScannerError,
+    MarketScannerRequest,
+    MarketScannerService,
+)
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
 from trade_scout.features.contracts import FeatureAvailabilityStatus
 from trade_scout.features.market_analysis import compute_market_analysis_feature_frame
@@ -120,3 +124,30 @@ def test_bounded_latest_state_matches_full_history_feature_frame() -> None:
     assert row.atr_pct_14 == pytest.approx(expected["atr_pct_14"])
     assert row.distance_sma_50_pct == pytest.approx(expected["distance_sma_50_pct"])
     assert row.distance_sma_200_pct == pytest.approx(expected["distance_sma_200_pct"])
+
+
+def test_scanner_expression_filters_latest_feature_rows() -> None:
+    source = _Source(
+        {
+            "FAST": _series("FAST", 0.004, 2.2),
+            "MID": _series("MID", 0.002, 1.8),
+            "SLOW": _series("SLOW", 0.0002, 3.0),
+        }
+    )
+    report = MarketScannerService(source).run(
+        MarketScannerRequest(
+            expression="return_20 > 0.05 and relative_volume_20 >= 2",
+            sort_by="return_20",
+        )
+    )
+
+    assert tuple(item.symbol for item in report.rows) == ("FAST",)
+
+
+def test_invalid_scanner_expression_is_rejected_explicitly() -> None:
+    source = _Source({"AAA": _series("AAA", 0.003, 1.0)})
+
+    with pytest.raises(MarketScannerError, match="invalid scanner expression"):
+        MarketScannerService(source).run(
+            MarketScannerRequest(expression="__import__('os').system('echo nope')")
+        )
