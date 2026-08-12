@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -43,7 +42,9 @@ class FileResearchDecisionLedger:
     def read(self, decision_id: str) -> ResearchDecision:
         """Read one immutable decision and verify its checksum."""
 
-        raw = cast(dict[str, object], json.loads(self._path(decision_id).read_text(encoding="utf-8")))
+        raw = cast(
+            dict[str, object], json.loads(self._path(decision_id).read_text(encoding="utf-8"))
+        )
         decision_raw = cast(dict[str, object], raw["decision"])
         decision = _decision_from_mapping(decision_raw)
         expected = str(raw["checksum"])
@@ -62,9 +63,7 @@ class FileResearchDecisionLedger:
         if not subject_id.strip():
             raise ValueError("subject_id must be non-empty")
         decisions = tuple(
-            decision
-            for decision in self._all_verified()
-            if decision.subject_id == subject_id
+            decision for decision in self._all_verified() if decision.subject_id == subject_id
         )
         if not decisions:
             return ()
@@ -76,7 +75,9 @@ class FileResearchDecisionLedger:
             if decision.supersedes_decision_id is not None
         }
         roots = [decision for decision in decisions if decision.supersedes_decision_id is None]
-        currents = [decision for decision in decisions if decision.decision_id not in superseded_ids]
+        currents = [
+            decision for decision in decisions if decision.decision_id not in superseded_ids
+        ]
         if len(roots) != 1 or len(currents) != 1:
             raise ResearchDecisionError(f"invalid decision lineage for subject {subject_id}")
 
@@ -123,7 +124,7 @@ def _decision_from_mapping(raw: dict[str, object]) -> ResearchDecision:
             risk_policy_validated=bool(values["risk_policy_validated"]),
             operational_dependencies_available=bool(values["operational_dependencies_available"]),
         )
-    decision = ResearchDecision(
+    return ResearchDecision(
         decision_id=str(raw["decision_id"]),
         subject_id=str(raw["subject_id"]),
         state=ResearchDecisionState(str(raw["state"])),
@@ -137,7 +138,6 @@ def _decision_from_mapping(raw: dict[str, object]) -> ResearchDecision:
         supersedes_decision_id=_optional_string(raw.get("supersedes_decision_id")),
         production_attestation=attestation,
     )
-    return replace(decision)
 
 
 def _optional_string(value: object) -> str | None:
