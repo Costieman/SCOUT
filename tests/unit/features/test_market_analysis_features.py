@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 from datetime import date, timedelta
-import math
 
 import pytest
 
@@ -71,7 +71,9 @@ def test_returns_are_point_in_time_and_use_split_adjusted_close() -> None:
     annual = _value(values, "return_252", 252)
 
     assert five.availability_status is FeatureAvailabilityStatus.AVAILABLE
-    assert five.value == pytest.approx(bars[5].close_split_adjusted / bars[0].close_split_adjusted - 1)
+    assert five.value == pytest.approx(
+        bars[5].close_split_adjusted / bars[0].close_split_adjusted - 1
+    )
     assert twenty.value == pytest.approx(
         bars[20].close_split_adjusted / bars[0].close_split_adjusted - 1
     )
@@ -132,7 +134,9 @@ def test_sma_distance_features_are_percentage_distance_from_trailing_average() -
     sma50 = sum(item.close_split_adjusted for item in bars[:50]) / 50
     sma200 = sum(item.close_split_adjusted for item in bars[:200]) / 200
 
-    assert sma50_distance.value == pytest.approx((bars[49].close_split_adjusted / sma50 - 1) * 100)
+    assert sma50_distance.value == pytest.approx(
+        (bars[49].close_split_adjusted / sma50 - 1) * 100
+    )
     assert sma200_distance.value == pytest.approx(
         (bars[199].close_split_adjusted / sma200 - 1) * 100
     )
