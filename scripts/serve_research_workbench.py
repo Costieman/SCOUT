@@ -70,11 +70,13 @@ def main() -> int:
     base_url = f"http://{args.host}:{args.port}/"
     market_url = f"{base_url}research/market"
     scanner_url = f"{base_url}research/scanner"
+    strategy_url = f"{base_url}research/strategies"
     universe_url = f"{base_url}research/universe"
     edge_url = f"{base_url}research/edge"
     print(f"Trade Scout research console: {base_url}")
     print(f"Market Analysis: {market_url}")
     print(f"Market Scanner: {scanner_url}")
+    print(f"Historical Strategy Research: {strategy_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
