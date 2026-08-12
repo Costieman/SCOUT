@@ -1,0 +1,61 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "BX",
+      "current_symbol_effective_date": "2007-06-22",
+      "regular_way_start": "2007-06-22",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2007-06-22",
+          "from_symbol": null,
+          "to_symbol": "BX",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "Blackstone Form 10-K: common units began NYSE trading June 22, 2007 under BX",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1393818/000119312508053079/d10k.htm"
+        },
+        {
+          "effective_date": "2019-07-01",
+          "from_symbol": "BX",
+          "to_symbol": "BX",
+          "event_type": "ENTITY_CONVERSION_ONE_FOR_ONE",
+          "source_title": "Blackstone Form 8-K: partnership converted to corporation one-for-one and BX trading continued on NYSE",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1393818/000119312519186655/d27713d8k.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "CBOE",
+      "current_symbol_effective_date": "2010-06-15",
+      "regular_way_start": "2010-06-15",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2010-06-15",
+          "from_symbol": null,
+          "to_symbol": "CBOE",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "CBOE Holdings Form 10-K: unrestricted common stock began Nasdaq trading June 15, 2010 under CBOE",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1374310/000144530512000485/cboe-12312011x10k.htm"
+        },
+        {
+          "effective_date": "2017-10-16",
+          "from_symbol": "CBOE",
+          "to_symbol": "CBOE",
+          "event_type": "CORPORATE_NAME_CHANGE_SAME_SURVIVOR",
+          "source_title": "Cboe Global Markets Form 10-K: CBOE Holdings changed legal name October 16, 2017",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1374310/000155837018000953/cboe-20171231x10k.htm"
+        },
+        {
+          "effective_date": "2018-09-17",
+          "from_symbol": "CBOE",
+          "to_symbol": "CBOE",
+          "event_type": "EXCHANGE_TRANSFER_TO_CBOE_BZX",
+          "source_title": "Cboe Global Markets Form 10-K: common stock transferred from Nasdaq to Cboe BZX September 17, 2018",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1374310/000155837019000884/cboe-20181231x10k.htm"
+        }
+      ]
+    }
+  ]
+}
