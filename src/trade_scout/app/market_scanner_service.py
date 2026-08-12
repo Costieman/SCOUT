@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from pathlib import Path
+from typing import Literal, Protocol
 
-from trade_scout.app.market_analysis_service import MarketAnalysisSource
-from trade_scout.features.contracts import FeatureAvailabilityStatus
+from trade_scout.data.canonical_storage import CanonicalDailyBarStore
+from trade_scout.data.contracts import DailyBar, DatasetVersion, QualityStatus
+from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
+from trade_scout.features.contracts import FeatureAvailabilityStatus, FeatureValue
 from trade_scout.features.market_analysis import compute_market_analysis_feature_frame
 
 ScannerSortKey = Literal[
@@ -17,6 +20,16 @@ ScannerSortKey = Literal[
     "realized_volatility_20",
     "distance_sma_200_pct",
 ]
+_SORT_KEYS: frozenset[str] = frozenset(
+    {
+        "return_20",
+        "return_252",
+        "relative_volume_20",
+        "atr_pct_14",
+        "realized_volatility_20",
+        "distance_sma_200_pct",
+    }
+)
 
 
 class MarketScannerError(RuntimeError):
@@ -36,6 +49,8 @@ class MarketScannerRequest:
     limit: int = 100
 
     def __post_init__(self) -> None:
+        if self.sort_by not in _SORT_KEYS:
+            raise ValueError(f"unsupported scanner sort feature {self.sort_by!r}")
         if self.min_relative_volume_20 is not None and self.min_relative_volume_20 < 0:
             raise ValueError("min_relative_volume_20 must be non-negative")
         if self.max_realized_volatility_20 is not None and self.max_realized_volatility_20 < 0:
@@ -71,26 +86,78 @@ class MarketScannerReport:
     rows: tuple[MarketScannerRow, ...]
 
 
+class MarketScannerSource(Protocol):
+    """Read-only source that materializes the reviewed canonical universe once per scan."""
+
+    def canonical_series(self) -> dict[str, tuple[DailyBar, ...]]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalMarketScannerSource:
+    """Load one immutable canonical dataset once and map it to reviewed query symbols."""
+
+    canonical_root: Path
+    dataset_version: str
+    identity_candidate_path: Path
+
+    def canonical_series(self) -> dict[str, tuple[DailyBar, ...]]:
+        candidate = load_reviewed_identity_snapshot_candidate(self.identity_candidate_path)
+        blocked = {item.instrument_id for item in candidate.coverage_gaps}
+        links = tuple(
+            item
+            for item in candidate.provider_series_links
+            if item.provider_id == "tiingo" and item.instrument_id not in blocked
+        )
+        canonical = CanonicalDailyBarStore(self.canonical_root).load(
+            DatasetVersion(self.dataset_version)
+        )
+        by_instrument: dict[str, list[DailyBar]] = {}
+        for bar in canonical:
+            if bar.quality_status is not QualityStatus.PASS:
+                raise MarketScannerError(
+                    f"canonical dataset {self.dataset_version} contains non-PASS quality rows"
+                )
+            by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
+
+        result: dict[str, tuple[DailyBar, ...]] = {}
+        for link in links:
+            bars = tuple(
+                sorted(
+                    by_instrument.get(str(link.instrument_id), ()),
+                    key=lambda item: item.trade_date,
+                )
+            )
+            if bars:
+                result[link.query_symbol.upper()] = bars
+        if not result:
+            raise MarketScannerError("selected canonical dataset contains no reviewed series")
+        return dict(sorted(result.items()))
+
+
 @dataclass(frozen=True, slots=True)
 class MarketScannerService:
-    source: MarketAnalysisSource
+    source: MarketScannerSource
 
     def run(self, request: MarketScannerRequest) -> MarketScannerReport:
-        symbols = self.source.available_symbols()
+        series = self.source.canonical_series()
+        all_bars = tuple(bar for bars in series.values() for bar in bars)
+        all_values = compute_market_analysis_feature_frame(all_bars)
+        values_by_instrument_date: dict[tuple[str, str], dict[str, FeatureValue]] = {}
+        for item in all_values:
+            key = (str(item.instrument_id), item.trade_date.isoformat())
+            values_by_instrument_date.setdefault(key, {})[item.feature_name] = item
+
         rows: list[MarketScannerRow] = []
         unavailable = 0
-        for symbol in symbols:
-            bars = self.source.canonical_bars(symbol)
-            values = compute_market_analysis_feature_frame(bars)
-            latest_date = bars[-1].trade_date
-            latest = {
-                item.feature_name: item
-                for item in values
-                if item.trade_date == latest_date
-            }
+        for symbol, bars in series.items():
+            latest_bar = bars[-1]
+            latest = values_by_instrument_date.get(
+                (str(latest_bar.instrument_id), latest_bar.trade_date.isoformat()),
+                {},
+            )
             row = MarketScannerRow(
                 symbol=symbol,
-                as_of=latest_date.isoformat(),
+                as_of=latest_bar.trade_date.isoformat(),
                 return_20=_available_value(latest.get("return_20")),
                 return_252=_available_value(latest.get("return_252")),
                 relative_volume_20=_available_value(latest.get("relative_volume_20")),
@@ -111,7 +178,7 @@ class MarketScannerService:
         )
         matched = len(rows)
         return MarketScannerReport(
-            scanned_symbol_count=len(symbols),
+            scanned_symbol_count=len(series),
             matched_symbol_count=matched,
             unavailable_symbol_count=unavailable,
             request=request,
@@ -119,14 +186,12 @@ class MarketScannerService:
         )
 
 
-def _available_value(value: object | None) -> float | None:
+def _available_value(value: FeatureValue | None) -> float | None:
     if value is None:
         return None
-    status = getattr(value, "availability_status", None)
-    raw = getattr(value, "value", None)
-    if status is not FeatureAvailabilityStatus.AVAILABLE or raw is None:
+    if value.availability_status is not FeatureAvailabilityStatus.AVAILABLE or value.value is None:
         return None
-    return float(raw)
+    return float(value.value)
 
 
 def _has_required_values(row: MarketScannerRow, request: MarketScannerRequest) -> bool:
@@ -174,10 +239,12 @@ def _sort_value(row: MarketScannerRow, name: ScannerSortKey) -> float:
 
 
 __all__ = [
+    "CanonicalMarketScannerSource",
     "MarketScannerError",
     "MarketScannerReport",
     "MarketScannerRequest",
     "MarketScannerRow",
     "MarketScannerService",
+    "MarketScannerSource",
     "ScannerSortKey",
 ]
