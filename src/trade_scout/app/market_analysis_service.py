@@ -94,6 +94,43 @@ class CanonicalMarketAnalysisSource:
             )
         )
 
+    def canonical_series(self) -> dict[str, tuple[DailyBar, ...]]:
+        """Load the reviewed canonical universe once for cross-sectional analysis."""
+
+        candidate = load_reviewed_identity_snapshot_candidate(self.identity_candidate_path)
+        blocked = {item.instrument_id for item in candidate.coverage_gaps}
+        links = tuple(
+            item
+            for item in candidate.provider_series_links
+            if item.provider_id == "tiingo" and item.instrument_id not in blocked
+        )
+        canonical = CanonicalDailyBarStore(self.canonical_root).load(
+            DatasetVersion(self.dataset_version)
+        )
+        by_instrument: dict[str, list[DailyBar]] = {}
+        for bar in canonical:
+            if bar.quality_status is not QualityStatus.PASS:
+                raise MarketAnalysisError(
+                    f"canonical dataset {self.dataset_version} contains non-PASS quality rows"
+                )
+            by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
+
+        result: dict[str, tuple[DailyBar, ...]] = {}
+        for link in links:
+            bars = tuple(
+                sorted(
+                    by_instrument.get(str(link.instrument_id), ()),
+                    key=lambda item: item.trade_date,
+                )
+            )
+            if bars:
+                result[link.query_symbol.upper()] = bars
+        if not result:
+            raise MarketAnalysisError(
+                f"canonical dataset {self.dataset_version} contains no reviewed series"
+            )
+        return dict(sorted(result.items()))
+
     def canonical_bars(self, symbol: str) -> tuple[DailyBar, ...]:
         normalized = symbol.strip().upper()
         candidate = load_reviewed_identity_snapshot_candidate(self.identity_candidate_path)
