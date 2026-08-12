@@ -9,10 +9,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 import duckdb
 
-from trade_scout.experiments.contracts import ExperimentManifest, ExperimentStatus, ResearchMode
+from trade_scout.experiments.contracts import (
+    ExperimentManifest,
+    ExperimentStatus,
+    JSONValue,
+    ManifestStore,
+    ResearchMode,
+)
+
+
+class ExperimentRegistry(Protocol):
+    """Indexing boundary used to keep registry concerns outside the experiment runner."""
+
+    def register(self, manifest: ExperimentManifest) -> None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +47,36 @@ class ExperimentIndexRecord:
     created_at: str
     completed_at: str | None
     manifest_checksum: str | None
+
+
+class IndexedManifestStore:
+    """Decorate any manifest store with a queryable experiment registry."""
+
+    def __init__(self, store: ManifestStore, registry: ExperimentRegistry) -> None:
+        self._store = store
+        self._registry = registry
+
+    def write_manifest(self, manifest: ExperimentManifest) -> None:
+        """Persist the authoritative manifest, then index its checksum-verified representation."""
+
+        self._store.write_manifest(manifest)
+        persisted = self._store.read_manifest(manifest.experiment_id)
+        self._registry.register(persisted)
+
+    def write_stage_output(
+        self,
+        experiment_id: str,
+        stage_name: str,
+        output: dict[str, JSONValue],
+    ) -> str:
+        """Delegate analytical artifact persistence unchanged."""
+
+        return self._store.write_stage_output(experiment_id, stage_name, output)
+
+    def read_manifest(self, experiment_id: str) -> ExperimentManifest:
+        """Read through to the authoritative manifest store."""
+
+        return self._store.read_manifest(experiment_id)
 
 
 class DuckDBExperimentRegistry:
