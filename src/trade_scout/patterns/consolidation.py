@@ -18,18 +18,20 @@ from trade_scout.patterns.contracts import (
     ResolvedPatternParameter,
     StructuralBoundary,
 )
+from trade_scout.patterns.trend import TrendFilter, trend_qualified
 
 
 @dataclass(frozen=True, slots=True)
 class ConsolidationDefinition:
-    """Resolved Version 1 consolidation definition."""
+    """Resolved consolidation definition with optional point-in-time trend context."""
 
     duration_sessions: int = 20
     max_range_pct: float = 0.12
     trigger_ready_distance_pct: float = 0.02
+    trend_filter: TrendFilter = TrendFilter.NONE
     pattern_family: str = "consolidation"
-    pattern_version: str = "consolidation-v0.1"
-    feature_set_version: str = "canonical-bars-only-v0.1"
+    pattern_version: str = "consolidation-v0.2"
+    feature_set_version: str = "canonical-bars-trend-v0.1"
 
     def __post_init__(self) -> None:
         if self.duration_sessions < 2:
@@ -58,6 +60,7 @@ def detect_consolidation_states(
         ResolvedPatternParameter(
             "trigger_ready_distance_pct", f"{definition.trigger_ready_distance_pct:.12g}"
         ),
+        ResolvedPatternParameter("trend_filter", definition.trend_filter.value),
     )
 
     for index, bar in enumerate(bars):
@@ -84,7 +87,8 @@ def detect_consolidation_states(
         high = max(item.high for item in window)
         low = min(item.low for item in window)
         range_pct = (high - low) / low
-        qualifies = quality_ok and range_pct <= definition.max_range_pct
+        trend_ok = trend_qualified(bars, index, definition.trend_filter)
+        qualifies = quality_ok and range_pct <= definition.max_range_pct and trend_ok
 
         if not qualifies:
             lifecycle = (
@@ -190,6 +194,7 @@ def _qualified_id(
             "formation_start": formation_start.isoformat(),
             "duration_sessions": str(definition.duration_sessions),
             "max_range_pct": f"{definition.max_range_pct:.12g}",
+            "trend_filter": definition.trend_filter.value,
         },
     )
 
