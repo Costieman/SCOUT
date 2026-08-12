@@ -44,4 +44,8 @@ def test_pattern_state_rejects_future_formation_interval() -> None:
 
 def test_pattern_state_rejects_reversed_formation_interval() -> None:
     with pytest.raises(ValueError, match="formation_start"):
-        _state(formation_start=date(2024, 1, 22), formation_end=date(2024, 1, 21), as_of_date=date(2024, 1, 23))
+        _state(
+            formation_start=date(2024, 1, 22),
+            formation_end=date(2024, 1, 21),
+            as_of_date=date(2024, 1, 23),
+        )
