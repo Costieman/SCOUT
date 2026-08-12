@@ -70,6 +70,23 @@ class FileManifestStore:
             raise ValueError(f"manifest checksum mismatch for {experiment_id}")
         return manifest
 
+    def read_stage_output(self, experiment_id: str, stage_name: str) -> dict[str, JSONValue]:
+        """Load one persisted stage output without weakening its JSON contract."""
+
+        safe_name = _safe_stage_name(stage_name)
+        path = self._run_dir(experiment_id) / "artifacts" / f"{safe_name}.json"
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict):
+            raise ValueError(
+                f"stage output must be a JSON mapping: experiment={experiment_id}, stage={stage_name}"
+            )
+        result: dict[str, JSONValue] = {}
+        for key, value in raw.items():
+            if not isinstance(key, str):
+                raise ValueError("stage output mapping keys must be strings")
+            result[key] = cast(JSONValue, value)
+        return result
+
     def _run_dir(self, experiment_id: str) -> Path:
         if not experiment_id or any(character in experiment_id for character in "/\\"):
             raise ValueError("experiment_id must be a non-empty path-safe identifier")
