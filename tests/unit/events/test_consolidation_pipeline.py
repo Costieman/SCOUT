@@ -13,7 +13,9 @@ from trade_scout.events import ConsolidationEventConfig, detect_consolidation_ev
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
 
 
-def _bar(index: int, *, close: float, high: float, low: float, volume: float = 100.0) -> ResearchBar:
+def _bar(
+    index: int, *, close: float, high: float, low: float, volume: float = 100.0
+) -> ResearchBar:
     return ResearchBar(
         instrument_id=InstrumentId("tsi_test"),
         trade_date=date(2024, 1, 1) + timedelta(days=index),
@@ -60,11 +62,14 @@ def test_event_side_volume_confirmation_can_block_breakout() -> None:
         volume_lookback_sessions=5,
     )
 
-    assert detect_consolidation_events(
-        _bars(breakout_volume=150.0),
-        _pattern_config(),
-        event_config=event_config,
-    ) == ()
+    assert (
+        detect_consolidation_events(
+            _bars(breakout_volume=150.0),
+            _pattern_config(),
+            event_config=event_config,
+        )
+        == ()
+    )
 
     events = detect_consolidation_events(
         _bars(breakout_volume=250.0),
