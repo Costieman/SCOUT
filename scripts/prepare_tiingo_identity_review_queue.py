@@ -26,7 +26,20 @@ from trade_scout.data.reviewed_identity_snapshot import (
 )
 
 _DEFERRED_SYMBOLS = frozenset(
-    {"ALGN", "ARES", "BAC", "BKNG", "BLDR", "CARR", "COST", "HON", "JPM", "MRK", "MS", "XOM"}
+    {
+        "ALGN",
+        "ARES",
+        "BAC",
+        "BKNG",
+        "BLDR",
+        "CARR",
+        "COST",
+        "HON",
+        "JPM",
+        "MRK",
+        "MS",
+        "XOM",
+    }
 )
 
 
@@ -113,11 +126,12 @@ def main() -> int:
     json_path = output_dir / "tiingo-unreviewed-durable.json"
     csv_path = output_dir / "tiingo-unreviewed-durable.csv"
 
+    profile_symbol_count = int(profile.get("symbol_count", len(profile["symbols"])))
     json_path.write_text(
         json.dumps(
             {
                 "schema_version": "tiingo-identity-review-queue-v0.1",
-                "profile_symbol_count": int(profile.get("symbol_count", len(profile["symbols"]))),
+                "profile_symbol_count": profile_symbol_count,
                 "reviewed_symbol_count": len(reviewed),
                 "deferred_symbol_count": len(_DEFERRED_SYMBOLS),
                 "unreviewed_durable_symbol_count": len(rows),
@@ -150,7 +164,7 @@ def main() -> int:
             {
                 "json_path": str(json_path),
                 "csv_path": str(csv_path),
-                "profile_symbol_count": int(profile.get("symbol_count", len(profile["symbols"]))),
+                "profile_symbol_count": profile_symbol_count,
                 "reviewed_symbol_count": len(reviewed),
                 "deferred_symbol_count": len(_DEFERRED_SYMBOLS),
                 "unreviewed_durable_symbol_count": len(rows),
