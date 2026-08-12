@@ -1,7 +1,7 @@
 """Orchestration-only experiment runner for Trade Scout research.
 
-The runner owns lifecycle, persistence, provenance and failure visibility. Analytical meaning remains
-inside the registered research stages supplied to it.
+The runner owns lifecycle, persistence, provenance, and failure visibility.
+Analytical meaning remains inside the registered research stages supplied to it.
 """
 
 from __future__ import annotations
@@ -93,13 +93,17 @@ class ExperimentRunner:
                 started_at = _timestamp(self._clock())
                 result = stage.run(context)
                 if sha256_json(run_definition.resolved_configuration) != config_checksum:
-                    raise RuntimeError(
-                        f"research stage {stage.name!r} mutated the resolved experiment configuration"
+                    message = (
+                        f"research stage {stage.name!r} mutated the resolved "
+                        "experiment configuration"
                     )
+                    raise RuntimeError(message)
                 if result.stage_name != stage.name:
-                    raise ValueError(
-                        f"stage {stage.name!r} returned mismatched result name {result.stage_name!r}"
+                    message = (
+                        f"stage {stage.name!r} returned mismatched result name "
+                        f"{result.stage_name!r}"
                     )
+                    raise ValueError(message)
                 checksum = self._store.write_stage_output(
                     experiment_id, result.stage_name, result.outputs
                 )
