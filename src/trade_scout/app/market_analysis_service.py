@@ -121,7 +121,8 @@ class CanonicalMarketAnalysisSource:
             )
         if any(item.quality_status is not QualityStatus.PASS for item in selected):
             raise MarketAnalysisError(
-                f"canonical rows for {normalized} include non-PASS quality states; analysis is blocked"
+                f"canonical rows for {normalized} include non-PASS quality states; "
+                "analysis is blocked"
             )
         return tuple(sorted(selected, key=lambda item: item.trade_date))
 
