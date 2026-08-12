@@ -10,19 +10,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from enum import StrEnum
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
-
-
-class TrendFilter(StrEnum):
-    """Point-in-time trend preconditions supported by the exploratory detector."""
-
-    NONE = "none"
-    ABOVE_SMA_200 = "above_sma_200"
-    ABOVE_RISING_SMA_200 = "above_rising_sma_200"
-    ABOVE_SMA_50_100_200 = "above_sma_50_100_200"
-    BULLISH_SMA_STACK_50_100_200 = "bullish_sma_stack_50_100_200"
+from trade_scout.patterns.trend import (
+    TrendFilter,
+    required_trend_history_sessions,
+    trend_qualified,
+    trend_qualified_indices as _shared_trend_qualified_indices,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,7 +125,7 @@ def current_consolidation_state(
     base_low = min(item.low for item in base)
     range_pct = _range_pct(boundary, base_low)
     signal_index = len(bars) - 1
-    trend_ok = _trend_qualified(bars, signal_index, config.trend_filter)
+    trend_ok = trend_qualified(bars, signal_index, config.trend_filter)
     distance = (boundary - latest.close) / boundary if boundary else None
     volume_ratio = _volume_ratio(
         bars,
@@ -176,22 +171,7 @@ def trend_qualified_indices(
     """Return signal-date indices satisfying the same point-in-time trend context."""
 
     _validate_bars(bars)
-    start = required_trend_history_sessions(trend_filter) - 1
-    return tuple(
-        index
-        for index in range(max(0, start), len(bars) - 1)
-        if _trend_qualified(bars, index, trend_filter)
-    )
-
-
-def required_trend_history_sessions(trend_filter: TrendFilter) -> int:
-    """Return the minimum trailing sessions needed to evaluate one trend condition."""
-
-    if trend_filter is TrendFilter.NONE:
-        return 1
-    if trend_filter is TrendFilter.ABOVE_RISING_SMA_200:
-        return 220
-    return 200
+    return _shared_trend_qualified_indices(bars, trend_filter)
 
 
 def _event_at(
@@ -212,7 +192,7 @@ def _event_at(
     range_pct = _range_pct(boundary, base_low)
     if range_pct > config.max_range_pct:
         return None
-    if not _trend_qualified(bars, signal_index, config.trend_filter):
+    if not trend_qualified(bars, signal_index, config.trend_filter):
         return None
     if signal.close <= boundary:
         return None
@@ -253,47 +233,6 @@ def _event_at(
     )
 
 
-def _trend_qualified(
-    bars: tuple[ResearchBar, ...],
-    signal_index: int,
-    trend_filter: TrendFilter,
-) -> bool:
-    if trend_filter is TrendFilter.NONE:
-        return True
-    if signal_index < 199:
-        return False
-
-    close = bars[signal_index].close
-    sma_200 = _sma(bars, signal_index=signal_index, period=200)
-    if close <= sma_200:
-        return False
-    if trend_filter is TrendFilter.ABOVE_SMA_200:
-        return True
-    if trend_filter in {
-        TrendFilter.ABOVE_SMA_50_100_200,
-        TrendFilter.BULLISH_SMA_STACK_50_100_200,
-    }:
-        sma_50 = _sma(bars, signal_index=signal_index, period=50)
-        sma_100 = _sma(bars, signal_index=signal_index, period=100)
-        if close <= sma_50 or close <= sma_100:
-            return False
-        if trend_filter is TrendFilter.ABOVE_SMA_50_100_200:
-            return True
-        return sma_50 > sma_100 > sma_200
-
-    if signal_index < 219:
-        return False
-    sma_prior = _sma(bars, signal_index=signal_index - 20, period=200)
-    return sma_200 > sma_prior
-
-
-def _sma(bars: tuple[ResearchBar, ...], *, signal_index: int, period: int) -> float:
-    if signal_index + 1 < period:
-        raise ValueError("insufficient history for requested moving average")
-    start = signal_index - period + 1
-    return sum(item.close for item in bars[start : signal_index + 1]) / period
-
-
 def _volume_ratio(
     bars: tuple[ResearchBar, ...],
     *,
@@ -331,3 +270,15 @@ def _validate_bars(bars: tuple[ResearchBar, ...]) -> None:
         raise ValueError("research bars must be unique and date-increasing")
     if any(min(item.open, item.high, item.low, item.close) <= 0 for item in bars):
         raise ValueError("research prices must be positive")
+
+
+__all__ = [
+    "ConsolidationBreakoutConfig",
+    "ConsolidationBreakoutEvent",
+    "CurrentConsolidationState",
+    "TrendFilter",
+    "current_consolidation_state",
+    "detect_consolidation_breakouts",
+    "required_trend_history_sessions",
+    "trend_qualified_indices",
+]
