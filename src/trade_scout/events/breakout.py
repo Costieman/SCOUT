@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
 from trade_scout.events.contracts import EventRecord
+from trade_scout.features.volume import relative_volume
 from trade_scout.patterns.contracts import (
     PatternLifecycleState,
     PatternState,
@@ -21,8 +22,16 @@ class CloseBreakoutDefinition:
     """Resolved close-breakout event definition."""
 
     trend_filter: TrendFilter = TrendFilter.NONE
+    min_breakout_volume_ratio: float | None = None
+    volume_lookback_sessions: int = 20
     event_type: str = "upside_close_breakout"
-    event_version: str = "upside-close-breakout-v0.2"
+    event_version: str = "upside-close-breakout-v0.3"
+
+    def __post_init__(self) -> None:
+        if self.min_breakout_volume_ratio is not None and self.min_breakout_volume_ratio <= 0:
+            raise ValueError("min_breakout_volume_ratio must be positive when supplied")
+        if not 2 <= self.volume_lookback_sessions <= 252:
+            raise ValueError("volume_lookback_sessions must be between 2 and 252")
 
 
 def generate_close_breakout_events(
@@ -34,7 +43,8 @@ def generate_close_breakout_events(
 
     The trigger on session t is evaluated against the resistance boundary stored in the pattern
     state from session t-1, preventing the trigger bar from redefining its own boundary. Optional
-    trend context is evaluated on the breakout session itself, matching the exploratory detector.
+    trend and volume context are evaluated on the breakout session itself, matching the exploratory
+    detector's point-in-time semantics.
     """
 
     if len(bars) != len(states):
@@ -63,6 +73,21 @@ def generate_close_breakout_events(
         if not trend_qualified(bars, index, definition.trend_filter):
             continue
 
+        volume_ratio = relative_volume(
+            bars,
+            signal_index=index,
+            lookback_sessions=definition.volume_lookback_sessions,
+        )
+        if definition.min_breakout_volume_ratio is not None and (
+            volume_ratio is None or volume_ratio < definition.min_breakout_volume_ratio
+        ):
+            continue
+
+        volume_gate = (
+            "none"
+            if definition.min_breakout_volume_ratio is None
+            else f"{definition.min_breakout_volume_ratio:.12g}"
+        )
         event_id = _stable_id(
             "evt",
             {
@@ -72,6 +97,8 @@ def generate_close_breakout_events(
                 "signal_date": bar.trade_date.isoformat(),
                 "trigger_boundary": f"{boundary:.12g}",
                 "trend_filter": definition.trend_filter.value,
+                "volume_gate": volume_gate,
+                "volume_lookback_sessions": str(definition.volume_lookback_sessions),
             },
         )
         events.append(
@@ -90,6 +117,14 @@ def generate_close_breakout_events(
                     ResolvedPatternParameter("confirmation", "daily_close"),
                     ResolvedPatternParameter("boundary_source", "prior_pattern_state"),
                     ResolvedPatternParameter("trend_filter", definition.trend_filter.value),
+                    ResolvedPatternParameter("min_breakout_volume_ratio", volume_gate),
+                    ResolvedPatternParameter(
+                        "volume_lookback_sessions", str(definition.volume_lookback_sessions)
+                    ),
+                    ResolvedPatternParameter(
+                        "observed_breakout_volume_ratio",
+                        "unavailable" if volume_ratio is None else f"{volume_ratio:.12g}",
+                    ),
                 ),
                 event_family_id=prior.pattern_instance_id,
                 feature_set_version=prior.feature_set_version,
