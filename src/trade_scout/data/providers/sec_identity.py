@@ -119,9 +119,7 @@ class SecHttpClient:
                     ) from exc
                 retry_after = exc.headers.get("Retry-After") if exc.headers is not None else None
                 delay = (
-                    float(retry_after)
-                    if retry_after and retry_after.isdigit()
-                    else 2.0**attempt
+                    float(retry_after) if retry_after and retry_after.isdigit() else 2.0**attempt
                 )
                 self._sleep(delay)
             except OSError as exc:
@@ -381,9 +379,7 @@ def _find_campaign_continuity_evidence(
 
 def _contains_exact_trading_start(text: str, ticker: str, target: date) -> bool:
     date_tokens = _date_tokens(target)
-    ticker_pattern = re.compile(
-        rf"(?<![a-z0-9]){re.escape(ticker.lower())}(?![a-z0-9])"
-    )
+    ticker_pattern = re.compile(rf"(?<![a-z0-9]){re.escape(ticker.lower())}(?![a-z0-9])")
     for token in date_tokens:
         start = 0
         while True:
@@ -398,9 +394,7 @@ def _contains_exact_trading_start(text: str, ticker: str, target: date) -> bool:
 
 
 def _ticker_and_exchange_cooccur(text: str, ticker: str, terms: tuple[str, ...]) -> bool:
-    ticker_pattern = re.compile(
-        rf"(?<![a-z0-9]){re.escape(ticker.lower())}(?![a-z0-9])"
-    )
+    ticker_pattern = re.compile(rf"(?<![a-z0-9]){re.escape(ticker.lower())}(?![a-z0-9])")
     for match in ticker_pattern.finditer(text):
         snippet = text[max(0, match.start() - 1200) : match.end() + 1200]
         if any(term in snippet for term in terms):
