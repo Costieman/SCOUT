@@ -20,6 +20,7 @@ from trade_scout.data.contracts import DatasetVersion, InstrumentId
 from trade_scout.experiments.store import FileManifestStore
 from trade_scout.experiments.trend_baseline_operator import (
     ExperimentAOperatorError,
+    ExperimentAOperatorResult,
     execute_experiment_a_fixed_cohort,
 )
 
@@ -28,7 +29,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Run first-program Experiment A across T0-T6 using one immutable canonical dataset. "
-            "This command uses a fixed reviewed cohort and does not claim historical index membership."
+            "This command uses a fixed reviewed cohort and makes no historical-index "
+            "membership claim."
         )
     )
     parser.add_argument("--root", type=Path, required=True, help="Private operator workspace root.")
@@ -64,7 +66,8 @@ def main() -> int:
         dataset_text = args.dataset_version or workspace.manifest.canonical_dataset_version
         if dataset_text is None:
             raise OperatorWorkspaceError(
-                "no canonical dataset is selected; pass --dataset-version or select one in workspace.json"
+                "no canonical dataset is selected; pass --dataset-version or select one in "
+                "workspace.json"
             )
 
         dataset_version = DatasetVersion(dataset_text)
@@ -107,7 +110,7 @@ def main() -> int:
     return 0
 
 
-def _result_payload(result) -> dict[str, object]:
+def _result_payload(result: ExperimentAOperatorResult) -> dict[str, object]:
     return {
         "schema_version": "experiment-a-operator-report-v0.1",
         "program_experiment": "A",
@@ -141,7 +144,7 @@ def _result_payload(result) -> dict[str, object]:
     }
 
 
-def _persist_report(path: Path, result) -> None:
+def _persist_report(path: Path, result: ExperimentAOperatorResult) -> None:
     payload = _result_payload(result)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
