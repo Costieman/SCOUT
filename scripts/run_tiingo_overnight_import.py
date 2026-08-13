@@ -114,9 +114,7 @@ def main() -> int:
             if link.provider_id == "tiingo"
         }
         pending = sorted(set(profile) - already_reviewed)
-        queue_path = (
-            root / "evidence" / "identity-review-queue" / "tiingo-unreviewed-durable.json"
-        )
+        queue_path = root / "evidence" / "identity-review-queue" / "tiingo-unreviewed-durable.json"
         if queue_path.is_file():
             queued = _load_queue_symbols(queue_path)
             pending = [symbol for symbol in pending if symbol in queued]
@@ -307,7 +305,10 @@ def _load_checkpoint(path: Path) -> dict[str, AutoIdentityEvidence]:
     if not path.is_file():
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or payload.get("schema_version") != "auto-identity-checkpoint-v0.1":
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "auto-identity-checkpoint-v0.1"
+    ):
         raise OvernightImportError("unsupported overnight identity checkpoint")
     rows = payload.get("evidence")
     if not isinstance(rows, list):
@@ -326,9 +327,7 @@ def _persist_checkpoint(path: Path, checkpoint: dict[str, AutoIdentityEvidence])
         path,
         {
             "schema_version": "auto-identity-checkpoint-v0.1",
-            "evidence": [
-                _evidence_payload(checkpoint[symbol]) for symbol in sorted(checkpoint)
-            ],
+            "evidence": [_evidence_payload(checkpoint[symbol]) for symbol in sorted(checkpoint)],
         },
     )
 
