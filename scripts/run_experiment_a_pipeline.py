@@ -137,8 +137,8 @@ def _default_target_version(
     value = f"{research_version}__with__{benchmark_version}"
     if len(value) > 128:
         raise ValueError(
-            "derived Experiment A target dataset version exceeds the canonical 128-character limit; "
-            "pass --target-dataset-version explicitly"
+            "derived Experiment A target dataset version exceeds the canonical "
+            "128-character limit; pass --target-dataset-version explicitly"
         )
     return value
 
