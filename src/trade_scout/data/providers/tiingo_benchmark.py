@@ -31,6 +31,7 @@ from trade_scout.data.providers.tiingo_split_preview import (
 )
 from trade_scout.data.session_completeness import (
     DatasetSessionCompletenessAudit,
+    ExchangeSessionCalendar,
     SessionCompletenessError,
     audit_daily_bar_session_completeness,
     default_us_equity_session_calendar,
@@ -216,7 +217,7 @@ def _instrument(definition: TiingoBenchmarkDefinition) -> InstrumentRecord:
     )
 
 
-def _benchmark_session_calendar(exchange: str):
+def _benchmark_session_calendar(exchange: str) -> ExchangeSessionCalendar:
     """Extend the pinned NYSE holiday policy to NYSE Arca for benchmark auditing."""
 
     calendar = default_us_equity_session_calendar()
