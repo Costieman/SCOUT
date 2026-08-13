@@ -17,7 +17,8 @@ meaning itself.
 - expose the accepted first consolidation-breakout Experiment A-J sequence as planning metadata;
 - index verified manifests in a queryable DuckDB registry without making the registry authoritative;
 - materialize immutable batch plans before execution and retain failed/null child runs;
-- verify persisted experiment manifests and every recorded stage-output checksum before evidence is trusted.
+- verify persisted experiment manifests and every recorded stage-output checksum before evidence is trusted;
+- prevent research decisions from citing missing, corrupted, or unsuccessful experiment runs.
 
 ## Non-responsibilities
 
@@ -48,6 +49,18 @@ for future reproduction and research-audit workflows.
 
 The integrity audit answers only whether the persisted reproducibility record remains intact. It does not
 judge statistical significance, economic value, scientific validity, or production eligibility.
+
+## Verified research-decision evidence
+
+`audit_decision_evidence` applies the persisted integrity audit to every experiment cited by a
+`ResearchDecision` and additionally requires each cited run to have SUCCEEDED. The report preserves the
+failure reason for missing, corrupted, unreadable, incomplete, or failed experiments.
+
+`VerifiedResearchDecisionLedger` is a thin admission decorator around the append-only decision ledger. It
+fails closed before a decision is written if any cited experiment is not intact and successful, while the
+underlying `FileResearchDecisionLedger` remains authoritative for decision checksums and supersession
+history. This gate verifies the existence and integrity of cited experiment evidence; it still does not
+infer whether that evidence is scientifically sufficient to justify the decision.
 
 ## First research-program plan
 
@@ -81,4 +94,5 @@ Reproduction creates a new experiment identity and records `reproduction_of`; it
 original experiment. Batch-plan identity is derived from the parent definition, declared grid, and all
 materialized child-configuration checksums, so a changed search space cannot silently retain the same
 plan identity. Persisted evidence must additionally pass the integrity audit before a later workflow may
-claim that the original manifest and recorded stage artifacts are still intact.
+claim that the original manifest and recorded stage artifacts are still intact. Research decisions using
+the verified ledger must cite only intact experiments with a SUCCEEDED lifecycle state.
