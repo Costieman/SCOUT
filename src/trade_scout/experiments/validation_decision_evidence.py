@@ -113,7 +113,9 @@ def audit_validation_decision_evidence(
             detail_parts.append(f"experiment {report.experiment_id!r} is not cited by decision")
         if not reference_cited:
             detail_parts.append(f"evidence reference {reference!r} is not cited by decision")
-        detail = "verified complete validation review" if not detail_parts else ", ".join(detail_parts)
+        detail = (
+            "verified complete validation review" if not detail_parts else ", ".join(detail_parts)
+        )
         warning_count = sum(len(snapshot.warnings) for snapshot in report.snapshots)
         reviews.append(
             ValidationDecisionReviewEvidence(
