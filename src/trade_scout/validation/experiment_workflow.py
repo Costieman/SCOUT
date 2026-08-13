@@ -1,8 +1,8 @@
 """Experiment Runner-backed governed validation with mandatory child provenance.
 
-This workflow requires every frozen validation target to execute as a durable child experiment.
-Success is returned only after the review, review provenance, and ordered child-experiment provenance
-are persisted and independently re-verifiable.
+Every frozen validation target executes as a durable child experiment. Success is returned only
+after the review, review provenance, and ordered child-experiment provenance are persisted and
+independently re-verifiable.
 """
 
 from __future__ import annotations
