@@ -21,6 +21,7 @@ from trade_scout.validation import (
     ParameterSurface,
     SampleAccounting,
     ValidationEvidenceReport,
+    ValidationPlan,
     ValidationReviewBundle,
     assemble_validation_review_bundle,
     build_fixed_holdout_plan,
@@ -36,7 +37,9 @@ def _sample() -> SampleAccounting:
     )
 
 
-def _snapshot(evidence_id: str, role: EvidenceRole, *, warning: str | None = None) -> EvidenceSnapshot:
+def _snapshot(
+    evidence_id: str, role: EvidenceRole, *, warning: str | None = None
+) -> EvidenceSnapshot:
     return EvidenceSnapshot(
         evidence_id=evidence_id,
         role=role,
@@ -46,7 +49,7 @@ def _snapshot(evidence_id: str, role: EvidenceRole, *, warning: str | None = Non
     )
 
 
-def _plan():
+def _plan() -> ValidationPlan:
     return build_fixed_holdout_plan(
         plan_id="plan-v1",
         development=DateInterval(date(2000, 1, 1), date(2010, 12, 31)),
