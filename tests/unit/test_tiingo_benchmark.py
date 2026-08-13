@@ -28,7 +28,7 @@ def _definition() -> TiingoBenchmarkDefinition:
         provider_instrument_id="tiingo-test-etf",
         instrument_id=INSTRUMENT,
         name="Test Broad Market ETF",
-        exchange="XNYS",
+        exchange="ARCX",
         currency="USD",
         first_trade_date=START,
         dataset_start_date=START,
@@ -71,6 +71,7 @@ def test_benchmark_promotes_as_separate_all_pass_immutable_dataset(tmp_path: Pat
     assert result.manifest.record_count == 5
     assert result.manifest.adjustment_policy_version == BENCHMARK_ADJUSTMENT_POLICY_VERSION
     assert result.manifest.source_batch_ids == ("raw-benchmark-batch",)
+    assert result.session_audit.instruments[0].exchange == "ARCX"
     bars = CanonicalDailyBarStore(tmp_path).load(DATASET)
     assert {bar.instrument_id for bar in bars} == {INSTRUMENT}
     assert {bar.dataset_version for bar in bars} == {DATASET}

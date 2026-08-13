@@ -45,7 +45,7 @@ def main() -> int:
     parser.add_argument("--provider-instrument-id", required=True)
     parser.add_argument("--instrument-id", required=True)
     parser.add_argument("--name", required=True)
-    parser.add_argument("--exchange", required=True, choices=("XNYS", "XNAS"))
+    parser.add_argument("--exchange", required=True, choices=("XNYS", "XNAS", "ARCX"))
     parser.add_argument("--currency", default="USD")
     parser.add_argument("--first-trade-date", type=date.fromisoformat, required=True)
     parser.add_argument("--start-date", type=date.fromisoformat, required=True)
