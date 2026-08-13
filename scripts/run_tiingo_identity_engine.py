@@ -106,10 +106,7 @@ def main() -> int:
         queue_path = args.queue
         if queue_path is None:
             default_queue = (
-                root
-                / "evidence"
-                / "identity-review-queue"
-                / "tiingo-unreviewed-durable.json"
+                root / "evidence" / "identity-review-queue" / "tiingo-unreviewed-durable.json"
             )
             if default_queue.is_file():
                 queue_path = default_queue
@@ -200,7 +197,10 @@ def _load_profile(path: Path) -> dict[str, dict[str, object]]:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise IdentityEngineRunError(f"cannot read Tiingo profile: {path}") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "tiingo-durable-profile-v0.1":
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "tiingo-durable-profile-v0.1"
+    ):
         raise IdentityEngineRunError("unsupported Tiingo durable profile")
     raw_symbols = payload.get("symbols")
     if not isinstance(raw_symbols, list):
@@ -270,7 +270,10 @@ def _load_checkpoint(path: Path) -> dict[str, IdentityEvidence]:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise IdentityEngineRunError(f"cannot read identity evidence checkpoint: {path}") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "sec-identity-checkpoint-v0.1":
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version") != "sec-identity-checkpoint-v0.1"
+    ):
         raise IdentityEngineRunError("unsupported identity evidence checkpoint")
     raw_items = payload.get("evidence")
     if not isinstance(raw_items, list):
@@ -329,7 +332,9 @@ def _evidence_from_payload(raw: dict[str, object]) -> IdentityEvidence:
     except ValueError as exc:
         raise IdentityEngineRunError("identity evidence checkpoint has invalid state") from exc
     effective_raw = raw.get("effective_date")
-    effective_date = None if effective_raw is None else _required_date(effective_raw, "effective_date")
+    effective_date = (
+        None if effective_raw is None else _required_date(effective_raw, "effective_date")
+    )
     return IdentityEvidence(
         source_symbol=_required_text(raw.get("source_symbol"), "source_symbol"),
         state=state,
@@ -360,7 +365,9 @@ def _optional_text(value: object) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str) or not value.strip():
-        raise IdentityEngineRunError("optional identity evidence text must be non-empty when supplied")
+        raise IdentityEngineRunError(
+            "optional identity evidence text must be non-empty when supplied"
+        )
     return value.strip()
 
 
