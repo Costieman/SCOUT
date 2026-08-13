@@ -37,6 +37,10 @@ from trade_scout.validation.execution import (
     execute_validation_design,
     materialize_validation_targets,
 )
+from trade_scout.validation.experiment_workflow import (
+    ExperimentRunnerGovernedValidationWorkflow,
+    ExperimentRunnerValidationReceipt,
+)
 from trade_scout.validation.multiplicity import (
     AdjustedPValue,
     HypothesisFamily,
@@ -72,6 +76,7 @@ from trade_scout.validation.runner_adapter import (
     ExperimentRunnerValidationTargetExecutor,
     ValidationEvidenceExtractor,
     ValidationExperimentArtifactReader,
+    ValidationTargetExperimentExecution,
     ValidationTargetExperimentFactory,
     ValidationTargetExperimentSpec,
 )
@@ -89,6 +94,8 @@ __all__ = [
     "EvidenceRole",
     "EvidenceSnapshot",
     "EvidenceTargetKind",
+    "ExperimentRunnerGovernedValidationWorkflow",
+    "ExperimentRunnerValidationReceipt",
     "ExperimentRunnerValidationTargetExecutor",
     "FileRobustnessPlanStore",
     "FileValidationPlanStore",
@@ -123,6 +130,7 @@ __all__ = [
     "ValidationSegment",
     "ValidationTarget",
     "ValidationTargetExecutor",
+    "ValidationTargetExperimentExecution",
     "ValidationTargetExperimentFactory",
     "ValidationTargetExperimentSpec",
     "ValidationTargetResult",
