@@ -8,6 +8,7 @@ explicit configuration rather than hidden defaults.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from enum import StrEnum
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
@@ -29,11 +30,11 @@ class TrendContext(StrEnum):
 class TrendContextConfig:
     """Resolved numerical choices required to make the semantic T0-T6 rules executable."""
 
-    sma_200_period: int = 200
-    sma_50_period: int = 50
-    sma_slope_lookback: int = 20
-    trailing_return_intervals: int = 60
-    relative_strength_intervals: int = 60
+    sma_200_period: int
+    sma_50_period: int
+    sma_slope_lookback: int
+    trailing_return_intervals: int
+    relative_strength_intervals: int
 
     def __post_init__(self) -> None:
         values = (
@@ -85,7 +86,7 @@ def _qualifies(
     *,
     context: TrendContext,
     config: TrendContextConfig,
-    benchmark_by_date: dict[object, float] | None,
+    benchmark_by_date: dict[date, float] | None,
 ) -> bool:
     if context is TrendContext.T0:
         return True
@@ -152,7 +153,7 @@ def _benchmark_return(
     bars: tuple[ResearchBar, ...],
     index: int,
     intervals: int,
-    benchmark_by_date: dict[object, float],
+    benchmark_by_date: dict[date, float],
 ) -> float | None:
     prior = index - intervals
     if prior < 0:
@@ -164,7 +165,7 @@ def _benchmark_return(
     return current_close / prior_close - 1.0
 
 
-def _benchmark_closes(bars: tuple[ResearchBar, ...]) -> dict[object, float]:
+def _benchmark_closes(bars: tuple[ResearchBar, ...]) -> dict[date, float]:
     _validate_bars(bars)
     return {bar.trade_date: bar.close for bar in bars if _usable(bar)}
 
