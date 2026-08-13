@@ -17,6 +17,12 @@ from trade_scout.experiments.contracts import (
     ResearchStage,
     StageResult,
 )
+from trade_scout.experiments.decision_evidence import (
+    DecisionEvidenceReport,
+    DecisionExperimentEvidence,
+    VerifiedResearchDecisionLedger,
+    audit_decision_evidence,
+)
 from trade_scout.experiments.decision_ledger import FileResearchDecisionLedger
 from trade_scout.experiments.decisions import (
     ProductionEligibilityAttestation,
@@ -71,6 +77,8 @@ __all__ = [
     "BatchExecutionSummary",
     "BatchFailurePolicy",
     "BatchRunRecord",
+    "DecisionEvidenceReport",
+    "DecisionExperimentEvidence",
     "DuckDBExperimentRegistry",
     "ExperimentBatchExecutor",
     "ExperimentBatchPlan",
@@ -108,6 +116,8 @@ __all__ = [
     "StageIntegrityRecord",
     "StageIntegrityState",
     "StageResult",
+    "VerifiedResearchDecisionLedger",
+    "audit_decision_evidence",
     "audit_experiment",
     "evaluate_first_research_program_progress",
     "expand_grid",
