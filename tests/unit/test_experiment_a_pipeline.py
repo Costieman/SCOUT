@@ -10,11 +10,15 @@ from scripts.run_experiment_a_pipeline import (
     _default_target_version,
     _experiment_command,
 )
+
 from trade_scout.data.contracts import DatasetVersion
-from trade_scout.experiments.benchmark_config import load_experiment_a_benchmark_config
+from trade_scout.experiments.benchmark_config import (
+    ExperimentABenchmarkConfig,
+    load_experiment_a_benchmark_config,
+)
 
 
-def _benchmark():
+def _benchmark() -> ExperimentABenchmarkConfig:
     path = Path(__file__).resolve().parents[2] / "configs" / "experiment_a_spy_benchmark_v0.1.json"
     return load_experiment_a_benchmark_config(path)
 
