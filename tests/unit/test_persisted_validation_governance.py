@@ -149,7 +149,8 @@ def test_validation_review_report_id_parses_only_canonical_reference() -> None:
 def test_resolve_persisted_reviews_returns_verified_checksum_and_bundle(tmp_path: Path) -> None:
     store = FileValidationReviewStore(tmp_path)
     bundle = _bundle()
-    expected_checksum = store.write(bundle)
+    store.write(bundle)
+    expected_checksum = store.checksum(bundle.report.report_id)
 
     resolved = resolve_persisted_validation_reviews(_decision(), store)
 
