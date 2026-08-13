@@ -53,7 +53,9 @@ def main() -> int:
                 "durable workspace evidence is inconsistent; Experiment A pipeline is blocked"
             )
         benchmark = load_experiment_a_benchmark_config(benchmark_config_path)
-        research_text = args.research_dataset_version or workspace.manifest.canonical_dataset_version
+        research_text = (
+            args.research_dataset_version or workspace.manifest.canonical_dataset_version
+        )
         if research_text is None:
             raise OperatorWorkspaceError(
                 "no research canonical dataset is selected; pass --research-dataset-version "
