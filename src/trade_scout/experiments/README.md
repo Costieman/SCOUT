@@ -16,7 +16,8 @@ meaning itself.
 - materialize explicit Cartesian parameter grids before sweep execution;
 - expose the accepted first consolidation-breakout Experiment A-J sequence as planning metadata;
 - index verified manifests in a queryable DuckDB registry without making the registry authoritative;
-- materialize immutable batch plans before execution and retain failed/null child runs.
+- materialize immutable batch plans before execution and retain failed/null child runs;
+- verify persisted experiment manifests and every recorded stage-output checksum before evidence is trusted.
 
 ## Non-responsibilities
 
@@ -27,13 +28,26 @@ markets, or deliver alerts. Those responsibilities remain in their domain module
 ## Version 1 persistence and registry
 
 `FileManifestStore` writes one directory per experiment containing `manifest.json` and small JSON stage
-artifacts. Manifests are canonicalized and SHA-256 verified on read. Large analytical tables should be
-persisted by their owning module using the project data/artifact policy and referenced from stage output
-metadata rather than embedded in the manifest.
+artifacts. Manifests are canonicalized and SHA-256 verified on read. Stage outputs are readable through
+the same persistence contract so their stored content can be checked against the checksum captured in
+the manifest. Large analytical tables should be persisted by their owning module using the project
+data/artifact policy and referenced from stage output metadata rather than embedded in the manifest.
 
 `DuckDBExperimentRegistry` provides a query index for status, research mode, hypothesis family, dataset
 version, and parent/reproduction lineage. `IndexedManifestStore` indexes the checksum-verified persisted
-manifest, preserving the manifest as the source of reproducibility truth.
+manifest, preserving the manifest as the source of reproducibility truth while delegating stage-artifact
+reads to the authoritative store.
+
+## Persisted integrity audit
+
+`audit_experiment` verifies the authoritative manifest first, then re-reads every stage artifact recorded
+by that manifest and recomputes its deterministic checksum. The report distinguishes VERIFIED, MISSING,
+CHECKSUM_MISMATCH, and UNREADABLE stage states. A corrupted manifest prevents stage evidence from being
+treated as verified, and `ExperimentIntegrityReport.require_verified()` provides a fail-closed boundary
+for future reproduction and research-audit workflows.
+
+The integrity audit answers only whether the persisted reproducibility record remains intact. It does not
+judge statistical significance, economic value, scientific validity, or production eligibility.
 
 ## First research-program plan
 
@@ -66,4 +80,5 @@ not mutate analytical configuration. Failed stages are recorded durably before a
 Reproduction creates a new experiment identity and records `reproduction_of`; it never overwrites the
 original experiment. Batch-plan identity is derived from the parent definition, declared grid, and all
 materialized child-configuration checksums, so a changed search space cannot silently retain the same
-plan identity.
+plan identity. Persisted evidence must additionally pass the integrity audit before a later workflow may
+claim that the original manifest and recorded stage artifacts are still intact.
