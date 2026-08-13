@@ -42,6 +42,8 @@ from trade_scout.universe.eligibility import UniverseMembershipRecord
 
 TREND_BASELINE_STAGE_NAME = "trend_baseline"
 TREND_CONTEXT_DEFINITION_VERSION = "first-program-trend-context-v0.1"
+EXPERIMENT_A_SMA_200_PERIOD = 200
+EXPERIMENT_A_SMA_50_PERIOD = 50
 
 
 class EligibilityResolver(Protocol):
@@ -168,6 +170,7 @@ class ExperimentATrendBaselineStage:
             trailing_return_intervals=_integer(resolved, "trailing_return_intervals"),
             relative_strength_intervals=_integer(resolved, "relative_strength_intervals"),
         )
+        _validate_experiment_a_periods(trend_config)
         horizons = _integer_tuple(resolved, "outcome_horizons")
         stride = _integer(resolved, "sampling_stride")
 
@@ -225,8 +228,6 @@ def experiment_a_definition(
     config_schema_version: str,
     outcome_horizons: tuple[int, ...],
     sampling_stride: int,
-    sma_200_period: int,
-    sma_50_period: int,
     sma_slope_lookback: int,
     trailing_return_intervals: int,
     relative_strength_intervals: int,
@@ -234,8 +235,8 @@ def experiment_a_definition(
     """Build one fully resolved exploratory Experiment A child definition."""
 
     config = TrendContextConfig(
-        sma_200_period=sma_200_period,
-        sma_50_period=sma_50_period,
+        sma_200_period=EXPERIMENT_A_SMA_200_PERIOD,
+        sma_50_period=EXPERIMENT_A_SMA_50_PERIOD,
         sma_slope_lookback=sma_slope_lookback,
         trailing_return_intervals=trailing_return_intervals,
         relative_strength_intervals=relative_strength_intervals,
@@ -273,6 +274,13 @@ def experiment_a_definition(
             }
         },
     )
+
+
+def _validate_experiment_a_periods(config: TrendContextConfig) -> None:
+    if config.sma_200_period != EXPERIMENT_A_SMA_200_PERIOD:
+        raise ValueError("Experiment A T1/T2/T3/T4/T5/T6 requires a 200-session SMA")
+    if config.sma_50_period != EXPERIMENT_A_SMA_50_PERIOD:
+        raise ValueError("Experiment A T3/T4 requires a 50-session SMA")
 
 
 def _experiment_a_config(configuration: dict[str, JSONValue]) -> dict[str, JSONValue]:
