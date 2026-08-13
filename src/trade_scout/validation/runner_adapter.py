@@ -43,6 +43,20 @@ class ValidationTargetExperimentSpec:
             raise ValueError("validation target experiment must contain at least one stage")
 
 
+@dataclass(frozen=True, slots=True)
+class ValidationTargetExperimentExecution:
+    """Evidence plus the exact durable child manifest that produced it."""
+
+    result: ValidationTargetResult
+    child_manifest: ExperimentManifest
+
+    def __post_init__(self) -> None:
+        if self.child_manifest.status is not ExperimentStatus.SUCCEEDED:
+            raise ValueError("validation child execution manifest must be SUCCEEDED")
+        if self.child_manifest.manifest_checksum is None:
+            raise ValueError("validation child execution manifest must have a checksum")
+
+
 class ValidationTargetExperimentFactory(Protocol):
     """Translate one governed target into explicit analytical Experiment Runner stages."""
 
@@ -103,6 +117,14 @@ class ExperimentRunnerValidationTargetExecutor:
     ) -> ValidationTargetResult:
         """Run one target as a durable child experiment and return persisted-derived evidence."""
 
+        return self.execute_validation_target_with_manifest(context).result
+
+    def execute_validation_target_with_manifest(
+        self,
+        context: ValidationExecutionContext,
+    ) -> ValidationTargetExperimentExecution:
+        """Run one target and expose the verified child manifest for provenance binding."""
+
         source = self._read_source(context.experiment_id)
         try:
             spec = self._factory.build_validation_experiment(context, source)
@@ -135,7 +157,7 @@ class ExperimentRunnerValidationTargetExecutor:
             ) from exc
 
         _require_snapshot_identity(context, snapshot)
-        return ValidationTargetResult(snapshot)
+        return ValidationTargetExperimentExecution(ValidationTargetResult(snapshot), child)
 
     def _read_source(self, experiment_id: str) -> ExperimentManifest:
         try:
