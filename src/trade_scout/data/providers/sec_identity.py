@@ -83,7 +83,9 @@ class SecHttpClient:
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if not user_agent.strip() or "@" not in user_agent:
-            raise ValueError("SEC user_agent must identify the requester and include a contact email")
+            raise ValueError(
+                "SEC user_agent must identify the requester and include a contact email"
+            )
         if minimum_interval_seconds < 0:
             raise ValueError("minimum_interval_seconds must be non-negative")
         if timeout_seconds <= 0:
@@ -116,7 +118,11 @@ class SecHttpClient:
                         f"SEC request failed with HTTP {exc.code}: {url}"
                     ) from exc
                 retry_after = exc.headers.get("Retry-After") if exc.headers is not None else None
-                delay = float(retry_after) if retry_after and retry_after.isdigit() else 2.0**attempt
+                delay = (
+                    float(retry_after)
+                    if retry_after and retry_after.isdigit()
+                    else 2.0**attempt
+                )
                 self._sleep(delay)
             except OSError as exc:
                 if attempt == self._max_attempts:
@@ -263,7 +269,9 @@ def _load_all_filings(client: SecHttpClient, cik: int) -> tuple[SecFiling, ...]:
         for item in result
         if item.form in _ANNUAL_FORMS
     }
-    return tuple(sorted(unique.values(), key=lambda item: (item.filing_date, item.accession_number)))
+    return tuple(
+        sorted(unique.values(), key=lambda item: (item.filing_date, item.accession_number))
+    )
 
 
 def _filings_from_parallel_arrays(cik: int, payload: object) -> tuple[SecFiling, ...]:
@@ -305,7 +313,12 @@ def _find_exact_start_evidence(
     filings: tuple[SecFiling, ...],
     observed_first_date: date,
 ) -> IdentityEvidence | None:
-    years = {observed_first_date.year - 1, observed_first_date.year, observed_first_date.year + 1, observed_first_date.year + 2}
+    years = {
+        observed_first_date.year - 1,
+        observed_first_date.year,
+        observed_first_date.year + 1,
+        observed_first_date.year + 2,
+    }
     for filing in filings:
         if filing.filing_date.year not in years:
             continue
@@ -323,7 +336,10 @@ def _find_exact_start_evidence(
                 regulator_id=f"CIK{company.cik:010d}",
                 company_name=company.name,
                 exchange=company.exchange,
-                detail="SEC filing text contains the exact observed start date, ticker, and explicit trading/listing language",
+                detail=(
+                    "SEC filing text contains the exact observed start date, ticker, and explicit "
+                    "trading/listing language"
+                ),
             )
     return None
 
@@ -365,7 +381,9 @@ def _find_campaign_continuity_evidence(
 
 def _contains_exact_trading_start(text: str, ticker: str, target: date) -> bool:
     date_tokens = _date_tokens(target)
-    ticker_pattern = re.compile(rf"(?<![A-Z0-9]){re.escape(ticker.upper())}(?![A-Z0-9])")
+    ticker_pattern = re.compile(
+        rf"(?<![a-z0-9]){re.escape(ticker.lower())}(?![a-z0-9])"
+    )
     for token in date_tokens:
         start = 0
         while True:
@@ -380,7 +398,9 @@ def _contains_exact_trading_start(text: str, ticker: str, target: date) -> bool:
 
 
 def _ticker_and_exchange_cooccur(text: str, ticker: str, terms: tuple[str, ...]) -> bool:
-    ticker_pattern = re.compile(rf"(?<![A-Z0-9]){re.escape(ticker.upper())}(?![A-Z0-9])")
+    ticker_pattern = re.compile(
+        rf"(?<![a-z0-9]){re.escape(ticker.lower())}(?![a-z0-9])"
+    )
     for match in ticker_pattern.finditer(text):
         snippet = text[max(0, match.start() - 1200) : match.end() + 1200]
         if any(term in snippet for term in terms):
