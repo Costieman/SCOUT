@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import runpy
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Callable, cast
 
 from trade_scout.data.contracts import DatasetVersion
 from trade_scout.experiments.benchmark_config import (
@@ -17,10 +17,22 @@ _PIPELINE_NAMESPACE = runpy.run_path(
     str(_REPOSITORY_ROOT / "scripts" / "run_experiment_a_pipeline.py"),
     run_name="trade_scout_experiment_a_pipeline_test",
 )
-_default_target_version = cast(Callable[[DatasetVersion, DatasetVersion], str], _PIPELINE_NAMESPACE["_default_target_version"])
-_benchmark_promotion_command = cast(Callable[..., list[str]], _PIPELINE_NAMESPACE["_benchmark_promotion_command"])
-_composition_command = cast(Callable[..., list[str]], _PIPELINE_NAMESPACE["_composition_command"])
-_experiment_command = cast(Callable[..., list[str]], _PIPELINE_NAMESPACE["_experiment_command"])
+_default_target_version = cast(
+    Callable[[DatasetVersion, DatasetVersion], str],
+    _PIPELINE_NAMESPACE["_default_target_version"],
+)
+_benchmark_promotion_command = cast(
+    Callable[..., list[str]],
+    _PIPELINE_NAMESPACE["_benchmark_promotion_command"],
+)
+_composition_command = cast(
+    Callable[..., list[str]],
+    _PIPELINE_NAMESPACE["_composition_command"],
+)
+_experiment_command = cast(
+    Callable[..., list[str]],
+    _PIPELINE_NAMESPACE["_experiment_command"],
+)
 
 
 def _benchmark() -> ExperimentABenchmarkConfig:
