@@ -74,6 +74,25 @@ volume -> market regime -> stock volatility/age -> simple stops -> frozen combin
 forward/final holdout. Validation rejects reordered or incomplete plans instead of silently accepting an
 ad hoc combinatorial search.
 
+## Executable Experiment A
+
+`ExperimentATrendBaselineStage` is the first program-specific adapter that connects the experiment runner
+to real domain interfaces. It loads one checksum-verified `CanonicalDailyBarStore` dataset version,
+attaches point-in-time universe membership, evaluates one registered T0-T6 trend context, and delegates
+forward-path measurement to the outcome module. The stage persists descriptive probability, return,
+MAE, MFE, and drawdown summaries with dataset and universe provenance.
+
+The 50-session and 200-session moving-average periods are fixed by the research specification and are
+enforced by the Experiment A builder and stage. Numerical choices not fixed by that specification--the
+200-session SMA slope lookback, trailing-return interval, relative-strength interval, and baseline
+sampling stride--must be supplied explicitly in the resolved configuration. T6 additionally requires an
+explicit benchmark series. Missing historical universe membership fails closed to ineligible rather than
+silently assuming current membership.
+
+This adapter makes Experiment A executable against an approved canonical store; it does not itself run or
+validate the historical study. No consolidation, breakout, stop, optimization, or inferential decision
+logic is introduced at this stage.
+
 ## Governed batch planning
 
 `plan_experiment_batch` resolves the complete requested search space before any child run starts and
