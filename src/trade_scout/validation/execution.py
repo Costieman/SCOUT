@@ -406,7 +406,8 @@ def _require_target_snapshot_identity(target: ValidationTarget, snapshot: Eviden
 def _require_manifest_ready(manifest: ExperimentManifest, experiment_id: str) -> None:
     if manifest.experiment_id != experiment_id:
         raise ValidationExecutionError(
-            f"source experiment identity mismatch: expected {experiment_id}, got {manifest.experiment_id}"
+            "source experiment identity mismatch: "
+            f"expected {experiment_id}, got {manifest.experiment_id}"
         )
     if manifest.status is not ExperimentStatus.SUCCEEDED:
         raise ValidationExecutionError(
@@ -424,11 +425,13 @@ def _require_robustness_declaration(
     if robustness_plan is None:
         if declared:
             raise ValidationExecutionError(
-                "validation plan declares robustness checks but no frozen robustness plan was supplied"
+                "validation plan declares robustness checks but no frozen robustness "
+                "plan was supplied"
             )
         return
     challenge_ids = tuple(challenge.challenge_id for challenge in robustness_plan.challenges)
     if declared and declared != challenge_ids:
         raise ValidationExecutionError(
-            "validation plan robustness_checks do not exactly match frozen robustness challenge order"
+            "validation plan robustness_checks do not exactly match frozen robustness "
+            "challenge order"
         )
