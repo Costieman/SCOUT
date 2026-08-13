@@ -1,0 +1,27 @@
+{
+  "schema_version": "experiment-a-benchmark-v0.1",
+  "benchmark_version": "experiment-a-spy-v0.1",
+  "purpose": "Broad-market relative-strength benchmark for first-program Experiment A T6. This is an explicit benchmark series and does not define historical research-universe membership.",
+  "provider_id": "tiingo",
+  "query_symbol": "SPY",
+  "provider_instrument_id": "SPY",
+  "instrument_id": "benchmark-spy-us78462f1030",
+  "name": "State Street SPDR S&P 500 ETF Trust",
+  "exchange": "ARCX",
+  "currency": "USD",
+  "first_trade_date": "1993-01-22",
+  "coverage_start_date": "1996-01-02",
+  "coverage_end_date": "2026-08-07",
+  "dataset_id": "research_benchmark_daily",
+  "dataset_version": "tiingo-spy-split-only-v0.1",
+  "benchmark_target": "S&P 500 Index",
+  "evidence_refs": [
+    "https://www.ssga.com/us/en/intermediary/etfs/state-street-spdr-sp-500-etf-trust-spy"
+  ],
+  "scope_notes": [
+    "State Street identifies SPY as an S&P 500 Index tracker, ticker SPY, listed on NYSE Arca in USD from 1993-01-22.",
+    "The canonical coverage window begins at 1996-01-02 to align with the bounded Trade Scout research campaign rather than claiming pre-campaign coverage.",
+    "SPY is used only as a market benchmark for relative-strength context T6; it is not a research-universe constituent by virtue of this configuration.",
+    "Provider acquisition, split-only normalization, session completeness, and immutable promotion remain fail-closed operator steps."
+  ]
+}
