@@ -13,11 +13,7 @@ from trade_scout.data.identity_adjudication import (
     adjudicate_identity_case,
     build_identity_batch_report,
 )
-from trade_scout.data.providers.sec_identity import (
-    SecCompany,
-    collect_sec_identity_evidence,
-)
-
+from trade_scout.data.providers.sec_identity import SecCompany, collect_sec_identity_evidence
 
 _CAMPAIGN_START = date(1996, 1, 2)
 
@@ -137,7 +133,8 @@ class _FakeSecClient:
 
 def test_sec_exact_start_requires_date_ticker_and_trading_language() -> None:
     client = _FakeSecClient(
-        "<html>Our common stock began trading on Nasdaq under the symbol TEST on January 2, 2020.</html>"
+        "<html>Our common stock began trading on Nasdaq under the symbol TEST "
+        "on January 2, 2020.</html>"
     )
     evidence = collect_sec_identity_evidence(
         client=client,  # type: ignore[arg-type]
@@ -153,7 +150,8 @@ def test_sec_exact_start_requires_date_ticker_and_trading_language() -> None:
 
 def test_sec_campaign_continuity_requires_ticker_exchange_cooccurrence() -> None:
     client = _FakeSecClient(
-        "<html>Test Corp common stock, symbol TEST, is listed on the New York Stock Exchange.</html>"
+        "<html>Test Corp common stock, symbol TEST, is listed on the "
+        "New York Stock Exchange.</html>"
     )
     evidence = collect_sec_identity_evidence(
         client=client,  # type: ignore[arg-type]
