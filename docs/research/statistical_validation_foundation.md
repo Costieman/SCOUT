@@ -24,6 +24,12 @@ Completeness is deliberately not a success criterion. A complete evidence packag
 
 `ParameterSurface` requires one cell for every coordinate in the declared Cartesian grid. A surface therefore cannot persist only a winning cell. Each cell retains its sample accounting, estimate, optional uncertainty interval, and warnings. The contract offers exact cell lookup but intentionally provides no `best` or ranking method.
 
+## Review bundle
+
+`assemble_validation_review_bundle` is the final assembly boundary before explicit scientific review. It first requires complete coverage of the frozen validation design, then retains the evidence report, assignments, parameter surfaces, multiplicity family, robustness-plan identity, evidence-role counts, and warnings in one typed package. A declared multiplicity family must be represented exactly rather than supplemented with unrelated families.
+
+`summarize_validation_review` produces a compact inventory for application/reporting layers. The summary reports evidence counts, role counts, parameter-surface identities, multiplicity-family identity, robustness-plan identity, and warning count. It intentionally does not compute a composite score, select a parameter cell, or assign REJECTED/CANDIDATE/VALIDATED status.
+
 ## Scientific boundary
 
 These objects make evidence auditable; they do not establish that an effect is credible, economically useful, or production eligible. Research status remains an explicit decision recorded through the separate decision-governance layer after the required validation evidence has been reviewed.
