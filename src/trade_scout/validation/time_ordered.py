@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from datetime import date
 
-from trade_scout.validation.contracts import DateInterval, ValidationPlan, ValidationRole, ValidationSegment, WalkForwardFold
+from trade_scout.validation.contracts import (
+    DateInterval,
+    ValidationPlan,
+    ValidationRole,
+    ValidationSegment,
+    WalkForwardFold,
+)
 
 
 def build_fixed_holdout_plan(
