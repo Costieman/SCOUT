@@ -81,11 +81,15 @@ from trade_scout.experiments.trend_baseline import (
     experiment_a_definition,
 )
 from trade_scout.experiments.validation_decision_evidence import (
+    PersistedValidationGovernedResearchDecisionLedger,
+    PersistedValidationReviewEvidence,
     ValidationDecisionEvidenceReport,
     ValidationDecisionReviewEvidence,
     ValidationGovernedResearchDecisionLedger,
     audit_validation_decision_evidence,
+    resolve_persisted_validation_reviews,
     validation_review_reference,
+    validation_review_report_id,
 )
 
 __all__ = [
@@ -121,6 +125,8 @@ __all__ = [
     "FirstResearchProgramProgress",
     "IndexedManifestStore",
     "MembershipEligibilityResolver",
+    "PersistedValidationGovernedResearchDecisionLedger",
+    "PersistedValidationReviewEvidence",
     "PlannedExperiment",
     "ProductionEligibilityAttestation",
     "ProgramAssignment",
@@ -150,8 +156,10 @@ __all__ = [
     "experiment_a_definition",
     "first_program_step",
     "plan_experiment_batch",
+    "resolve_persisted_validation_reviews",
     "validate_decision_supersession",
     "validate_first_research_program",
     "validate_plan_unchanged",
     "validation_review_reference",
+    "validation_review_report_id",
 ]
