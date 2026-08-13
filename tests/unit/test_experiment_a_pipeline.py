@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
+import runpy
 from pathlib import Path
-
-from scripts.run_experiment_a_pipeline import (
-    _benchmark_promotion_command,
-    _composition_command,
-    _default_target_version,
-    _experiment_command,
-)
+from typing import Any, Callable, cast
 
 from trade_scout.data.contracts import DatasetVersion
 from trade_scout.experiments.benchmark_config import (
@@ -17,9 +12,19 @@ from trade_scout.experiments.benchmark_config import (
     load_experiment_a_benchmark_config,
 )
 
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+_PIPELINE_NAMESPACE = runpy.run_path(
+    str(_REPOSITORY_ROOT / "scripts" / "run_experiment_a_pipeline.py"),
+    run_name="trade_scout_experiment_a_pipeline_test",
+)
+_default_target_version = cast(Callable[[DatasetVersion, DatasetVersion], str], _PIPELINE_NAMESPACE["_default_target_version"])
+_benchmark_promotion_command = cast(Callable[..., list[str]], _PIPELINE_NAMESPACE["_benchmark_promotion_command"])
+_composition_command = cast(Callable[..., list[str]], _PIPELINE_NAMESPACE["_composition_command"])
+_experiment_command = cast(Callable[..., list[str]], _PIPELINE_NAMESPACE["_experiment_command"])
+
 
 def _benchmark() -> ExperimentABenchmarkConfig:
-    path = Path(__file__).resolve().parents[2] / "configs" / "experiment_a_spy_benchmark_v0.1.json"
+    path = _REPOSITORY_ROOT / "configs" / "experiment_a_spy_benchmark_v0.1.json"
     return load_experiment_a_benchmark_config(path)
 
 
