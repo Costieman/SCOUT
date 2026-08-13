@@ -104,9 +104,7 @@ def summarize_trend_baseline(
     for horizon in horizons:
         selected = tuple(item for item in outcomes if item.horizon == horizon)
         if not selected:
-            summaries.append(
-                TrendBaselineSummary(horizon, 0, None, None, None, None, None, None)
-            )
+            summaries.append(TrendBaselineSummary(horizon, 0, None, None, None, None, None, None))
             continue
         returns = tuple(item.forward_return for item in selected)
         summaries.append(
@@ -154,9 +152,7 @@ def _usable(bar: ResearchBar) -> bool:
     return bar.eligibility and bar.quality_status is QualityStatus.PASS
 
 
-def _validate_inputs(
-    bars: tuple[ResearchBar, ...], horizons: tuple[int, ...], stride: int
-) -> None:
+def _validate_inputs(bars: tuple[ResearchBar, ...], horizons: tuple[int, ...], stride: int) -> None:
     if not bars:
         raise ValueError("trend baseline requires at least one research bar")
     if not horizons or any(horizon < 1 for horizon in horizons):
