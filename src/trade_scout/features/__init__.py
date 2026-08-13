@@ -25,6 +25,11 @@ from trade_scout.features.storage import (
     FeatureSnapshotPromotionRequest,
     FeatureSnapshotStore,
 )
+from trade_scout.features.trend_context import (
+    TrendContext,
+    TrendContextConfig,
+    qualifying_trend_indices,
+)
 
 __all__ = [
     "ATR_FEATURE_NAME",
@@ -43,7 +48,10 @@ __all__ = [
     "FeatureSnapshotPromotionRequest",
     "FeatureSnapshotStore",
     "FeatureValue",
+    "TrendContext",
+    "TrendContextConfig",
     "compute_incremental_initial_feature_frame",
     "compute_initial_feature_frame",
     "initial_feature_definition_sha256",
+    "qualifying_trend_indices",
 ]
