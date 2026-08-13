@@ -126,7 +126,11 @@ class _SyntheticExecutor:
         self.contexts.append(context)
         target = context.target
         role = target.evidence_role
-        fold_id = target.target_id if target.target_type is ValidationTargetType.WALK_FORWARD_FOLD else None
+        fold_id = (
+            target.target_id
+            if target.target_type is ValidationTargetType.WALK_FORWARD_FOLD
+            else None
+        )
         challenge_id = (
             target.target_id
             if target.target_type is ValidationTargetType.ROBUSTNESS_CHALLENGE
@@ -146,7 +150,9 @@ class _SyntheticExecutor:
         )
 
 
-def _stores(tmp_path: Path) -> tuple[
+def _stores(
+    tmp_path: Path,
+) -> tuple[
     FileValidationPlanStore,
     FileRobustnessPlanStore,
     FileManifestStore,
