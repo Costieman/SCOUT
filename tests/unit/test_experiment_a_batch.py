@@ -67,7 +67,11 @@ def test_comparison_requires_and_orders_all_seven_contexts() -> None:
 
 
 def test_comparison_rejects_incomplete_context_set() -> None:
-    ids = {context: f"experiment_{context.value}" for context in TrendContext if context is not TrendContext.T6}
+    ids = {
+        context: f"experiment_{context.value}"
+        for context in TrendContext
+        if context is not TrendContext.T6
+    }
 
     try:
         compare_experiment_a_outputs(ids, _Reader())
