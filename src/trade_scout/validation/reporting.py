@@ -80,7 +80,7 @@ class ValidationReviewBundle:
             )
         if expected_family is None and family_ids:
             raise ValueError(
-                "multiplicity summaries require evidence report multiplicity_family_id to be declared"
+                "multiplicity summaries require the report to declare multiplicity_family_id"
             )
         if self.robustness_plan_id is not None and not self.robustness_plan_id.strip():
             raise ValueError("robustness_plan_id must be non-empty when supplied")
