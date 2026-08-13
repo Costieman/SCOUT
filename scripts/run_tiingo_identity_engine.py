@@ -1,8 +1,8 @@
 """Run unattended SEC-backed identity triage across durable Tiingo histories.
 
-This command is intentionally metadata-only: it reads the durable Tiingo profile and current reviewed
-identity candidate, collects independent SEC evidence, checkpoints every completed symbol, and writes
-a deterministic READY/DEFER report. It never calls Tiingo and never mutates canonical data.
+This command is intentionally metadata-only. It reads the durable Tiingo profile and current
+reviewed identity candidate, collects independent SEC evidence, and checkpoints each symbol.
+It writes READY/DEFER evidence without calling Tiingo or mutating canonical data.
 """
 
 from __future__ import annotations
