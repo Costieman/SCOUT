@@ -39,6 +39,7 @@ from trade_scout.validation import (
     ValidationRoleCount,
     ValidationSegment,
 )
+from trade_scout.validation.store import ValidationReviewStoreError
 
 
 def _plan() -> ValidationPlan:
@@ -264,7 +265,9 @@ def test_verify_rejects_changed_stage_evidence_identity(tmp_path: Path) -> None:
     )
     manifest = _manifest()
     changed_stage = replace(manifest.stages[0], output_checksum="3" * 64)
-    changed_manifest = replace(manifest, stages=(changed_stage, manifest.stages[1]), manifest_checksum=None)
+    changed_manifest = replace(
+        manifest, stages=(changed_stage, manifest.stages[1]), manifest_checksum=None
+    )
     changed_manifest = replace(
         changed_manifest,
         manifest_checksum=sha256_json(changed_manifest),
@@ -292,7 +295,7 @@ def test_verify_detects_persisted_review_replacement(tmp_path: Path) -> None:
     raw["bundle"]["report"]["primary_outcome"] = "tampered"
     path.write_text(json.dumps(raw), encoding="utf-8")
 
-    with pytest.raises(Exception, match="checksum mismatch"):
+    with pytest.raises(ValidationReviewStoreError, match="checksum mismatch"):
         verify_validation_review_provenance(
             provenance,
             review_store=review_store,
