@@ -68,6 +68,13 @@ from trade_scout.validation.robustness import (
     RobustnessPlan,
     consolidation_breakout_robustness_plan,
 )
+from trade_scout.validation.runner_adapter import (
+    ExperimentRunnerValidationTargetExecutor,
+    ValidationEvidenceExtractor,
+    ValidationExperimentArtifactReader,
+    ValidationTargetExperimentFactory,
+    ValidationTargetExperimentSpec,
+)
 from trade_scout.validation.store import FileValidationReviewStore, ValidationReviewStoreError
 from trade_scout.validation.time_ordered import build_fixed_holdout_plan, build_walk_forward_plan
 
@@ -82,6 +89,7 @@ __all__ = [
     "EvidenceRole",
     "EvidenceSnapshot",
     "EvidenceTargetKind",
+    "ExperimentRunnerValidationTargetExecutor",
     "FileRobustnessPlanStore",
     "FileValidationPlanStore",
     "FileValidationReviewStore",
@@ -100,10 +108,12 @@ __all__ = [
     "RobustnessPlan",
     "SampleAccounting",
     "ValidationCompleteness",
+    "ValidationEvidenceExtractor",
     "ValidationEvidenceReport",
     "ValidationExecutionContext",
     "ValidationExecutionError",
     "ValidationExecutionReceipt",
+    "ValidationExperimentArtifactReader",
     "ValidationPlan",
     "ValidationReviewBundle",
     "ValidationReviewStoreError",
@@ -113,6 +123,8 @@ __all__ = [
     "ValidationSegment",
     "ValidationTarget",
     "ValidationTargetExecutor",
+    "ValidationTargetExperimentFactory",
+    "ValidationTargetExperimentSpec",
     "ValidationTargetResult",
     "ValidationTargetType",
     "WalkForwardFold",
