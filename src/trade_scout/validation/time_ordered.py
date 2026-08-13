@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
+from itertools import pairwise
 
 from trade_scout.validation.contracts import (
     DateInterval,
@@ -57,10 +58,8 @@ def build_walk_forward_plan(
 
     if len(boundaries) < 3:
         raise ValueError("walk-forward planning requires at least three boundaries")
-    if any(current >= following for current, following in zip(boundaries, boundaries[1:])):
+    if any(current >= following for current, following in pairwise(boundaries)):
         raise ValueError("walk-forward boundaries must be strictly increasing")
-
-    from datetime import timedelta
 
     folds: list[WalkForwardFold] = []
     for index in range(len(boundaries) - 2):
