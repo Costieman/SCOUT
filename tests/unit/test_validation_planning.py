@@ -89,9 +89,7 @@ def test_walk_forward_plan_uses_only_prior_dates_for_each_fold() -> None:
     assert plan.walk_forward_folds[0].validation.start == date(2005, 1, 1)
     assert plan.walk_forward_folds[1].development.end == date(2009, 12, 31)
     assert plan.walk_forward_folds[1].validation.start == date(2010, 1, 1)
-    assert all(
-        fold.development.end < fold.validation.start for fold in plan.walk_forward_folds
-    )
+    assert all(fold.development.end < fold.validation.start for fold in plan.walk_forward_folds)
 
 
 def test_sample_accounting_rejects_impossible_effective_sample_size() -> None:
