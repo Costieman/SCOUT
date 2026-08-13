@@ -21,6 +21,8 @@ from trade_scout.experiments.contracts import ExperimentDefinition, ExperimentEx
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
 from trade_scout.experiments.trend_baseline import (
+    EXPERIMENT_A_SMA_200_PERIOD,
+    EXPERIMENT_A_SMA_50_PERIOD,
     CanonicalTrendBaselineSource,
     ExperimentATrendBaselineStage,
     MembershipEligibilityResolver,
@@ -57,10 +59,12 @@ def _daily_bar(instrument_id: InstrumentId, trade_date: date, close: float) -> D
 
 def _canonical_store(tmp_path: Path) -> tuple[CanonicalDailyBarStore, tuple[date, ...]]:
     store = CanonicalDailyBarStore(tmp_path / "data")
-    dates = tuple(date(2026, 1, 2) + timedelta(days=index) for index in range(14))
+    dates = tuple(date(2025, 1, 2) + timedelta(days=index) for index in range(230))
     bars = tuple(
-        _daily_bar(STOCK, day, 100.0 + index * 2.0) for index, day in enumerate(dates)
-    ) + tuple(_daily_bar(BENCHMARK, day, 100.0 + index * 0.5) for index, day in enumerate(dates))
+        _daily_bar(STOCK, day, 100.0 + index * 0.5) for index, day in enumerate(dates)
+    ) + tuple(
+        _daily_bar(BENCHMARK, day, 100.0 + index * 0.1) for index, day in enumerate(dates)
+    )
     store.promote(
         bars,
         DatasetPromotionRequest(
@@ -102,12 +106,19 @@ def _definition(context: TrendContext) -> ExperimentDefinition:
         config_schema_version="0.1.0",
         outcome_horizons=(2, 3),
         sampling_stride=2,
-        sma_200_period=3,
-        sma_50_period=2,
-        sma_slope_lookback=1,
-        trailing_return_intervals=2,
-        relative_strength_intervals=2,
+        sma_slope_lookback=5,
+        trailing_return_intervals=20,
+        relative_strength_intervals=20,
     )
+
+
+def test_definition_preserves_specified_50_and_200_session_periods() -> None:
+    definition = _definition(TrendContext.T4)
+    config = definition.resolved_configuration["experiment_a"]
+
+    assert isinstance(config, dict)
+    assert config["sma_200_period"] == EXPERIMENT_A_SMA_200_PERIOD == 200
+    assert config["sma_50_period"] == EXPERIMENT_A_SMA_50_PERIOD == 50
 
 
 def test_experiment_a_runs_from_canonical_store_through_experiment_runner(tmp_path: Path) -> None:
