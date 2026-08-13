@@ -69,7 +69,9 @@ class ExperimentAOperatorResult:
 
     @property
     def succeeded(self) -> bool:
-        return self.batch.complete and self.batch.failed_count == 0 and self.batch.succeeded_count == 7
+        return (
+            self.batch.complete and self.batch.failed_count == 0 and self.batch.succeeded_count == 7
+        )
 
 
 class FixedCohortEligibilityResolver:
@@ -126,7 +128,9 @@ def preflight_experiment_a_fixed_cohort(
 
     research_ids = tuple(InstrumentId(value) for value in observed_ids if value != benchmark_key)
     if not research_ids:
-        raise ExperimentAOperatorError("canonical dataset contains no research instruments besides benchmark")
+        raise ExperimentAOperatorError(
+            "canonical dataset contains no research instruments besides benchmark"
+        )
 
     return ExperimentAPreflight(
         dataset_version=str(dataset_version),
@@ -198,7 +202,9 @@ def execute_experiment_a_fixed_cohort(
     for child, record in zip(plan.children, batch.records, strict=True):
         configuration = child.definition.resolved_configuration.get("experiment_a")
         if not isinstance(configuration, dict):
-            raise ExperimentAOperatorError("planned Experiment A child is missing resolved configuration")
+            raise ExperimentAOperatorError(
+                "planned Experiment A child is missing resolved configuration"
+            )
         raw_context = configuration.get("trend_context")
         if not isinstance(raw_context, str):
             raise ExperimentAOperatorError("planned Experiment A child is missing trend context")
