@@ -204,7 +204,9 @@ class _RecordingValidationLedger:
         return history[-1] if history else None
 
 
-def _stores(tmp_path: Path) -> tuple[FileValidationReviewStore, FileValidationReviewProvenanceStore]:
+def _stores(
+    tmp_path: Path,
+) -> tuple[FileValidationReviewStore, FileValidationReviewProvenanceStore]:
     review_store = FileValidationReviewStore(tmp_path / "reviews")
     bundle = _bundle()
     review_checksum = review_store.write(bundle)
@@ -337,7 +339,9 @@ def test_review_replacement_fails_before_decision_mutation(tmp_path: Path) -> No
         experiment_manifest_reader=_ManifestReader(_manifest()),
     )
 
-    with pytest.raises(ResearchDecisionError, match="persisted validation review verification failed"):
+    with pytest.raises(
+        ResearchDecisionError, match="persisted validation review verification failed"
+    ):
         ledger.append(_decision())
 
     assert recording.appended == []
