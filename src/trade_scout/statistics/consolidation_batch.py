@@ -131,7 +131,10 @@ def build_consolidation_batch_report(
         "Exploratory multi-symbol evidence only; this report is not production validation.",
         "Cross-symbol summaries do not treat event observations as independent inference units.",
         "The underlying comparator remains the simple same-stock trend-context baseline.",
-        "Parameter optimization, multiplicity correction, holdout validation, costs, and stop research are outside this batch definition.",
+        (
+            "Parameter optimization, multiplicity correction, holdout validation, costs, "
+            "and stop research are outside this batch definition."
+        ),
     )
 
     return ConsolidationBatchReport(
@@ -181,9 +184,7 @@ def _cross_symbol_horizon_summary(
 
     means = [item.mean_return for item in selected if item.mean_return is not None]
     medians = [item.median_return for item in selected if item.median_return is not None]
-    positive = [
-        item.positive_fraction for item in selected if item.positive_fraction is not None
-    ]
+    positive = [item.positive_fraction for item in selected if item.positive_fraction is not None]
     return BatchHorizonSummary(
         horizon=horizon,
         contributing_symbol_count=len(selected),
