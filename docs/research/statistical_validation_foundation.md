@@ -10,6 +10,12 @@ Trade Scout treats validation as a downstream challenge to a fixed research defi
 
 `EvidenceSnapshot` labels evidence as development, validation, walk-forward, final holdout, or robustness evidence. Walk-forward snapshots require a fold identity; robustness snapshots require a challenge identity. `ValidationEvidenceReport` bundles these records without converting them into a scientific promotion decision.
 
+## Evidence completeness
+
+`EvidenceAssignment` explicitly links each evidence snapshot to one frozen validation segment, walk-forward fold, or robustness challenge. `assess_validation_completeness` requires exact target coverage: missing holdout evidence, omitted folds, omitted robustness challenges, role mismatches, unassigned snapshots, or attempts to reuse one snapshot for multiple targets remain visible. `ValidationCompleteness.require_complete()` provides the fail-closed boundary for downstream validation/governance workflows.
+
+Completeness is deliberately not a success criterion. A complete evidence package may still show a null, unstable, or adverse result. The gate proves only that the predeclared validation design was actually represented in the evidence record.
+
 ## Multiple testing
 
 `HypothesisFamily` records the complete set of hypotheses before adjustment. `adjust_p_values` refuses partial families, so null or unfavorable tests cannot disappear from multiplicity accounting. The current deterministic methods are exploratory/no adjustment, Bonferroni, and Benjamini-Hochberg false-discovery-rate adjustment.
