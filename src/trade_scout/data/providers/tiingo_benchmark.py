@@ -7,7 +7,7 @@ The standalone result can then be composed with an Experiment A research cohort.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -33,12 +33,14 @@ from trade_scout.data.session_completeness import (
     DatasetSessionCompletenessAudit,
     SessionCompletenessError,
     audit_daily_bar_session_completeness,
+    default_us_equity_session_calendar,
 )
 
 BENCHMARK_TRANSFORMATION_VERSION = "tiingo-benchmark-split-only-v0.1"
 BENCHMARK_ADJUSTMENT_POLICY_VERSION = "raw-plus-split-only-v0.1"
 BENCHMARK_QUALITY_VERSION = "canonical-daily-bar-plus-session-completeness-v0.1"
 BENCHMARK_UNIVERSE_VERSION = "explicit-research-benchmark-v0.1"
+_NYSE_ARCA_MIC = "ARCX"
 
 
 class TiingoBenchmarkPromotionError(RuntimeError):
@@ -153,6 +155,7 @@ def promote_tiingo_benchmark_rows(
             instruments=(instrument,),
             dataset_start_date=definition.dataset_start_date,
             dataset_end_date=definition.dataset_end_date,
+            calendar=_benchmark_session_calendar(instrument.exchange),
         )
     except SessionCompletenessError as exc:
         raise TiingoBenchmarkPromotionError(str(exc)) from exc
@@ -210,4 +213,16 @@ def _instrument(definition: TiingoBenchmarkDefinition) -> InstrumentRecord:
         first_trade_date=definition.first_trade_date,
         delisting_date=None,
         provider_ids={"tiingo": definition.provider_instrument_id.strip()},
+    )
+
+
+def _benchmark_session_calendar(exchange: str):
+    """Extend the pinned NYSE holiday policy to NYSE Arca for benchmark auditing."""
+
+    calendar = default_us_equity_session_calendar()
+    if exchange != _NYSE_ARCA_MIC:
+        return calendar
+    return replace(
+        calendar,
+        supported_exchanges=calendar.supported_exchanges | frozenset({_NYSE_ARCA_MIC}),
     )
