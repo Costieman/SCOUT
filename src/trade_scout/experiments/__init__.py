@@ -80,6 +80,13 @@ from trade_scout.experiments.trend_baseline import (
     TrendBaselineDataset,
     experiment_a_definition,
 )
+from trade_scout.experiments.validation_decision_evidence import (
+    ValidationDecisionEvidenceReport,
+    ValidationDecisionReviewEvidence,
+    ValidationGovernedResearchDecisionLedger,
+    audit_validation_decision_evidence,
+    validation_review_reference,
+)
 
 __all__ = [
     "FIRST_RESEARCH_PROGRAM",
@@ -131,9 +138,13 @@ __all__ = [
     "StageIntegrityState",
     "StageResult",
     "TrendBaselineDataset",
+    "ValidationDecisionEvidenceReport",
+    "ValidationDecisionReviewEvidence",
+    "ValidationGovernedResearchDecisionLedger",
     "VerifiedResearchDecisionLedger",
     "audit_decision_evidence",
     "audit_experiment",
+    "audit_validation_decision_evidence",
     "evaluate_first_research_program_progress",
     "expand_grid",
     "experiment_a_definition",
@@ -142,4 +153,5 @@ __all__ = [
     "validate_decision_supersession",
     "validate_first_research_program",
     "validate_plan_unchanged",
+    "validation_review_reference",
 ]
