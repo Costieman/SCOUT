@@ -78,7 +78,8 @@ class FileManifestStore:
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
             raise ValueError(
-                f"stage output must be a JSON mapping: experiment={experiment_id}, stage={stage_name}"
+                "stage output must be a JSON mapping: "
+                f"experiment={experiment_id}, stage={stage_name}"
             )
         result: dict[str, JSONValue] = {}
         for key, value in raw.items():
