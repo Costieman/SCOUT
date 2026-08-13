@@ -1,8 +1,8 @@
 """Canonicalize one explicitly identified Tiingo benchmark series for research use.
 
 This boundary is separate from the reviewed-equity universe workflow. A benchmark must be named,
-identified, bounded, quality checked, and promoted into its own immutable canonical dataset before it
-can be composed with an Experiment A research cohort.
+identified, bounded, quality checked, and promoted into its own immutable canonical dataset.
+The standalone result can then be composed with an Experiment A research cohort.
 """
 
 from __future__ import annotations
