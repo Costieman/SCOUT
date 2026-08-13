@@ -175,7 +175,10 @@ def adjudicate_identity_case(
         )
 
     if evidence.state is IdentityEvidenceState.CAMPAIGN_CONTINUITY:
-        if review.observed_first_date == campaign_start and evidence.effective_date == campaign_start:
+        if (
+            review.observed_first_date == campaign_start
+            and evidence.effective_date == campaign_start
+        ):
             return IdentityDecision(
                 source_symbol=symbol,
                 state=IdentityDecisionState.READY_FOR_REVIEW,
