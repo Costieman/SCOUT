@@ -32,7 +32,9 @@ from trade_scout.validation import (
 
 
 def _sample() -> SampleAccounting:
-    return SampleAccounting(raw_event_count=50, unique_instrument_count=30, effective_sample_size=25)
+    return SampleAccounting(
+        raw_event_count=50, unique_instrument_count=30, effective_sample_size=25
+    )
 
 
 def _bundle(
@@ -69,9 +71,7 @@ def _bundle(
             snapshots=snapshots,
         ),
         assignments=(
-            EvidenceAssignment(
-                "development-evidence", EvidenceTargetKind.SEGMENT, "development"
-            ),
+            EvidenceAssignment("development-evidence", EvidenceTargetKind.SEGMENT, "development"),
             EvidenceAssignment("validation-evidence", EvidenceTargetKind.SEGMENT, "validation"),
             EvidenceAssignment("holdout-evidence", EvidenceTargetKind.SEGMENT, "holdout"),
         ),
@@ -168,7 +168,9 @@ def test_resolve_persisted_reviews_requires_a_validation_reference(tmp_path: Pat
 
 
 def test_resolve_persisted_reviews_rejects_missing_review(tmp_path: Path) -> None:
-    with pytest.raises(ResearchDecisionError, match="persisted validation review verification failed"):
+    with pytest.raises(
+        ResearchDecisionError, match="persisted validation review verification failed"
+    ):
         resolve_persisted_validation_reviews(_decision(), FileValidationReviewStore(tmp_path))
 
 
@@ -223,7 +225,9 @@ def test_persisted_governance_never_delegates_when_review_is_corrupt(tmp_path: P
     recording = _RecordingGovernedLedger()
     ledger = PersistedValidationGovernedResearchDecisionLedger(recording, store)  # type: ignore[arg-type]
 
-    with pytest.raises(ResearchDecisionError, match="persisted validation review verification failed"):
+    with pytest.raises(
+        ResearchDecisionError, match="persisted validation review verification failed"
+    ):
         ledger.append(_decision())
 
     assert recording.appended == []
