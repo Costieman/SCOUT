@@ -49,7 +49,8 @@ def _store(tmp_path: Path, *, include_benchmark: bool = True) -> CanonicalDailyB
     bars = tuple(_bar(STOCK, day, 100.0 + index * 0.5) for index, day in enumerate(dates))
     if include_benchmark:
         bars += tuple(
-            _bar(BENCHMARK, day, 100.0 + index * 0.1) for index, day in enumerate(dates)
+            _bar(BENCHMARK, day, 100.0 + index * 0.1)
+            for index, day in enumerate(dates)
         )
     store.promote(
         bars,
