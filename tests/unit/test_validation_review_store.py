@@ -221,7 +221,7 @@ def test_store_rejects_unknown_schema_version(tmp_path: Path) -> None:
     raw["schema_version"] = 999
     path.write_text(json.dumps(raw), encoding="utf-8")
 
-    with pytest.raises(ValidationReviewStoreError, match="unsupported.*schema"):
+    with pytest.raises(ValidationReviewStoreError, match=r"unsupported.*schema"):
         store.read("review-001")
 
 
