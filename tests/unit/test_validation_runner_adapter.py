@@ -14,6 +14,7 @@ from trade_scout.experiments.contracts import (
     ExperimentDefinition,
     ExperimentManifest,
     ExperimentStatus,
+    JSONValue,
     ResearchMode,
     StageResult,
 )
@@ -80,7 +81,7 @@ class _Extractor:
         self,
         context: ValidationExecutionContext,
         manifest: ExperimentManifest,
-        artifacts: tuple[tuple[str, dict[str, Any]], ...],
+        artifacts: tuple[tuple[str, dict[str, JSONValue]], ...],
     ) -> EvidenceSnapshot:
         self.child_ids.append(manifest.experiment_id)
         stage_name, output = artifacts[0]
@@ -104,7 +105,9 @@ class _Extractor:
                 raw_event_count=int(output["raw_event_count"]),
                 unique_instrument_count=int(output["unique_instrument_count"]),
             ),
-            metrics=(MetricEstimate(context.primary_outcome, float(output["estimate"]), "fraction"),),
+            metrics=(
+                MetricEstimate(context.primary_outcome, float(output["estimate"]), "fraction"),
+            ),
             fold_id=fold_id,
             challenge_id=challenge_id,
         )

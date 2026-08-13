@@ -180,12 +180,16 @@ def _govern_child_definition(
         and target.robustness_kind == "DATASET_REVISION"
     )
     if proposed.dataset_version != source.definition.dataset_version and not dataset_revision:
-        raise ValueError("validation child dataset_version changed outside DATASET_REVISION challenge")
+        raise ValueError(
+            "validation child dataset_version changed outside DATASET_REVISION challenge"
+        )
 
     universe_changed = proposed.universe_version != source.definition.universe_version
     universe_declared = any(field.startswith("universe.") for field in target.changed_fields)
     if universe_changed and not universe_declared:
-        raise ValueError("validation child universe_version changed without declared universe field")
+        raise ValueError(
+            "validation child universe_version changed without declared universe field"
+        )
 
     if _VALIDATION_TARGET_CONFIG_KEY in proposed.resolved_configuration:
         raise ValueError(
