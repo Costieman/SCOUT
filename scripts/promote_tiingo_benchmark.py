@@ -26,6 +26,7 @@ from trade_scout.data.providers.tiingo import TiingoApiError, TiingoHttpClient
 from trade_scout.data.providers.tiingo_benchmark import (
     TiingoBenchmarkDefinition,
     TiingoBenchmarkPromotionError,
+    TiingoBenchmarkPromotionResult,
     promote_tiingo_benchmark_rows,
 )
 from trade_scout.data.providers.tiingo_receipt_capture import TiingoReceiptTrackingCapture
@@ -119,10 +120,7 @@ def main() -> int:
             source_batch_ids=(record.manifest.batch_id,),
         )
         report_path = (
-            workspace.root
-            / "evidence"
-            / "benchmarks"
-            / f"{definition.dataset_version}.json"
+            workspace.root / "evidence" / "benchmarks" / f"{definition.dataset_version}.json"
         )
         _persist_report(report_path, definition, result, receipt.receipt_id)
     except (
@@ -149,7 +147,12 @@ def _rows(value: object) -> list[dict[str, Any]]:
     return rows
 
 
-def _persist_report(path: Path, definition, result, receipt_id: str) -> None:
+def _persist_report(
+    path: Path,
+    definition: TiingoBenchmarkDefinition,
+    result: TiingoBenchmarkPromotionResult,
+    receipt_id: str,
+) -> None:
     manifest = result.manifest
     audit = result.session_audit
     payload = {
