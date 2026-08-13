@@ -1,5 +1,12 @@
 """Out-of-sample, walk-forward, robustness, and research-promotion validation."""
 
+from trade_scout.validation.completeness import (
+    EvidenceAssignment,
+    EvidenceTargetKind,
+    IncompleteValidationEvidenceError,
+    ValidationCompleteness,
+    assess_validation_completeness,
+)
 from trade_scout.validation.contracts import (
     DateInterval,
     SampleAccounting,
@@ -45,9 +52,12 @@ __all__ = [
     "ConfidenceInterval",
     "DateInterval",
     "EffectEstimate",
+    "EvidenceAssignment",
     "EvidenceRole",
     "EvidenceSnapshot",
+    "EvidenceTargetKind",
     "HypothesisFamily",
+    "IncompleteValidationEvidenceError",
     "MetricEstimate",
     "MultiplicityMethod",
     "ParameterAxis",
@@ -57,12 +67,14 @@ __all__ = [
     "RobustnessKind",
     "RobustnessPlan",
     "SampleAccounting",
+    "ValidationCompleteness",
     "ValidationEvidenceReport",
     "ValidationPlan",
     "ValidationRole",
     "ValidationSegment",
     "WalkForwardFold",
     "adjust_p_values",
+    "assess_validation_completeness",
     "build_fixed_holdout_plan",
     "build_parameter_surface",
     "build_walk_forward_plan",
