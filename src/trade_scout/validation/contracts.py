@@ -1,7 +1,8 @@
 """Typed contracts for time-ordered research validation.
 
 The validation layer plans and records how fixed research definitions are challenged. It does not
-change pattern, event, outcome, risk, or ranking definitions and it does not infer production eligibility.
+change pattern, event, outcome, risk, or ranking definitions and does not infer production
+eligibility.
 """
 
 from __future__ import annotations
@@ -9,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
+from itertools import pairwise
 
 
 class ValidationRole(StrEnum):
@@ -88,7 +90,7 @@ class ValidationPlan:
         if len(fold_ids) != len(set(fold_ids)):
             raise ValueError("walk-forward fold IDs must be unique")
         ordered = sorted(self.segments, key=lambda segment: segment.interval.start)
-        for previous, current in zip(ordered, ordered[1:]):
+        for previous, current in pairwise(ordered):
             if previous.interval.overlaps(current.interval):
                 raise ValueError("validation segments must not overlap")
         holdouts = [segment for segment in ordered if segment.role is ValidationRole.HOLDOUT]
