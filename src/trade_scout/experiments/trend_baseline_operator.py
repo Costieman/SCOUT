@@ -3,8 +3,8 @@
 The operator layer connects one immutable canonical dataset to the governed Experiment A planner,
 runner, integrity-preserving manifest store, and descriptive comparison output. It deliberately
 supports only a fixed reviewed cohort in this first executable slice. That cohort is useful for
-exploratory engineering/research, but it is not historical index membership and must not be described
-as survivorship-bias-free validation evidence.
+exploratory engineering/research, but it is not historical index membership and must not be
+described as survivorship-bias-free validation evidence.
 """
 
 from __future__ import annotations
@@ -77,10 +77,10 @@ class ExperimentAOperatorResult:
 class FixedCohortEligibilityResolver:
     """Time-invariant eligibility for a predeclared exploratory research cohort.
 
-    This resolver introduces no date-varying index membership claim. An instrument is eligible on a
-    date only if it belongs to the cohort; the canonical source still provides bars only on dates for
-    which the immutable dataset contains observations. The fixed cohort itself may embody ex-post
-    selection and is therefore unsuitable as confirmatory survivorship-bias-free evidence.
+    This resolver introduces no date-varying index membership claim. An instrument is eligible on
+    a date only if it belongs to the cohort; the canonical source still provides bars only on dates
+    for which the immutable dataset contains observations. The fixed cohort itself may embody
+    ex-post selection and is therefore unsuitable as confirmatory survivorship-bias-free evidence.
     """
 
     def __init__(self, instrument_ids: tuple[InstrumentId, ...], *, universe_version: str) -> None:
