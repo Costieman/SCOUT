@@ -196,9 +196,7 @@ def build_validation_review_provenance(
     expected_manifest_checksum = experiment_manifest.manifest_checksum
     if expected_manifest_checksum is None:
         raise ValidationReviewProvenanceError("source experiment manifest has no checksum")
-    actual_manifest_checksum = sha256_json(
-        replace(experiment_manifest, manifest_checksum=None)
-    )
+    actual_manifest_checksum = sha256_json(replace(experiment_manifest, manifest_checksum=None))
     if actual_manifest_checksum != expected_manifest_checksum:
         raise ValidationReviewProvenanceError("source experiment manifest checksum mismatch")
 
