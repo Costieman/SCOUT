@@ -74,7 +74,9 @@ class ProvenanceVerifiedValidationReview:
             ("validation_plan_checksum", self.validation_plan_checksum),
             ("experiment_manifest_checksum", self.experiment_manifest_checksum),
         ):
-            if len(checksum) != 64 or any(character not in "0123456789abcdef" for character in checksum):
+            if len(checksum) != 64 or any(
+                character not in "0123456789abcdef" for character in checksum
+            ):
                 raise ValueError(f"{label} must be a lowercase SHA-256 hexadecimal digest")
 
 
@@ -137,11 +139,17 @@ def _require_reference_identity(
     if provenance.report_id != bundle.report.report_id:
         raise ValidationReviewProvenanceError("provenance report identity does not match review")
     if provenance.validation_plan_id != bundle.report.validation_plan_id:
-        raise ValidationReviewProvenanceError("provenance validation plan identity does not match review")
+        raise ValidationReviewProvenanceError(
+            "provenance validation plan identity does not match review"
+        )
     if provenance.experiment_id != bundle.report.experiment_id:
-        raise ValidationReviewProvenanceError("provenance experiment identity does not match review")
+        raise ValidationReviewProvenanceError(
+            "provenance experiment identity does not match review"
+        )
     if provenance.robustness_plan_id != bundle.robustness_plan_id:
-        raise ValidationReviewProvenanceError("provenance robustness plan identity does not match review")
+        raise ValidationReviewProvenanceError(
+            "provenance robustness plan identity does not match review"
+        )
 
 
 def _resolve_robustness_plan(
