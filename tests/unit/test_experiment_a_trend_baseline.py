@@ -21,8 +21,8 @@ from trade_scout.experiments.contracts import ExperimentDefinition, ExperimentEx
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
 from trade_scout.experiments.trend_baseline import (
-    EXPERIMENT_A_SMA_200_PERIOD,
     EXPERIMENT_A_SMA_50_PERIOD,
+    EXPERIMENT_A_SMA_200_PERIOD,
     CanonicalTrendBaselineSource,
     ExperimentATrendBaselineStage,
     MembershipEligibilityResolver,
