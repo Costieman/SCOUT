@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import runpy
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, cast
+from typing import cast
 
 from trade_scout.data.contracts import DatasetVersion
 from trade_scout.experiments.benchmark_config import (
