@@ -30,6 +30,14 @@ Completeness is deliberately not a success criterion. A complete evidence packag
 
 `summarize_validation_review` produces a compact inventory for application/reporting layers. The summary reports evidence counts, role counts, parameter-surface identities, multiplicity-family identity, robustness-plan identity, and warning count. It intentionally does not compute a composite score, select a parameter cell, or assign REJECTED/CANDIDATE/VALIDATED status.
 
+## Immutable review persistence
+
+`FileValidationReviewStore` persists a complete `ValidationReviewBundle` as an append-only, deterministic JSON artifact keyed by `report_id`. The bundle payload is serialized in canonical key order and protected by a SHA-256 checksum. The write is atomic and refuses to overwrite an existing report ID, so a review already used in scientific governance cannot be silently revised in place.
+
+Reads fail closed. The store verifies the schema version, filename/envelope identity, payload checksum, and nested typed invariants before returning a review bundle. This means that tampering with estimates, uncertainty intervals, comparator definitions, sample accounting, parameter surfaces, multiplicity metadata, evidence assignments, or completeness state is detected before downstream governance can consume the artifact. Recomputing a checksum over an invalid payload is insufficient because reconstruction reruns the domain-contract validation.
+
+`list_report_ids()` is intentionally only a filesystem inventory operation; callers that need trusted evidence must call `read()` or `checksum()`. Persisted review files remain separate from provider data and experiment outputs, allowing research decisions to cite an independently auditable validation artifact without altering the underlying experiment record.
+
 ## Scientific boundary
 
 These objects make evidence auditable; they do not establish that an effect is credible, economically useful, or production eligible. Research status remains an explicit decision recorded through the separate decision-governance layer after the required validation evidence has been reviewed.

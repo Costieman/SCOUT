@@ -51,6 +51,7 @@ from trade_scout.validation.robustness import (
     RobustnessPlan,
     consolidation_breakout_robustness_plan,
 )
+from trade_scout.validation.store import FileValidationReviewStore, ValidationReviewStoreError
 from trade_scout.validation.time_ordered import build_fixed_holdout_plan, build_walk_forward_plan
 
 __all__ = [
@@ -64,6 +65,7 @@ __all__ = [
     "EvidenceRole",
     "EvidenceSnapshot",
     "EvidenceTargetKind",
+    "FileValidationReviewStore",
     "HypothesisFamily",
     "IncompleteValidationEvidenceError",
     "MetricEstimate",
@@ -80,6 +82,7 @@ __all__ = [
     "ValidationEvidenceReport",
     "ValidationPlan",
     "ValidationReviewBundle",
+    "ValidationReviewStoreError",
     "ValidationReviewSummary",
     "ValidationRole",
     "ValidationRoleCount",
