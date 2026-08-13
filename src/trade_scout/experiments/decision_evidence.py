@@ -1,6 +1,6 @@
 """Fail-closed verification of experiment evidence cited by research decisions.
 
-This module checks persistence integrity and experiment completion only. It does not infer whether the
+This module checks persistence integrity and experiment completion only. It does not infer whether
 cited evidence is scientifically sufficient, statistically significant, or economically useful.
 """
 
