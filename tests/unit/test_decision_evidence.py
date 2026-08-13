@@ -9,6 +9,7 @@ import pytest
 from trade_scout.experiments.contracts import (
     ExperimentContext,
     ExperimentDefinition,
+    ExperimentExecutionError,
     ResearchMode,
     StageResult,
 )
@@ -116,7 +117,7 @@ def test_tampered_stage_artifact_is_rejected_before_decision_append(tmp_path: Pa
 def test_failed_experiment_is_rejected_even_when_manifest_is_intact(tmp_path: Path) -> None:
     store = FileManifestStore(tmp_path / "runs")
     runner = ExperimentRunner(store, id_factory=lambda: "exp_failed")
-    with pytest.raises(Exception):
+    with pytest.raises(ExperimentExecutionError):
         runner.run(_definition(), (_FailingStage(),))
 
     report = audit_decision_evidence(store, _decision("exp_failed"))
