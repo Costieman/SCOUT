@@ -107,7 +107,9 @@ class SecIdentityClient:
         max_attempts: int = 5,
     ) -> None:
         if "@" not in user_agent or not user_agent.strip():
-            raise ValueError("SEC user agent must identify the requester and include a contact email")
+            raise ValueError(
+                "SEC user agent must identify the requester and include a contact email"
+            )
         if minimum_interval_seconds < 0:
             raise ValueError("minimum_interval_seconds must be non-negative")
         self._headers = {
@@ -140,7 +142,9 @@ class SecIdentityClient:
                         f"SEC request failed with HTTP {exc.code}: {url}"
                     ) from exc
                 retry_after = exc.headers.get("Retry-After") if exc.headers is not None else None
-                delay = float(retry_after) if retry_after and retry_after.isdigit() else 2.0**attempt
+                delay = (
+                    float(retry_after) if retry_after and retry_after.isdigit() else 2.0**attempt
+                )
                 time.sleep(delay)
             except OSError as exc:
                 if attempt == self._max_attempts:
@@ -437,7 +441,9 @@ def _load_all_filings(client: SecIdentityClient, cik: int) -> tuple[_SecFiling, 
         for item in result
         if item.form in _ANNUAL_FORMS
     }
-    return tuple(sorted(unique.values(), key=lambda item: (item.filing_date, item.accession_number)))
+    return tuple(
+        sorted(unique.values(), key=lambda item: (item.filing_date, item.accession_number))
+    )
 
 
 def _filings_from_arrays(cik: int, payload: object) -> tuple[_SecFiling, ...]:
