@@ -77,7 +77,9 @@ class ValidationTarget:
                 raise ValueError("segment targets cannot carry robustness metadata")
         elif self.target_type is ValidationTargetType.WALK_FORWARD_FOLD:
             if self.development_interval is None or self.validation_interval is None:
-                raise ValueError("walk-forward targets require development and validation intervals")
+                raise ValueError(
+                    "walk-forward targets require development and validation intervals"
+                )
             if self.evidence_role is not EvidenceRole.WALK_FORWARD:
                 raise ValueError("walk-forward targets require WALK_FORWARD evidence role")
             if self.segment_role is not None or self.interval is not None:
