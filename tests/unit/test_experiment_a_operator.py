@@ -48,10 +48,7 @@ def _store(tmp_path: Path, *, include_benchmark: bool = True) -> CanonicalDailyB
     dates = tuple(date(2025, 1, 2) + timedelta(days=index) for index in range(235))
     bars = tuple(_bar(STOCK, day, 100.0 + index * 0.5) for index, day in enumerate(dates))
     if include_benchmark:
-        bars += tuple(
-            _bar(BENCHMARK, day, 100.0 + index * 0.1)
-            for index, day in enumerate(dates)
-        )
+        bars += tuple(_bar(BENCHMARK, day, 100.0 + index * 0.1) for index, day in enumerate(dates))
     store.promote(
         bars,
         DatasetPromotionRequest(
