@@ -93,6 +93,21 @@ This adapter makes Experiment A executable against an approved canonical store; 
 validate the historical study. No consolidation, breakout, stop, optimization, or inferential decision
 logic is introduced at this stage.
 
+## Private-workspace Experiment A operator
+
+`trend_baseline_operator.py` and `scripts/run_experiment_a.py` connect the governed seven-child Experiment
+A plan to an immutable dataset in the private operator workspace. Preflight requires an all-PASS
+canonical manifest and an explicit broad-market benchmark inside the same dataset before T6 can run.
+Experiment manifests and stage outputs remain in the private workspace, and the command writes a compact
+metadata-only comparison report under `evidence/research-program/experiment-a/`.
+
+The first operator path intentionally uses a fixed reviewed cohort derived from instruments already in
+the selected canonical dataset. This permits exploratory execution while the historical universe layer
+is still being completed, but it is **not** historical index membership and is **not** survivorship-bias-
+free validation evidence. The report records those limitations explicitly. The operator does not make
+provider calls, silently substitute a benchmark, or promote the resulting descriptive comparison to a
+research decision.
+
 ## Governed batch planning
 
 `plan_experiment_batch` resolves the complete requested search space before any child run starts and
