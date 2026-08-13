@@ -88,6 +88,15 @@ from trade_scout.experiments.trend_baseline import (
     TrendBaselineDataset,
     experiment_a_definition,
 )
+from trade_scout.experiments.validation_child_provenance import (
+    FileValidationChildProvenanceStore,
+    ValidationChildExperimentProvenance,
+    ValidationChildManifestReader,
+    ValidationChildProvenanceError,
+    ValidationChildSetProvenance,
+    build_validation_child_provenance,
+    verify_validation_child_provenance,
+)
 from trade_scout.experiments.validation_decision_evidence import (
     PersistedValidationGovernedResearchDecisionLedger,
     PersistedValidationReviewEvidence,
@@ -137,6 +146,7 @@ __all__ = [
     "FileBatchPlanStore",
     "FileManifestStore",
     "FileResearchDecisionLedger",
+    "FileValidationChildProvenanceStore",
     "FileValidationReviewProvenanceStore",
     "FirstProgramExperiment",
     "FirstProgramGrid",
@@ -166,6 +176,10 @@ __all__ = [
     "StageIntegrityState",
     "StageResult",
     "TrendBaselineDataset",
+    "ValidationChildExperimentProvenance",
+    "ValidationChildManifestReader",
+    "ValidationChildProvenanceError",
+    "ValidationChildSetProvenance",
     "ValidationDecisionEvidenceReport",
     "ValidationDecisionReviewEvidence",
     "ValidationGovernedResearchDecisionLedger",
@@ -176,6 +190,7 @@ __all__ = [
     "audit_decision_evidence",
     "audit_experiment",
     "audit_validation_decision_evidence",
+    "build_validation_child_provenance",
     "build_validation_review_provenance",
     "evaluate_first_research_program_progress",
     "expand_grid",
@@ -189,5 +204,6 @@ __all__ = [
     "validate_plan_unchanged",
     "validation_review_reference",
     "validation_review_report_id",
+    "verify_validation_child_provenance",
     "verify_validation_review_provenance",
 ]
