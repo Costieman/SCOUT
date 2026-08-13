@@ -170,12 +170,16 @@ def _validate_intrinsic_identity(snapshot: object, assignment: EvidenceAssignmen
 
     if not isinstance(snapshot, EvidenceSnapshot):
         raise TypeError("validation report contains an unsupported evidence snapshot")
-    if assignment.target_kind is EvidenceTargetKind.WALK_FORWARD_FOLD:
-        if snapshot.fold_id != assignment.target_id:
-            raise ValueError("walk-forward evidence fold_id does not match assigned fold")
-    if assignment.target_kind is EvidenceTargetKind.ROBUSTNESS_CHALLENGE:
-        if snapshot.challenge_id != assignment.target_id:
-            raise ValueError("robustness evidence challenge_id does not match assigned challenge")
+    if (
+        assignment.target_kind is EvidenceTargetKind.WALK_FORWARD_FOLD
+        and snapshot.fold_id != assignment.target_id
+    ):
+        raise ValueError("walk-forward evidence fold_id does not match assigned fold")
+    if (
+        assignment.target_kind is EvidenceTargetKind.ROBUSTNESS_CHALLENGE
+        and snapshot.challenge_id != assignment.target_id
+    ):
+        raise ValueError("robustness evidence challenge_id does not match assigned challenge")
 
 
 def _target_label(kind: EvidenceTargetKind, target_id: str) -> str:
