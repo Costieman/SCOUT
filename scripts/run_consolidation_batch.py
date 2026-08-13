@@ -12,7 +12,14 @@ from pathlib import Path
 
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
 from trade_scout.data.canonical_storage import CanonicalDailyBarStore
-from trade_scout.data.contracts import DatasetVersion, PriceRepresentation, QualityStatus, to_research_bar
+from trade_scout.data.contracts import (
+    DailyBar,
+    DatasetVersion,
+    PriceRepresentation,
+    QualityStatus,
+    ResearchBar,
+    to_research_bar,
+)
 from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
 from trade_scout.statistics.consolidation_batch import build_consolidation_batch_report
@@ -66,8 +73,10 @@ def main() -> int:
     if len(symbol_by_instrument) != len(links):
         raise SystemExit("reviewed Tiingo identity candidate contains duplicate instrument links")
 
-    canonical = CanonicalDailyBarStore(workspace.canonical_root).load(DatasetVersion(dataset_version))
-    selected_by_symbol: dict[str, list[object]] = defaultdict(list)
+    canonical = CanonicalDailyBarStore(workspace.canonical_root).load(
+        DatasetVersion(dataset_version)
+    )
+    selected_by_symbol: dict[str, list[DailyBar]] = defaultdict(list)
     for bar in canonical:
         symbol = symbol_by_instrument.get(bar.instrument_id)
         if symbol is not None:
@@ -79,7 +88,7 @@ def main() -> int:
             "selected canonical dataset is missing reviewed symbols: " + ", ".join(missing)
         )
 
-    series_by_symbol = {}
+    series_by_symbol: dict[str, tuple[ResearchBar, ...]] = {}
     for symbol in sorted(selected_by_symbol):
         bars = tuple(selected_by_symbol[symbol])
         if any(item.quality_status is not QualityStatus.PASS for item in bars):
