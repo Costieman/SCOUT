@@ -91,6 +91,14 @@ from trade_scout.experiments.validation_decision_evidence import (
     validation_review_reference,
     validation_review_report_id,
 )
+from trade_scout.experiments.validation_provenance import (
+    FileValidationReviewProvenanceStore,
+    StageArtifactProvenance,
+    ValidationReviewProvenance,
+    ValidationReviewProvenanceError,
+    build_validation_review_provenance,
+    verify_validation_review_provenance,
+)
 
 __all__ = [
     "FIRST_RESEARCH_PROGRAM",
@@ -120,6 +128,7 @@ __all__ = [
     "FileBatchPlanStore",
     "FileManifestStore",
     "FileResearchDecisionLedger",
+    "FileValidationReviewProvenanceStore",
     "FirstProgramExperiment",
     "FirstProgramGrid",
     "FirstResearchProgramProgress",
@@ -139,6 +148,7 @@ __all__ = [
     "ResearchDecisionState",
     "ResearchMode",
     "ResearchStage",
+    "StageArtifactProvenance",
     "StageFactory",
     "StageIntegrityRecord",
     "StageIntegrityState",
@@ -147,10 +157,13 @@ __all__ = [
     "ValidationDecisionEvidenceReport",
     "ValidationDecisionReviewEvidence",
     "ValidationGovernedResearchDecisionLedger",
+    "ValidationReviewProvenance",
+    "ValidationReviewProvenanceError",
     "VerifiedResearchDecisionLedger",
     "audit_decision_evidence",
     "audit_experiment",
     "audit_validation_decision_evidence",
+    "build_validation_review_provenance",
     "evaluate_first_research_program_progress",
     "expand_grid",
     "experiment_a_definition",
@@ -162,4 +175,5 @@ __all__ = [
     "validate_plan_unchanged",
     "validation_review_reference",
     "validation_review_report_id",
+    "verify_validation_review_provenance",
 ]
