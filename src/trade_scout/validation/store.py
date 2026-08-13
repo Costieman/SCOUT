@@ -154,7 +154,7 @@ def _sha256_mapping(value: dict[str, Any]) -> str:
 
 
 def _bundle_to_mapping(bundle: ValidationReviewBundle) -> dict[str, Any]:
-    return cast(dict[str, Any], asdict(bundle))
+    return asdict(bundle)
 
 
 def _bundle_from_mapping(raw: dict[str, Any]) -> ValidationReviewBundle:
@@ -406,7 +406,7 @@ def _int(raw: dict[str, Any], key: str) -> int:
     value = raw[key]
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{key} must be an integer")
-    return value
+    return int(value)
 
 
 def _optional_string(value: object) -> str | None:
@@ -430,4 +430,4 @@ def _optional_int(value: object, key: str) -> int | None:
         return None
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{key} must be an integer or null")
-    return value
+    return int(value)
