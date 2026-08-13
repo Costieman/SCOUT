@@ -78,6 +78,11 @@ class IndexedManifestStore:
 
         return self._store.read_manifest(experiment_id)
 
+    def read_stage_output(self, experiment_id: str, stage_name: str) -> dict[str, JSONValue]:
+        """Read stage output through to the authoritative manifest store."""
+
+        return self._store.read_stage_output(experiment_id, stage_name)
+
 
 class DuckDBExperimentRegistry:
     """Persist and query compact experiment metadata in a local DuckDB database."""

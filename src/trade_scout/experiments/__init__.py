@@ -33,6 +33,13 @@ from trade_scout.experiments.first_research_program import (
     first_program_step,
     validate_first_research_program,
 )
+from trade_scout.experiments.integrity import (
+    ExperimentIntegrityError,
+    ExperimentIntegrityReport,
+    StageIntegrityRecord,
+    StageIntegrityState,
+    audit_experiment,
+)
 from trade_scout.experiments.plan_store import FileBatchPlanStore
 from trade_scout.experiments.planner import (
     ExperimentBatchPlan,
@@ -71,6 +78,8 @@ __all__ = [
     "ExperimentDefinition",
     "ExperimentExecutionError",
     "ExperimentIndexRecord",
+    "ExperimentIntegrityError",
+    "ExperimentIntegrityReport",
     "ExperimentManifest",
     "ExperimentPlanningError",
     "ExperimentRegistryReader",
@@ -96,7 +105,10 @@ __all__ = [
     "ResearchMode",
     "ResearchStage",
     "StageFactory",
+    "StageIntegrityRecord",
+    "StageIntegrityState",
     "StageResult",
+    "audit_experiment",
     "evaluate_first_research_program_progress",
     "expand_grid",
     "first_program_step",
