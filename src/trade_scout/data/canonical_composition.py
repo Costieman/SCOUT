@@ -45,9 +45,10 @@ def compose_canonical_datasets(
 ) -> CanonicalCompositionResult:
     """Compose disjoint all-PASS canonical sources into one new immutable dataset version.
 
-    All sources must use the same canonical provider and adjustment policy. Instrument/date keys must
-    be disjoint across source datasets. This prevents a benchmark attachment operation from silently
-    replacing or voting between price observations already present in the research cohort.
+    All sources must use the same canonical provider and adjustment policy.
+    Instrument/date keys must be disjoint across source datasets. This prevents a benchmark
+    attachment operation from silently replacing or voting between price observations already
+    present in the research cohort.
     """
 
     sources = _validate_source_versions(source_dataset_versions, target_dataset_version)
