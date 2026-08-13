@@ -1,7 +1,8 @@
 """Bind complete validation review bundles to explicit research decisions.
 
-This module verifies that a research decision cites the review-ready validation evidence it claims to
-use. It never infers a decision state from statistical results and it never promotes a subject.
+This module verifies that a research decision cites the review-ready validation evidence that it
+claims to use. It never infers a decision state from statistical results and it never promotes a
+subject.
 """
 
 from __future__ import annotations
