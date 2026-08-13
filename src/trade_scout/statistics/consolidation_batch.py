@@ -7,9 +7,9 @@ aggregates the existing single-symbol Edge Explorer reports.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from statistics import median
-from typing import Mapping
 
 from trade_scout.data.contracts import ResearchBar
 from trade_scout.outcomes.forward_returns import HorizonSummary

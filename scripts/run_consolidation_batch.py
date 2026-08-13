@@ -7,7 +7,7 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
@@ -119,7 +119,7 @@ def main() -> int:
     report_checksum = hashlib.sha256(logical_json.encode("utf-8")).hexdigest()
     payload = {
         "schema_version": "consolidation-batch-report-v0.1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "identity_snapshot_version": candidate.snapshot_version,
         "identity_candidate_schema_version": candidate.schema_version,
         "provider_calls_made": False,
