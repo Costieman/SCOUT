@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any
 
 from trade_scout.data.canonical_storage import (
@@ -95,7 +96,7 @@ def promote_tiingo_benchmark_rows(
     rows: list[dict[str, Any]],
     *,
     definition: TiingoBenchmarkDefinition,
-    canonical_root,
+    canonical_root: Path,
     source_batch_ids: tuple[str, ...],
     promoted_at: datetime | None = None,
 ) -> TiingoBenchmarkPromotionResult:
@@ -115,6 +116,14 @@ def promote_tiingo_benchmark_rows(
     except TiingoSplitPreviewError as exc:
         raise TiingoBenchmarkPromotionError(str(exc)) from exc
 
+    if (
+        transformed.tiingo_adjusted_cross_check_eligible
+        and transformed.tiingo_adjusted_cross_check_mismatch_count
+    ):
+        raise TiingoBenchmarkPromotionError(
+            "benchmark split-only transform disagrees with eligible Tiingo adjusted cross-check"
+        )
+
     instrument = _instrument(definition)
     normalized = normalize_provider_daily_bars(
         transformed.bars,
@@ -126,6 +135,14 @@ def promote_tiingo_benchmark_rows(
             "benchmark normalization is not PASS: "
             f"normalization_issues={len(normalized.normalization_issues)}, "
             f"quality_issues={len(normalized.quality_issues)}"
+        )
+    if normalized.normalization_issues or normalized.quality_issues:
+        raise TiingoBenchmarkPromotionError(
+            "benchmark has normalization or quality issues and cannot be promoted"
+        )
+    if len(normalized.bars) != len(transformed.bars):
+        raise TiingoBenchmarkPromotionError(
+            "benchmark normalized row count does not match verified raw row count"
         )
     if not normalized.bars:
         raise TiingoBenchmarkPromotionError("benchmark normalization produced no canonical bars")
