@@ -37,6 +37,11 @@ from trade_scout.validation.parameter_surface import (
     ParameterSurface,
     build_parameter_surface,
 )
+from trade_scout.validation.plan_store import (
+    FileRobustnessPlanStore,
+    FileValidationPlanStore,
+    FrozenValidationPlanStoreError,
+)
 from trade_scout.validation.reporting import (
     MultiplicitySummary,
     ValidationReviewBundle,
@@ -65,7 +70,10 @@ __all__ = [
     "EvidenceRole",
     "EvidenceSnapshot",
     "EvidenceTargetKind",
+    "FileRobustnessPlanStore",
+    "FileValidationPlanStore",
     "FileValidationReviewStore",
+    "FrozenValidationPlanStoreError",
     "HypothesisFamily",
     "IncompleteValidationEvidenceError",
     "MetricEstimate",
