@@ -98,11 +98,15 @@ def _validate_source_versions(
     target: DatasetVersion,
 ) -> tuple[DatasetVersion, ...]:
     if len(values) < 2:
-        raise CanonicalCompositionError("canonical composition requires at least two source datasets")
+        raise CanonicalCompositionError(
+            "canonical composition requires at least two source datasets"
+        )
     if len(set(values)) != len(values):
         raise CanonicalCompositionError("canonical source dataset versions must be unique")
     if target in values:
-        raise CanonicalCompositionError("target dataset version must differ from every source version")
+        raise CanonicalCompositionError(
+            "target dataset version must differ from every source version"
+        )
     return values
 
 
