@@ -34,6 +34,7 @@ from trade_scout.features.trend_context import (
 )
 from trade_scout.outcomes.trend_baseline import (
     TrendBaselineOutcome,
+    TrendBaselineSummary,
     measure_trend_baseline_outcomes,
     summarize_trend_baseline,
 )
@@ -55,7 +56,9 @@ class EligibilityResolver(Protocol):
 class MembershipEligibilityResolver:
     """Resolve eligibility from already-computed immutable universe membership records."""
 
-    def __init__(self, records: Iterable[UniverseMembershipRecord], *, universe_version: str) -> None:
+    def __init__(
+        self, records: Iterable[UniverseMembershipRecord], *, universe_version: str
+    ) -> None:
         materialized = tuple(records)
         if not universe_version.strip():
             raise ValueError("universe_version must be non-empty")
@@ -305,19 +308,14 @@ def _integer_tuple(values: dict[str, JSONValue], key: str) -> tuple[int, ...]:
     return result
 
 
-def _summary_json(summary: object) -> dict[str, JSONValue]:
-    item = cast("object", summary)
-    from trade_scout.outcomes.trend_baseline import TrendBaselineSummary
-
-    if not isinstance(item, TrendBaselineSummary):
-        raise TypeError("expected TrendBaselineSummary")
+def _summary_json(summary: TrendBaselineSummary) -> dict[str, JSONValue]:
     return {
-        "horizon": item.horizon,
-        "sample_size": item.sample_size,
-        "mean_return": item.mean_return,
-        "median_return": item.median_return,
-        "positive_fraction": item.positive_fraction,
-        "median_mfe": item.median_mfe,
-        "median_mae": item.median_mae,
-        "median_max_drawdown": item.median_max_drawdown,
+        "horizon": summary.horizon,
+        "sample_size": summary.sample_size,
+        "mean_return": summary.mean_return,
+        "median_return": summary.median_return,
+        "positive_fraction": summary.positive_fraction,
+        "median_mfe": summary.median_mfe,
+        "median_mae": summary.median_mae,
+        "median_max_drawdown": summary.median_max_drawdown,
     }
