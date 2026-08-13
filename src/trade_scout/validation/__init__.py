@@ -37,6 +37,14 @@ from trade_scout.validation.parameter_surface import (
     ParameterSurface,
     build_parameter_surface,
 )
+from trade_scout.validation.reporting import (
+    MultiplicitySummary,
+    ValidationReviewBundle,
+    ValidationReviewSummary,
+    ValidationRoleCount,
+    assemble_validation_review_bundle,
+    summarize_validation_review,
+)
 from trade_scout.validation.robustness import (
     RobustnessChallenge,
     RobustnessKind,
@@ -60,6 +68,7 @@ __all__ = [
     "IncompleteValidationEvidenceError",
     "MetricEstimate",
     "MultiplicityMethod",
+    "MultiplicitySummary",
     "ParameterAxis",
     "ParameterCell",
     "ParameterSurface",
@@ -70,13 +79,18 @@ __all__ = [
     "ValidationCompleteness",
     "ValidationEvidenceReport",
     "ValidationPlan",
+    "ValidationReviewBundle",
+    "ValidationReviewSummary",
     "ValidationRole",
+    "ValidationRoleCount",
     "ValidationSegment",
     "WalkForwardFold",
     "adjust_p_values",
+    "assemble_validation_review_bundle",
     "assess_validation_completeness",
     "build_fixed_holdout_plan",
     "build_parameter_surface",
     "build_walk_forward_plan",
     "consolidation_breakout_robustness_plan",
+    "summarize_validation_review",
 ]
