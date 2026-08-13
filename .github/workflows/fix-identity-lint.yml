@@ -19,7 +19,7 @@ jobs:
           version: "0.11.28"
           python-version: "3.13"
       - run: uv sync --locked --dev
-      - name: Wrap known long lines
+      - name: Fix known lint issues
         shell: bash
         run: |
           python - <<'PY'
@@ -27,19 +27,15 @@ jobs:
 
           runner = Path('scripts/run_tiingo_identity_engine.py')
           text = runner.read_text(encoding='utf-8')
-          text = text.replace(
-              'This command is intentionally metadata-only: it reads the durable Tiingo profile and current reviewed\n'
-              'identity candidate, collects independent SEC evidence, checkpoints every completed symbol, and writes\n',
-              'This command is intentionally metadata-only. It reads the durable Tiingo profile and the current\n'
-              'reviewed identity candidate, collects independent SEC evidence, checkpoints every completed symbol,\n'
-              'and writes a deterministic READY/DEFER report. It never calls Tiingo and never mutates canonical data.\n'
-          )
-          text = text.replace(
-              'a deterministic READY/DEFER report. It never calls Tiingo and never mutates canonical data.\n',
-              '',
-              1,
-          )
-          runner.write_text(text, encoding='utf-8')
+          start = text.index('"""Run unattended SEC-backed identity triage')
+          end = text.index('"""', start + 3) + 3
+          header = '''"""Run unattended SEC-backed identity triage across durable Tiingo histories.
+
+This command is intentionally metadata-only. It reads the durable Tiingo profile and current
+reviewed identity candidate, collects independent SEC evidence, and checkpoints each symbol.
+It writes READY/DEFER evidence without calling Tiingo or mutating canonical data.
+"""'''
+          runner.write_text(header + text[end:], encoding='utf-8')
 
           tests = Path('tests/unit/data/providers/test_identity_engine.py')
           text = tests.read_text(encoding='utf-8')
