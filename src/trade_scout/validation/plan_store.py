@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict
 from datetime import date
 from pathlib import Path
 from typing import Any, cast
@@ -97,7 +96,9 @@ class FileValidationPlanStore:
         except FileNotFoundError as exc:
             raise FrozenValidationPlanStoreError(f"{kind} not found: {identity}") from exc
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-            raise FrozenValidationPlanStoreError(f"{kind} is unreadable: {identity}: {exc}") from exc
+            raise FrozenValidationPlanStoreError(
+                f"{kind} is unreadable: {identity}: {exc}"
+            ) from exc
         _verify_envelope(raw, expected_kind=kind, expected_identity=identity)
         payload = raw.get("payload")
         if not isinstance(payload, dict):
