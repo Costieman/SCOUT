@@ -71,15 +71,28 @@ from trade_scout.experiments.registry import (
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
 from trade_scout.experiments.sweeps import expand_grid
+from trade_scout.experiments.trend_baseline import (
+    TREND_BASELINE_STAGE_NAME,
+    TREND_CONTEXT_DEFINITION_VERSION,
+    CanonicalTrendBaselineSource,
+    ExperimentATrendBaselineStage,
+    MembershipEligibilityResolver,
+    TrendBaselineDataset,
+    experiment_a_definition,
+)
 
 __all__ = [
     "FIRST_RESEARCH_PROGRAM",
+    "TREND_BASELINE_STAGE_NAME",
+    "TREND_CONTEXT_DEFINITION_VERSION",
     "BatchExecutionSummary",
     "BatchFailurePolicy",
     "BatchRunRecord",
+    "CanonicalTrendBaselineSource",
     "DecisionEvidenceReport",
     "DecisionExperimentEvidence",
     "DuckDBExperimentRegistry",
+    "ExperimentATrendBaselineStage",
     "ExperimentBatchExecutor",
     "ExperimentBatchPlan",
     "ExperimentContext",
@@ -100,6 +113,7 @@ __all__ = [
     "FirstProgramGrid",
     "FirstResearchProgramProgress",
     "IndexedManifestStore",
+    "MembershipEligibilityResolver",
     "PlannedExperiment",
     "ProductionEligibilityAttestation",
     "ProgramAssignment",
@@ -116,11 +130,13 @@ __all__ = [
     "StageIntegrityRecord",
     "StageIntegrityState",
     "StageResult",
+    "TrendBaselineDataset",
     "VerifiedResearchDecisionLedger",
     "audit_decision_evidence",
     "audit_experiment",
     "evaluate_first_research_program_progress",
     "expand_grid",
+    "experiment_a_definition",
     "first_program_step",
     "plan_experiment_batch",
     "validate_decision_supersession",
