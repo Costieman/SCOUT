@@ -115,7 +115,9 @@ def compare_experiment_a_outputs(
         if output.get("program_experiment") != "A":
             raise ValueError(f"experiment {experiment_id} is not an Experiment A run")
         if output.get("trend_context") != context.value:
-            raise ValueError(f"experiment {experiment_id} does not match trend context {context.value}")
+            raise ValueError(
+                f"experiment {experiment_id} does not match trend context {context.value}"
+            )
         summaries = output.get("summaries")
         if not isinstance(summaries, list):
             raise ValueError("Experiment A stage output is missing summary rows")
