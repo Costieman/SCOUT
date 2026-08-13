@@ -25,7 +25,8 @@ from trade_scout.data.contracts import DatasetVersion
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Compose an immutable reviewed-cohort dataset with a separately canonicalized benchmark."
+            "Compose an immutable reviewed-cohort dataset with a separately "
+            "canonicalized benchmark."
         )
     )
     parser.add_argument("--root", type=Path, required=True)
