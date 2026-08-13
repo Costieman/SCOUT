@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from trade_scout.experiments.decision_evidence import VerifiedResearchDecisionLedger
 from trade_scout.experiments.decisions import ResearchDecision, ResearchDecisionError
 from trade_scout.validation.reporting import ValidationReviewBundle
+from trade_scout.validation.store import FileValidationReviewStore, ValidationReviewStoreError
 
 _VALIDATION_REVIEW_PREFIX = "validation-review:"
 
@@ -20,6 +21,19 @@ def validation_review_reference(bundle: ValidationReviewBundle) -> str:
     """Return the canonical evidence reference for one validation review bundle."""
 
     return f"{_VALIDATION_REVIEW_PREFIX}{bundle.report.report_id}"
+
+
+def validation_review_report_id(reference: str) -> str | None:
+    """Parse one canonical validation-review reference without accepting malformed IDs."""
+
+    if not reference.startswith(_VALIDATION_REVIEW_PREFIX):
+        return None
+    report_id = reference.removeprefix(_VALIDATION_REVIEW_PREFIX)
+    if not report_id or report_id != report_id.strip():
+        raise ResearchDecisionError(f"malformed validation review reference: {reference!r}")
+    if any(character in report_id for character in "/\\") or report_id in {".", ".."}:
+        raise ResearchDecisionError(f"malformed validation review reference: {reference!r}")
+    return report_id
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +91,24 @@ class ValidationDecisionEvidenceReport:
             "validation review evidence verification failed for "
             f"{self.decision_id}: {'; '.join(failures)}"
         )
+
+
+@dataclass(frozen=True, slots=True)
+class PersistedValidationReviewEvidence:
+    """Checksum-verified persisted validation review resolved from a decision reference."""
+
+    reference: str
+    report_id: str
+    checksum: str
+    bundle: ValidationReviewBundle
+
+    def __post_init__(self) -> None:
+        if validation_review_reference(self.bundle) != self.reference:
+            raise ValueError("persisted validation review reference does not match bundle identity")
+        if self.bundle.report.report_id != self.report_id:
+            raise ValueError("persisted validation review report ID does not match bundle identity")
+        if len(self.checksum) != 64:
+            raise ValueError("persisted validation review checksum must be SHA-256 hex length")
 
 
 def audit_validation_decision_evidence(
@@ -141,6 +173,47 @@ def audit_validation_decision_evidence(
     )
 
 
+def resolve_persisted_validation_reviews(
+    decision: ResearchDecision,
+    store: FileValidationReviewStore,
+) -> tuple[PersistedValidationReviewEvidence, ...]:
+    """Resolve all validation references through checksum-verified immutable persistence."""
+
+    references = tuple(
+        reference
+        for reference in decision.evidence_references
+        if reference.startswith(_VALIDATION_REVIEW_PREFIX)
+    )
+    if not references:
+        raise ResearchDecisionError(
+            f"research decision {decision.decision_id} cites no persisted validation review"
+        )
+    if len(references) != len(set(references)):
+        raise ResearchDecisionError("validation review evidence references must be unique")
+
+    resolved: list[PersistedValidationReviewEvidence] = []
+    for reference in references:
+        report_id = validation_review_report_id(reference)
+        if report_id is None:
+            raise AssertionError("validation reference filter and parser disagree")
+        try:
+            bundle = store.read(report_id)
+            checksum = store.checksum(report_id)
+        except (ValidationReviewStoreError, ValueError) as exc:
+            raise ResearchDecisionError(
+                f"persisted validation review verification failed for {reference}: {exc}"
+            ) from exc
+        resolved.append(
+            PersistedValidationReviewEvidence(
+                reference=reference,
+                report_id=report_id,
+                checksum=checksum,
+                bundle=bundle,
+            )
+        )
+    return tuple(resolved)
+
+
 class ValidationGovernedResearchDecisionLedger:
     """Decision-ledger decorator requiring both experiment and validation-review evidence."""
 
@@ -157,6 +230,42 @@ class ValidationGovernedResearchDecisionLedger:
 
         audit_validation_decision_evidence(decision, validation_reviews).require_verified()
         return self._ledger.append(decision)
+
+    def read(self, decision_id: str) -> ResearchDecision:
+        """Delegate checksum-verified decision reads."""
+
+        return self._ledger.read(decision_id)
+
+    def history(self, subject_id: str) -> tuple[ResearchDecision, ...]:
+        """Delegate subject history reconstruction."""
+
+        return self._ledger.history(subject_id)
+
+    def current(self, subject_id: str) -> ResearchDecision | None:
+        """Delegate current-decision lookup."""
+
+        return self._ledger.current(subject_id)
+
+
+class PersistedValidationGovernedResearchDecisionLedger:
+    """Governance boundary that resolves validation evidence only from immutable persistence."""
+
+    def __init__(
+        self,
+        ledger: ValidationGovernedResearchDecisionLedger,
+        validation_store: FileValidationReviewStore,
+    ) -> None:
+        self._ledger = ledger
+        self._validation_store = validation_store
+
+    def append(self, decision: ResearchDecision) -> str:
+        """Load and verify persisted reviews before the existing governance/experiment gates."""
+
+        resolved = resolve_persisted_validation_reviews(decision, self._validation_store)
+        return self._ledger.append(
+            decision,
+            validation_reviews=tuple(item.bundle for item in resolved),
+        )
 
     def read(self, decision_id: str) -> ResearchDecision:
         """Delegate checksum-verified decision reads."""
