@@ -17,6 +17,7 @@ from trade_scout.data.contracts import (
     InstrumentId,
     QualityStatus,
 )
+from trade_scout.experiments.contracts import ExperimentDefinition, ExperimentExecutionError
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
 from trade_scout.experiments.trend_baseline import (
@@ -94,7 +95,7 @@ def _membership(dates: tuple[date, ...]) -> tuple[UniverseMembershipRecord, ...]
     )
 
 
-def _definition(context: TrendContext):
+def _definition(context: TrendContext) -> ExperimentDefinition:
     return experiment_a_definition(
         trend_context=context,
         dataset_version=str(DATASET_VERSION),
@@ -130,11 +131,14 @@ def test_experiment_a_runs_from_canonical_store_through_experiment_runner(tmp_pa
     assert output["trend_context"] == "T1"
     assert output["instrument_count"] == 1
     assert output["instruments_with_signals"] == 1
-    assert int(output["measured_outcome_count"]) > 0
+    measured = output["measured_outcome_count"]
+    assert isinstance(measured, int) and measured > 0
     summaries = output["summaries"]
     assert isinstance(summaries, list)
-    assert summaries[0]["sample_size"] > 0
-    assert summaries[0]["positive_fraction"] == 1.0
+    first = summaries[0]
+    assert isinstance(first, dict)
+    assert isinstance(first["sample_size"], int) and first["sample_size"] > 0
+    assert first["positive_fraction"] == 1.0
 
 
 def test_t6_uses_explicit_benchmark_relative_strength(tmp_path: Path) -> None:
@@ -151,9 +155,11 @@ def test_t6_uses_explicit_benchmark_relative_strength(tmp_path: Path) -> None:
     manifest = runner.run(_definition(TrendContext.T6), (ExperimentATrendBaselineStage(source),))
     output = manifest_store.read_stage_output(manifest.experiment_id, "trend_baseline")
 
+    signal_count = output["qualifying_signal_count_before_stride"]
+    measured = output["measured_outcome_count"]
     assert output["trend_context"] == "T6"
-    assert int(output["qualifying_signal_count_before_stride"]) > 0
-    assert int(output["measured_outcome_count"]) > 0
+    assert isinstance(signal_count, int) and signal_count > 0
+    assert isinstance(measured, int) and measured > 0
 
 
 def test_t6_fails_closed_without_benchmark_series(tmp_path: Path) -> None:
@@ -165,7 +171,7 @@ def test_t6_fails_closed_without_benchmark_series(tmp_path: Path) -> None:
         id_factory=lambda: "experiment_A_missing_benchmark",
     )
 
-    with pytest.raises(Exception, match="T6 requires benchmark bars"):
+    with pytest.raises(ExperimentExecutionError, match="T6 requires benchmark bars"):
         runner.run(_definition(TrendContext.T6), (ExperimentATrendBaselineStage(source),))
 
 
