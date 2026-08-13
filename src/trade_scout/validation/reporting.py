@@ -63,23 +63,22 @@ class ValidationReviewBundle:
     def __post_init__(self) -> None:
         if not self.completeness.complete:
             raise ValueError("validation review bundle requires complete evidence coverage")
-        role_order = tuple(role for role in EvidenceRole)
+        role_order = tuple(EvidenceRole)
         if tuple(item.role for item in self.role_counts) != role_order:
             raise ValueError("validation role counts must retain canonical EvidenceRole order")
         if len({surface.surface_id for surface in self.parameter_surfaces}) != len(
             self.parameter_surfaces
         ):
             raise ValueError("parameter surface IDs must be unique within a review bundle")
-        family_ids = [item.family.family_id for item in self.multiplicity]
+        family_ids = tuple(item.family.family_id for item in self.multiplicity)
         if len(family_ids) != len(set(family_ids)):
             raise ValueError("multiplicity family IDs must be unique within a review bundle")
         expected_family = self.report.multiplicity_family_id
-        if expected_family is not None:
-            if expected_family not in family_ids:
-                raise ValueError(
-                    "evidence report multiplicity_family_id must be present in the review bundle"
-                )
-        elif family_ids:
+        if expected_family is not None and family_ids != (expected_family,):
+            raise ValueError(
+                "review bundle must contain exactly the multiplicity family declared by the report"
+            )
+        if expected_family is None and family_ids:
             raise ValueError(
                 "multiplicity summaries require evidence report multiplicity_family_id to be declared"
             )
