@@ -164,7 +164,9 @@ def _bundle_from_mapping(raw: dict[str, Any]) -> ValidationReviewBundle:
             _assignment_from_mapping(item) for item in _mapping_list(raw, "assignments")
         ),
         completeness=_completeness_from_mapping(_mapping(raw, "completeness")),
-        role_counts=tuple(_role_count_from_mapping(item) for item in _mapping_list(raw, "role_counts")),
+        role_counts=tuple(
+            _role_count_from_mapping(item) for item in _mapping_list(raw, "role_counts")
+        ),
         parameter_surfaces=tuple(
             _surface_from_mapping(item) for item in _mapping_list(raw, "parameter_surfaces")
         ),
@@ -279,7 +281,9 @@ def _completeness_from_mapping(raw: dict[str, Any]) -> ValidationCompleteness:
         missing_targets=_string_tuple(raw.get("missing_targets", []), "missing_targets"),
         unexpected_targets=_string_tuple(raw.get("unexpected_targets", []), "unexpected_targets"),
         role_mismatches=_string_tuple(raw.get("role_mismatches", []), "role_mismatches"),
-        unassigned_evidence=_string_tuple(raw.get("unassigned_evidence", []), "unassigned_evidence"),
+        unassigned_evidence=_string_tuple(
+            raw.get("unassigned_evidence", []), "unassigned_evidence"
+        ),
     )
 
 
