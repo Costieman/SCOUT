@@ -60,9 +60,7 @@ def _canonical_store(tmp_path: Path) -> tuple[CanonicalDailyBarStore, tuple[date
     dates = tuple(date(2026, 1, 2) + timedelta(days=index) for index in range(14))
     bars = tuple(
         _daily_bar(STOCK, day, 100.0 + index * 2.0) for index, day in enumerate(dates)
-    ) + tuple(
-        _daily_bar(BENCHMARK, day, 100.0 + index * 0.5) for index, day in enumerate(dates)
-    )
+    ) + tuple(_daily_bar(BENCHMARK, day, 100.0 + index * 0.5) for index, day in enumerate(dates))
     store.promote(
         bars,
         DatasetPromotionRequest(
