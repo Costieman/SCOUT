@@ -363,8 +363,7 @@ def split_discontinuity_scenario() -> SyntheticMarketScenario:
     post_split_raw = [57.5 + 0.5 * index for index in range(len(dates) - split_index)]
     raw_closes = tuple(pre_split_raw + post_split_raw)
     adjusted_closes = tuple(
-        close / 2.0 if index < split_index else close
-        for index, close in enumerate(raw_closes)
+        close / 2.0 if index < split_index else close for index, close in enumerate(raw_closes)
     )
 
     raw_bars = list(
