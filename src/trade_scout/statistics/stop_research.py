@@ -116,9 +116,7 @@ def summarize_stop_policy_results(
         if len(set(event_ids)) != len(event_ids):
             raise ValueError(f"policy {policy.policy_id} contains duplicate event results")
         if set(event_ids) != baseline_population:
-            raise ValueError(
-                "stop policies must be compared on the exact same event population"
-            )
+            raise ValueError("stop policies must be compared on the exact same event population")
 
     no_stop_mean = _mean(tuple(item.realized_return for item in no_stop_results))
     complete_event_count = len(no_stop_results)
