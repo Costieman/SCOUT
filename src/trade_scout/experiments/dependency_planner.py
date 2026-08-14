@@ -116,8 +116,10 @@ class ResearchProgramDependencyPreflight:
     def ready(self) -> bool:
         """Return whether the experiment can execute without unresolved dependencies."""
 
-        return self.template_dry_run.ready and not self.blockers and all(
-            check.satisfied for check in self.checks
+        return (
+            self.template_dry_run.ready
+            and not self.blockers
+            and all(check.satisfied for check in self.checks)
         )
 
     @property
