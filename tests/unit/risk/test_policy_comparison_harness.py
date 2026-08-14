@@ -83,7 +83,9 @@ def test_stop_cost_hooks_include_commission_and_stop_slippage() -> None:
         commission_bps_per_side=5.0,
     )
 
-    result = evaluate_stop_policy(tuple(bars), _event(tuple(bars)), horizon=2, policy=policy, cost_model=costs)
+    result = evaluate_stop_policy(
+        tuple(bars), _event(tuple(bars)), horizon=2, policy=policy, cost_model=costs
+    )
 
     assert result is not None
     assert result.assumed_entry_price == pytest.approx(100.0 * 1.0015)
