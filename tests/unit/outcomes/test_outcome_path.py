@@ -109,7 +109,11 @@ def test_unusable_bar_truncates_before_bad_session() -> None:
         _bar(3, open_=103.0, high=105.0, low=102.0, close=104.0),
         _bar(4, open_=104.0, high=106.0, low=103.0, close=105.0),
     )
-    bars = (*original[:3], replace(original[3], quality_status=QualityStatus.QUARANTINE), original[4])
+    bars = (
+        *original[:3],
+        replace(original[3], quality_status=QualityStatus.QUARANTINE),
+        original[4],
+    )
 
     outcome = measure_outcome_paths(bars, (_event(bars, 0),), horizons=(4,))[0]
 
