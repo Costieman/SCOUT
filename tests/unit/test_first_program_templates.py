@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from trade_scout.experiments.contracts import JSONValue, ResearchMode
-from trade_scout.experiments.first_research_program import FirstProgramExperiment
 from trade_scout.experiments.first_program_templates import (
     FIRST_PROGRAM_TEMPLATES,
     FirstProgramRuntime,
@@ -11,6 +10,7 @@ from trade_scout.experiments.first_program_templates import (
     first_program_template,
     validate_first_program_templates,
 )
+from trade_scout.experiments.first_research_program import FirstProgramExperiment
 
 
 def _runtime(
