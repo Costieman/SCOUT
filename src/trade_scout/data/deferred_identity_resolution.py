@@ -3,8 +3,11 @@
 The first automatic identity pass intentionally required either an exact public-trading start or
 bounded campaign continuity. This module re-examines the resulting deferred queue. It may advance
 only cases where SEC primary-source filings prove that the current registrant already owned and
-reported the same trading symbol/exchange before the provider history begins. Structural anomalies,
-legacy lineage cases, CIK changes, unsupported exchanges, and unresolved boundaries remain deferred.
+reported the same trading symbol/exchange before the provider history begins. For histories that
+start exactly at the bounded 1996-01-02 campaign left edge, the resolver also inspects broader SEC
+issuer filings around that truncation boundary instead of requiring a pre-boundary annual report.
+Structural anomalies, protected lineage cases, CIK changes, unsupported exchanges, and unresolved
+boundaries remain deferred.
 """
 
 from __future__ import annotations
@@ -18,16 +21,48 @@ from trade_scout.data.auto_identity_import import (
     AutoIdentityImportError,
     SecIdentityClient,
     _EXCHANGE_TERMS,
+    _SUBMISSIONS_FILE_URL,
+    _SUBMISSIONS_URL,
     _SecCompany,
     _SecFiling,
+    _filings_from_arrays,
     _find_exact_start,
     _load_all_filings,
     _normalize,
     _ticker_exchange_cooccur,
 )
 
+_CAMPAIGN_START = date(1996, 1, 2)
 _PRE_BOUNDARY_LOOKBACK_DAYS = 800
 _POST_BOUNDARY_LOOKAHEAD_DAYS = 550
+_CAMPAIGN_LOOKBACK_DAYS = 1100
+_CAMPAIGN_LOOKAHEAD_DAYS = 730
+_CAMPAIGN_CONTINUITY_FORMS = frozenset(
+    {
+        "10",
+        "10-12B",
+        "10-12G",
+        "10-K",
+        "10-K405",
+        "10-KSB",
+        "10-Q",
+        "10-QSB",
+        "20-F",
+        "40-F",
+        "8-K",
+        "8-K/A",
+        "DEF 14A",
+        "S-1",
+        "S-2",
+        "S-3",
+        "S-4",
+        "424B1",
+        "424B2",
+        "424B3",
+        "424B4",
+        "424B5",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +153,15 @@ def resolve_deferred_identity(
             f"SEC exchange {company.exchange!r} is not supported by the equity identity resolver",
             company=company,
         )
+
+    if evidence.observed_first_date == _CAMPAIGN_START:
+        campaign_result = _resolve_campaign_left_boundary(
+            client=client,
+            company=company,
+            evidence=evidence,
+        )
+        if campaign_result is not None:
+            return campaign_result
 
     try:
         filings = _load_all_filings(client, company.cik)
@@ -211,6 +255,122 @@ def resolve_deferred_identity(
     )
 
 
+def _resolve_campaign_left_boundary(
+    *,
+    client: SecIdentityClient,
+    company: _SecCompany,
+    evidence: AutoIdentityEvidence,
+) -> DeferredIdentityResolution | None:
+    """Use broader SEC filings to adjudicate a provider history truncated at campaign start."""
+
+    try:
+        filings = _load_all_filing_forms(client, company.cik)
+    except AutoIdentityImportError as exc:
+        return _deferred(evidence, "SEC_SOURCE_ERROR", str(exc), company=company)
+
+    lower = _CAMPAIGN_START - timedelta(days=_CAMPAIGN_LOOKBACK_DAYS)
+    upper = _CAMPAIGN_START + timedelta(days=_CAMPAIGN_LOOKAHEAD_DAYS)
+    eligible = tuple(
+        filing
+        for filing in filings
+        if filing.form in _CAMPAIGN_CONTINUITY_FORMS and lower <= filing.filing_date <= upper
+    )
+    pre = _nearest_ticker_exchange_filing(
+        client=client,
+        company=company,
+        filings=eligible,
+        boundary=_CAMPAIGN_START,
+        before=True,
+        lookback_days=_CAMPAIGN_LOOKBACK_DAYS,
+        lookahead_days=_CAMPAIGN_LOOKAHEAD_DAYS,
+    )
+    post = _nearest_ticker_exchange_filing(
+        client=client,
+        company=company,
+        filings=eligible,
+        boundary=_CAMPAIGN_START,
+        before=False,
+        lookback_days=_CAMPAIGN_LOOKBACK_DAYS,
+        lookahead_days=_CAMPAIGN_LOOKAHEAD_DAYS,
+    )
+
+    if pre is not None:
+        kind = (
+            "CAMPAIGN_BOUNDARY_BRACKETED_SEC_CONTINUITY"
+            if post is not None
+            else "CAMPAIGN_BOUNDARY_PRE_SEC_CONTINUITY"
+        )
+        reason = (
+            "provider history starts exactly at the bounded campaign left edge; a pre-boundary SEC "
+            "issuer filing under the same current CIK independently reports the same ticker and "
+            "exchange"
+        )
+        if post is not None:
+            reason += "; a post-boundary SEC filing independently brackets that continuity"
+        return DeferredIdentityResolution(
+            source_symbol=evidence.source_symbol.strip().upper(),
+            observed_first_date=evidence.observed_first_date,
+            original_evidence_kind=evidence.evidence_kind,
+            original_reason=evidence.reason,
+            status="READY",
+            resolution_kind=kind,
+            cik=company.cik,
+            company_name=company.name,
+            exchange=company.exchange,
+            evidence_url=pre.source_url,
+            evidence_title=f"SEC {pre.form} filed {pre.filing_date.isoformat()}",
+            reason=reason,
+        )
+
+    if post is not None:
+        return _deferred(
+            evidence,
+            "CAMPAIGN_BOUNDARY_POST_ONLY",
+            "provider history begins at the campaign left edge, but same-CIK ticker/exchange evidence was found only after that edge",
+            company=company,
+            filing=post,
+        )
+
+    return _deferred(
+        evidence,
+        "CAMPAIGN_BOUNDARY_NOT_PROVEN",
+        "no qualifying SEC issuer filing around the campaign left edge proves same-CIK ticker/exchange continuity before 1996-01-02",
+        company=company,
+    )
+
+
+def _load_all_filing_forms(
+    client: SecIdentityClient,
+    cik: int,
+) -> tuple[_SecFiling, ...]:
+    """Load SEC submissions without the annual-form filter used by first-pass identity review."""
+
+    payload = client.get_json(_SUBMISSIONS_URL.format(cik=cik))
+    if not isinstance(payload, dict):
+        raise AutoIdentityImportError("SEC submissions root must be an object")
+    filings = payload.get("filings")
+    if not isinstance(filings, dict):
+        raise AutoIdentityImportError("SEC submissions are missing filings")
+
+    result = list(_filings_from_arrays(cik, filings.get("recent")))
+    historical = filings.get("files", [])
+    if not isinstance(historical, list):
+        raise AutoIdentityImportError("SEC historical submissions list is malformed")
+    for item in historical:
+        if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+            raise AutoIdentityImportError("SEC historical submissions entry is malformed")
+        old_payload = client.get_json(_SUBMISSIONS_FILE_URL.format(name=item["name"]))
+        result.extend(_filings_from_arrays(cik, old_payload))
+
+    unique = {
+        (item.accession_number, item.primary_document): item
+        for item in result
+    }
+    return tuple(
+        sorted(unique.values(), key=lambda item: (item.filing_date, item.accession_number))
+    )
+
+
 def _catalog_company(
     catalog: Mapping[str, _SecCompany],
     source_symbol: str,
@@ -239,21 +399,21 @@ def _nearest_ticker_exchange_filing(
     filings: tuple[_SecFiling, ...],
     boundary: date,
     before: bool,
+    lookback_days: int = _PRE_BOUNDARY_LOOKBACK_DAYS,
+    lookahead_days: int = _POST_BOUNDARY_LOOKAHEAD_DAYS,
 ) -> _SecFiling | None:
     terms = _EXCHANGE_TERMS.get(company.exchange)
     if terms is None:
         return None
-    lower = boundary - timedelta(days=_PRE_BOUNDARY_LOOKBACK_DAYS)
-    upper = boundary + timedelta(days=_POST_BOUNDARY_LOOKAHEAD_DAYS)
+    lower = boundary - timedelta(days=lookback_days)
+    upper = boundary + timedelta(days=lookahead_days)
     candidates = [
         filing
         for filing in filings
         if lower <= filing.filing_date <= upper
         and ((filing.filing_date <= boundary) if before else (filing.filing_date >= boundary))
     ]
-    candidates.sort(
-        key=lambda item: abs((item.filing_date - boundary).days)
-    )
+    candidates.sort(key=lambda item: abs((item.filing_date - boundary).days))
     for filing in candidates:
         try:
             text = _normalize(client.get_text(filing.source_url))
