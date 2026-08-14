@@ -95,6 +95,7 @@ from trade_scout.validation.store import FileValidationReviewStore, ValidationRe
 from trade_scout.validation.time_ordered import build_fixed_holdout_plan, build_walk_forward_plan
 
 __all__ = [
+    "RESEARCH_EVIDENCE_PACKAGE_VERSION",
     "AdjustedPValue",
     "ComparatorDefinition",
     "ComparatorKind",
@@ -122,7 +123,6 @@ __all__ = [
     "ParameterAxis",
     "ParameterCell",
     "ParameterSurface",
-    "RESEARCH_EVIDENCE_PACKAGE_VERSION",
     "ResearchEvidencePackage",
     "ResearchEvidenceReportingProfile",
     "ResearchEvidenceSummary",
