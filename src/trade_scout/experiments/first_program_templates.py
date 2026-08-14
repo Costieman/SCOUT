@@ -203,8 +203,12 @@ def _make_templates() -> tuple[FirstProgramTemplate, ...]:
                 "Within broad candidate duration regions, consolidation compression may change "
                 "the post-breakout outcome distribution."
             ),
-            required_capabilities=common
-            + ("consolidation_pattern", "atr_features", "realized_volatility_features"),
+            required_capabilities=(
+                *common,
+                "consolidation_pattern",
+                "atr_features",
+                "realized_volatility_features",
+            ),
             required_resolution_keys=("candidate_duration_regions", "tightness_variants"),
             base_variables={"tightness_variant": {}, "forward_horizon": 5},
             static_parameter_grid=horizons,
@@ -218,8 +222,12 @@ def _make_templates() -> tuple[FirstProgramTemplate, ...]:
                 "Breakout boundary and confirmation definitions may change signal frequency, "
                 "execution consequences, and forward expectancy."
             ),
-            required_capabilities=common
-            + ("consolidation_pattern", "breakout_event_families_b1_b6", "atr_features"),
+            required_capabilities=(
+                *common,
+                "consolidation_pattern",
+                "breakout_event_families_b1_b6",
+                "atr_features",
+            ),
             required_resolution_keys=("frozen_base_definition", "breakout_variants"),
             comparators=("simpler_breakout_definitions", "same_trend_without_target_pattern"),
             base_variables={"breakout_variant": {}, "forward_horizon": 5},
@@ -233,7 +241,11 @@ def _make_templates() -> tuple[FirstProgramTemplate, ...]:
                 "Volume confirmation may add incremental information after controlling for the "
                 "selected base and breakout definitions, subject to sample-size cost."
             ),
-            required_capabilities=common + ("volume_features", "frozen_base_and_breakout_events"),
+            required_capabilities=(
+                *common,
+                "volume_features",
+                "frozen_base_and_breakout_events",
+            ),
             required_resolution_keys=("frozen_base_breakout_definition", "volume_variants"),
             comparators=("no_volume_filter",),
             base_variables={"volume_variant": {}, "forward_horizon": 5},
@@ -521,8 +533,8 @@ def dry_run_first_program_experiment(
 
 __all__ = [
     "FIRST_PROGRAM_ID",
-    "FIRST_PROGRAM_TEMPLATE_VERSION",
     "FIRST_PROGRAM_TEMPLATES",
+    "FIRST_PROGRAM_TEMPLATE_VERSION",
     "FirstProgramDryRun",
     "FirstProgramRuntime",
     "FirstProgramTemplate",
