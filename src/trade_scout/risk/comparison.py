@@ -24,6 +24,8 @@ from trade_scout.statistics.stop_research import (
 )
 
 HYBRID_BASELINE_ATR_MULTIPLE = 2.0
+_DEFAULT_COMPARISON_COST_MODEL = CostModel()
+_DEFAULT_COMPARISON_SUCCESS = PrematureStopDefinition()
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,9 +62,9 @@ def run_risk_policy_comparison(
     *,
     horizon: int,
     policies: tuple[StopPolicy, ...] | None = None,
-    cost_model: CostModel = CostModel(),
+    cost_model: CostModel = _DEFAULT_COMPARISON_COST_MODEL,
     structural_contexts: Mapping[str, StructuralStopContext] | None = None,
-    premature_success: PrematureStopDefinition = PrematureStopDefinition(),
+    premature_success: PrematureStopDefinition = _DEFAULT_COMPARISON_SUCCESS,
 ) -> RiskPolicyComparisonRun:
     """Apply all policies to one exact eligible event set and assemble descriptive evidence."""
 
