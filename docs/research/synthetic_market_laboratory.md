@@ -31,6 +31,22 @@ The Version 1 laboratory contains ten controlled histories:
 9. stop breach followed by later recovery; and
 10. daily-bar ambiguity in which both stop and target are touched but intraday ordering is unknowable.
 
+## Pattern-state integration
+
+The consolidation Pattern/Event pathway uses the laboratory through the normal `ResearchBar` contract. The persistent lifecycle tracker fixes a pattern instance's formation interval and structural boundaries when it first qualifies; later sessions may move that same instance between `QUALIFIED` and `TRIGGER_READY`, invalidate it, or allow the Event layer to mark it `CONSUMED` after a confirmed breakout.
+
+Lifecycle hardening follows the Pattern & Event Engine specification:
+
+- nested durations remain independent pattern instances rather than being silently collapsed;
+- event confirmation consumes an instance once, and a replacement instance must be formed wholly after the terminal session;
+- reset/cooldown is expressed in trading-session updates rather than calendar time;
+- data/eligibility failure, trend failure, support failure, range expansion, maximum age, and explicit corporate-action discontinuities are deterministic invalidation reasons;
+- one incremental update path is used by historical batch replay and later scanner-style updates;
+- one lifecycle cannot mix instruments, dataset versions, or price representations; and
+- prefix replay is required to match the corresponding prefix of a longer replay, making future-bar leakage directly testable.
+
+Corporate actions are supplied explicitly to the lifecycle pipeline. A material action terminates an active instance and prevents a subsequent rolling window from bridging the discontinuity; a new instance must form from bars strictly after the action date.
+
 ## Scientific use
 
 The laboratory should be used as a controlled dependency for pattern/event integration, outcome-path measurement, risk-policy comparison, leakage tests, and replay verification. Tests should assert against scenario annotations rather than reverse-engineering the expected answer from the implementation under test.
