@@ -371,9 +371,9 @@ def evaluate_stop_policy(
             no_stop_return=no_stop_return,
             definition=premature_success,
         )
-        flags = ["ENTRY_AT_OR_BELOW_INITIAL_STOP"]
+        entry_flags = ["ENTRY_AT_OR_BELOW_INITIAL_STOP"]
         if premature_status is PrematureStopStatus.SAME_BAR_AMBIGUOUS:
-            flags.append("STOP_AND_SUCCESS_THRESHOLD_SAME_BAR_ORDER_UNKNOWN")
+            entry_flags.append("STOP_AND_SUCCESS_THRESHOLD_SAME_BAR_ORDER_UNKNOWN")
         return _result(
             event=event,
             policy=policy,
@@ -395,7 +395,7 @@ def evaluate_stop_policy(
             path_to_exit=(entry_bar,),
             full_path=path,
             no_stop_return=no_stop_return,
-            ambiguity_flags=tuple(flags),
+            ambiguity_flags=tuple(entry_flags),
             cost_model=cost_model,
         )
 
@@ -418,9 +418,9 @@ def evaluate_stop_policy(
             no_stop_return=no_stop_return,
             definition=premature_success,
         )
-        flags: tuple[str, ...] = ()
+        stop_flags: tuple[str, ...] = ()
         if premature_status is PrematureStopStatus.SAME_BAR_AMBIGUOUS:
-            flags = ("STOP_AND_SUCCESS_THRESHOLD_SAME_BAR_ORDER_UNKNOWN",)
+            stop_flags = ("STOP_AND_SUCCESS_THRESHOLD_SAME_BAR_ORDER_UNKNOWN",)
         return _result(
             event=event,
             policy=policy,
@@ -442,7 +442,7 @@ def evaluate_stop_policy(
             path_to_exit=path[: offset + 1],
             full_path=path,
             no_stop_return=no_stop_return,
-            ambiguity_flags=flags,
+            ambiguity_flags=stop_flags,
             cost_model=cost_model,
         )
 
