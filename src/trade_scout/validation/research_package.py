@@ -222,7 +222,9 @@ class ResearchEvidencePackage:
     def robustness_snapshots(self) -> tuple[EvidenceSnapshot, ...]:
         """Return robustness challenges as separate evidence records."""
 
-        return tuple(item for item in self.evidence_snapshots if item.role is EvidenceRole.ROBUSTNESS)
+        return tuple(
+            item for item in self.evidence_snapshots if item.role is EvidenceRole.ROBUSTNESS
+        )
 
     @property
     def final_holdout_snapshots(self) -> tuple[EvidenceSnapshot, ...]:
@@ -290,7 +292,9 @@ def build_research_evidence_package(
     if manifest.manifest_checksum is None or not manifest.manifest_checksum.strip():
         raise ValueError("research evidence package requires a checksummed experiment manifest")
     if review.report.experiment_id != manifest.experiment_id:
-        raise ValueError("validation report and experiment manifest reference different experiments")
+        raise ValueError(
+            "validation report and experiment manifest reference different experiments"
+        )
 
     primary = _primary_snapshot(review, primary_evidence_id)
     resolved_profile = profile or canonical_research_reporting_profile()
@@ -433,8 +437,7 @@ def _validate_profile_coverage(
     )
     if missing_metrics:
         raise ValueError(
-            "primary evidence is missing required reporting metrics: "
-            + ", ".join(missing_metrics)
+            "primary evidence is missing required reporting metrics: " + ", ".join(missing_metrics)
         )
 
     for family in profile.required_metric_families:
