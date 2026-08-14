@@ -233,8 +233,7 @@ def _make_templates() -> tuple[FirstProgramTemplate, ...]:
                 "Volume confirmation may add incremental information after controlling for the "
                 "selected base and breakout definitions, subject to sample-size cost."
             ),
-            required_capabilities=common
-            + ("volume_features", "frozen_base_and_breakout_events"),
+            required_capabilities=common + ("volume_features", "frozen_base_and_breakout_events"),
             required_resolution_keys=("frozen_base_breakout_definition", "volume_variants"),
             comparators=("no_volume_filter",),
             base_variables={"volume_variant": {}, "forward_horizon": 5},
@@ -419,9 +418,7 @@ def validate_first_program_templates() -> None:
             )
         expected_mode = ResearchMode.EXPLORATORY if index < 8 else ResearchMode.CONFIRMATORY
         if template.mode is not expected_mode:
-            raise ValueError(
-                f"experiment {template.experiment.value} has incorrect research mode"
-            )
+            raise ValueError(f"experiment {template.experiment.value} has incorrect research mode")
 
 
 def dry_run_first_program_experiment(
