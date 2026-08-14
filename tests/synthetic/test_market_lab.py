@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 import pytest
 
 from trade_scout.data.contracts import CorporateActionType, PriceRepresentation
@@ -63,15 +61,12 @@ def test_missing_bar_annotations_identify_dates_absent_from_history() -> None:
         if annotation.kind is SyntheticAnnotationKind.MISSING_BAR
     }
 
+    assert len(scenario.raw_bars) == 37
     assert len(missing_dates) == 3
     assert missing_dates.isdisjoint(observed_dates)
-    assert any(
-        (later - earlier) > timedelta(days=3)
-        for earlier, later in zip(
-            (bar.trade_date for bar in scenario.raw_bars),
-            (bar.trade_date for bar in scenario.raw_bars[1:]),
-            strict=False,
-        )
+    assert all(
+        scenario.raw_bars[0].trade_date < missing_date < scenario.raw_bars[-1].trade_date
+        for missing_date in missing_dates
     )
 
 
