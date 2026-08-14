@@ -47,6 +47,18 @@ Lifecycle hardening follows the Pattern & Event Engine specification:
 
 Corporate actions are supplied explicitly to the lifecycle pipeline. A material action terminates an active instance and prevents a subsequent rolling window from bridging the discontinuity; a new instance must form from bars strictly after the action date.
 
+## Outcome-path integration
+
+The next integration layer consumes the shared `EventRecord` contract rather than pattern-specific types. It measures next-session-open forward paths while preserving explicit truncation instead of silently deleting incomplete horizons.
+
+The synthetic suite now verifies:
+
+- a generated consolidation breakout flows through `EventRecord` into a complete outcome path;
+- MAE/MFE values and their time-to-extreme session offsets are retained;
+- an overnight gap-down is visible as both entry-gap and path-gap evidence;
+- a stop-breach-and-recovery scenario remains an unmanaged path, proving the Outcome layer does not impose a stop rule; and
+- a same-day high/low ambiguity is preserved through extreme-order state and drawdown bounds rather than resolved with invented intraday sequencing.
+
 ## Scientific use
 
 The laboratory should be used as a controlled dependency for pattern/event integration, outcome-path measurement, risk-policy comparison, leakage tests, and replay verification. Tests should assert against scenario annotations rather than reverse-engineering the expected answer from the implementation under test.
