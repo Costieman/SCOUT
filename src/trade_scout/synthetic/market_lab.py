@@ -638,7 +638,7 @@ def ambiguous_daily_bar_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="ambiguous-daily-bar",
         kind=SyntheticScenarioKind.AMBIGUOUS_DAILY_BAR,
-        description="Daily bar touches both a 95 stop and 105 target; intraday order is unknowable.",
+        description="Bar touches a 95 stop and 105 target; intraday order is unknowable.",
         raw_bars=bars,
         annotations=(
             SyntheticAnnotation(
