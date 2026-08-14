@@ -29,7 +29,9 @@ from trade_scout.synthetic import (
 )
 
 
-def _config(*, duration: int, max_range_pct: float, cooldown_sessions: int = 5) -> ConsolidationBreakoutConfig:
+def _config(
+    *, duration: int, max_range_pct: float, cooldown_sessions: int = 5
+) -> ConsolidationBreakoutConfig:
     return ConsolidationBreakoutConfig(
         duration=duration,
         max_range_pct=max_range_pct,
@@ -52,10 +54,6 @@ def _bar(index: int, *, close: float, high: float, low: float) -> ResearchBar:
         dataset_version=DatasetVersion("synthetic-lifecycle-test-v1"),
         price_representation=PriceRepresentation.SPLIT_ADJUSTED,
     )
-
-
-def _state_signature(state: object) -> object:
-    return state
 
 
 def test_synthetic_breakout_moves_from_trigger_ready_to_consumed_once() -> None:
@@ -90,7 +88,9 @@ def test_nested_synthetic_bases_remain_independent_pattern_instances() -> None:
         if annotation.kind is SyntheticAnnotationKind.BREAKOUT
     )
     signal_index = next(
-        index for index, bar in enumerate(scenario.raw_bars) if bar.trade_date == breakout.start_date
+        index
+        for index, bar in enumerate(scenario.raw_bars)
+        if bar.trade_date == breakout.start_date
     )
 
     inner = qualified_pattern_at(
@@ -166,7 +166,9 @@ def test_corporate_action_invalidates_active_episode_and_prevents_bridge_across_
         for state in replay.pattern_states
         if state.as_of_date == split_date and state.state is PatternLifecycleState.INVALIDATED
     )
-    assert split_state.resolved_parameters["invalidation_reason"] == "corporate_action_discontinuity"
+    assert (
+        split_state.resolved_parameters["invalidation_reason"] == "corporate_action_discontinuity"
+    )
     assert replay.events == ()
     later_states = [state for state in replay.pattern_states if state.as_of_date > split_date]
     assert all(state.formation_start > split_date for state in later_states)
@@ -223,7 +225,5 @@ def test_future_bars_cannot_rewrite_prior_pattern_state_history() -> None:
         state for state in full.pattern_states if state.as_of_date <= cutoff_date
     )
     full_prior_events = tuple(event for event in full.events if event.signal_date <= cutoff_date)
-    assert tuple(_state_signature(state) for state in prefix.pattern_states) == tuple(
-        _state_signature(state) for state in full_prior_states
-    )
+    assert prefix.pattern_states == full_prior_states
     assert prefix.events == full_prior_events
