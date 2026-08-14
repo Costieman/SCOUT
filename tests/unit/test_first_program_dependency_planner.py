@@ -44,26 +44,21 @@ def _complete_inventory(
     requirements = first_program_dependency_requirements(experiment, runtime)
 
     def ids(category: DependencyCategory) -> frozenset[str]:
-        return frozenset(
-            item.requirement_id for item in requirements if item.category is category
-        )
+        return frozenset(item.requirement_id for item in requirements if item.category is category)
 
     return ResearchDependencyInventory(
         dataset_versions=ids(DependencyCategory.DATASET),
         universe_versions=ids(DependencyCategory.UNIVERSE),
         feature_definitions=ids(DependencyCategory.FEATURE),
         event_definitions=ids(DependencyCategory.EVENT),
-        outcome_horizons=frozenset(
-            int(value) for value in ids(DependencyCategory.OUTCOME_HORIZON)
-        ),
+        outcome_horizons=frozenset(int(value) for value in ids(DependencyCategory.OUTCOME_HORIZON)),
         risk_policy_ids=ids(DependencyCategory.RISK_POLICY),
         comparator_ids=ids(DependencyCategory.COMPARATOR),
         validation_plan_ids=ids(DependencyCategory.VALIDATION_PLAN),
         assumption_ids=ids(DependencyCategory.ASSUMPTION),
         capabilities=ids(DependencyCategory.CAPABILITY),
         completed_experiments=frozenset(
-            FirstProgramExperiment(value)
-            for value in ids(DependencyCategory.PRIOR_EXPERIMENT)
+            FirstProgramExperiment(value) for value in ids(DependencyCategory.PRIOR_EXPERIMENT)
         ),
     )
 
