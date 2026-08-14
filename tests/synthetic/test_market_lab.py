@@ -65,11 +65,14 @@ def test_missing_bar_annotations_identify_dates_absent_from_history() -> None:
 
     assert len(missing_dates) == 3
     assert missing_dates.isdisjoint(observed_dates)
-    assert any((later - earlier) > timedelta(days=3) for earlier, later in zip(
-        (bar.trade_date for bar in scenario.raw_bars),
-        (bar.trade_date for bar in scenario.raw_bars[1:]),
-        strict=False,
-    ))
+    assert any(
+        (later - earlier) > timedelta(days=3)
+        for earlier, later in zip(
+            (bar.trade_date for bar in scenario.raw_bars),
+            (bar.trade_date for bar in scenario.raw_bars[1:]),
+            strict=False,
+        )
+    )
 
 
 def test_split_scenario_carries_raw_and_adjusted_representations() -> None:
@@ -119,7 +122,9 @@ def test_stop_out_path_hits_stop_before_recovering_above_entry() -> None:
     stop_price = float(annotation.values["stop_price"])
     entry_price = float(annotation.values["entry_price"])
     hit_index = next(
-        index for index, bar in enumerate(scenario.raw_bars) if bar.trade_date == annotation.start_date
+        index
+        for index, bar in enumerate(scenario.raw_bars)
+        if bar.trade_date == annotation.start_date
     )
 
     assert scenario.raw_bars[hit_index].low < stop_price
