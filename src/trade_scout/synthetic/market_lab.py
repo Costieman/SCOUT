@@ -11,6 +11,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from enum import StrEnum
+from types import MappingProxyType
 
 from trade_scout.data.contracts import (
     CorporateActionRecord,
@@ -69,6 +70,7 @@ class SyntheticAnnotation:
     def __post_init__(self) -> None:
         if self.start_date > self.end_date:
             raise ValueError("annotation start_date must not be after end_date")
+        object.__setattr__(self, "values", MappingProxyType(dict(self.values)))
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,7 +92,10 @@ class SyntheticMarketScenario:
             raise ValueError("synthetic scenarios must contain at least one raw bar")
         self._validate_bars(self.raw_bars, PriceRepresentation.RAW)
         if self.split_adjusted_bars is not None:
-            self._validate_bars(self.split_adjusted_bars, PriceRepresentation.SPLIT_ADJUSTED)
+            self._validate_bars(
+                self.split_adjusted_bars,
+                PriceRepresentation.SPLIT_ADJUSTED,
+            )
             raw_dates = tuple(bar.trade_date for bar in self.raw_bars)
             adjusted_dates = tuple(bar.trade_date for bar in self.split_adjusted_bars)
             if raw_dates != adjusted_dates:
@@ -98,7 +103,8 @@ class SyntheticMarketScenario:
 
     @staticmethod
     def _validate_bars(
-        bars: Sequence[ResearchBar], representation: PriceRepresentation
+        bars: Sequence[ResearchBar],
+        representation: PriceRepresentation,
     ) -> None:
         first_instrument = bars[0].instrument_id
         previous_date: date | None = None
@@ -106,7 +112,9 @@ class SyntheticMarketScenario:
             if bar.instrument_id != first_instrument:
                 raise ValueError("all bars in a synthetic scenario must use one instrument_id")
             if bar.price_representation is not representation:
-                raise ValueError("synthetic bar price representation does not match scenario series")
+                raise ValueError(
+                    "synthetic bar price representation does not match scenario series"
+                )
             if bar.high < max(bar.open, bar.close) or bar.low > min(bar.open, bar.close):
                 raise ValueError("synthetic OHLC envelope is internally inconsistent")
             if bar.low > bar.high:
@@ -115,7 +123,10 @@ class SyntheticMarketScenario:
                 raise ValueError("synthetic bar dates must be strictly increasing")
             previous_date = bar.trade_date
 
-    def bars(self, representation: PriceRepresentation = PriceRepresentation.RAW) -> tuple[ResearchBar, ...]:
+    def bars(
+        self,
+        representation: PriceRepresentation = PriceRepresentation.RAW,
+    ) -> tuple[ResearchBar, ...]:
         """Return the requested explicit price representation for the scenario."""
 
         if representation is PriceRepresentation.RAW:
@@ -181,12 +192,11 @@ def _bars_from_closes(
     bars: list[ResearchBar] = []
     previous_close = closes[0]
     for trade_date, close_price in zip(dates, closes, strict=True):
-        open_price = previous_close
         bars.append(
             _bar(
                 instrument_id=instrument_id,
                 trade_date=trade_date,
-                open_price=open_price,
+                open_price=previous_close,
                 close_price=close_price,
                 volume=volume,
                 representation=representation,
@@ -201,7 +211,11 @@ def clean_trend_scenario() -> SyntheticMarketScenario:
 
     dates = _trading_dates(date(2020, 1, 2), 60)
     closes = tuple(100.0 + 0.8 * index for index in range(len(dates)))
-    bars = _bars_from_closes(scenario_id="clean-trend", dates=dates, closes=closes)
+    bars = _bars_from_closes(
+        scenario_id="clean-trend",
+        dates=dates,
+        closes=closes,
+    )
     return SyntheticMarketScenario(
         scenario_id="clean-trend",
         kind=SyntheticScenarioKind.CLEAN_TREND,
@@ -224,13 +238,35 @@ def consolidation_breakout_scenario() -> SyntheticMarketScenario:
     dates = _trading_dates(date(2020, 4, 1), 55)
     trend = [100.0 + 0.7 * index for index in range(20)]
     base = [114.0 + (0.35 if index % 2 == 0 else -0.35) for index in range(20)]
-    breakout = [116.0, 118.0, 120.0, 122.0, 124.0, 126.0, 127.0, 128.0, 129.0, 130.0, 131.0, 132.0, 133.0, 134.0, 135.0]
+    breakout = [
+        116.0,
+        118.0,
+        120.0,
+        122.0,
+        124.0,
+        126.0,
+        127.0,
+        128.0,
+        129.0,
+        130.0,
+        131.0,
+        132.0,
+        133.0,
+        134.0,
+        135.0,
+    ]
     closes = tuple(trend + base + breakout)
-    bars = _bars_from_closes(scenario_id="consolidation-breakout", dates=dates, closes=closes)
+    bars = _bars_from_closes(
+        scenario_id="consolidation-breakout",
+        dates=dates,
+        closes=closes,
+    )
     return SyntheticMarketScenario(
         scenario_id="consolidation-breakout",
         kind=SyntheticScenarioKind.CONSOLIDATION_BREAKOUT,
-        description="Prior uptrend followed by a tight twenty-session base and confirmed upside breakout.",
+        description=(
+            "Prior uptrend followed by a tight twenty-session base and confirmed upside breakout."
+        ),
         raw_bars=bars,
         annotations=(
             SyntheticAnnotation(
@@ -257,7 +293,11 @@ def false_breakout_scenario() -> SyntheticMarketScenario:
     base = [104.5 + (0.25 if index % 2 == 0 else -0.25) for index in range(20)]
     failure = [106.5, 103.5, 102.5, 101.5, 101.0, 100.5, 100.0, 99.5, 99.0, 98.5]
     closes = tuple(lead_in + base + failure)
-    bars = _bars_from_closes(scenario_id="false-breakout", dates=dates, closes=closes)
+    bars = _bars_from_closes(
+        scenario_id="false-breakout",
+        dates=dates,
+        closes=closes,
+    )
     return SyntheticMarketScenario(
         scenario_id="false-breakout",
         kind=SyntheticScenarioKind.FALSE_BREAKOUT,
@@ -286,10 +326,16 @@ def missing_bars_scenario() -> SyntheticMarketScenario:
     complete_dates = _trading_dates(date(2020, 9, 1), 40)
     missing_indices = (10, 11, 25)
     retained_dates = tuple(
-        trade_date for index, trade_date in enumerate(complete_dates) if index not in missing_indices
+        trade_date
+        for index, trade_date in enumerate(complete_dates)
+        if index not in missing_indices
     )
     closes = tuple(100.0 + 0.3 * index for index in range(len(retained_dates)))
-    bars = _bars_from_closes(scenario_id="missing-bars", dates=retained_dates, closes=closes)
+    bars = _bars_from_closes(
+        scenario_id="missing-bars",
+        dates=retained_dates,
+        closes=closes,
+    )
     annotations = tuple(
         SyntheticAnnotation(
             kind=SyntheticAnnotationKind.MISSING_BAR,
@@ -320,15 +366,30 @@ def split_discontinuity_scenario() -> SyntheticMarketScenario:
         close / 2.0 if index < split_index else close
         for index, close in enumerate(raw_closes)
     )
-    raw_bars = _bars_from_closes(scenario_id="split-discontinuity", dates=dates, closes=raw_closes)
+
+    raw_bars = list(
+        _bars_from_closes(
+            scenario_id="split-discontinuity",
+            dates=dates,
+            closes=raw_closes,
+        )
+    )
+    instrument_id = raw_bars[0].instrument_id
+    split_date = dates[split_index]
+    raw_bars[split_index] = _bar(
+        instrument_id=instrument_id,
+        trade_date=split_date,
+        open_price=57.0,
+        close_price=raw_closes[split_index],
+        high_price=58.0,
+        low_price=56.5,
+    )
     adjusted_bars = _bars_from_closes(
         scenario_id="split-discontinuity",
         dates=dates,
         closes=adjusted_closes,
         representation=PriceRepresentation.SPLIT_ADJUSTED,
     )
-    instrument_id = raw_bars[0].instrument_id
-    split_date = dates[split_index]
     action = CorporateActionRecord(
         action_id="SYN-SPLIT-2-FOR-1",
         instrument_id=instrument_id,
@@ -341,8 +402,10 @@ def split_discontinuity_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="split-discontinuity",
         kind=SyntheticScenarioKind.SPLIT_DISCONTINUITY,
-        description="Two-for-one split with a raw-price discontinuity and continuous adjusted series.",
-        raw_bars=raw_bars,
+        description=(
+            "Two-for-one split with a raw-price discontinuity and continuous adjusted series."
+        ),
+        raw_bars=tuple(raw_bars),
         split_adjusted_bars=adjusted_bars,
         corporate_actions=(action,),
         annotations=(
@@ -361,7 +424,13 @@ def volatility_shock_scenario() -> SyntheticMarketScenario:
 
     dates = _trading_dates(date(2021, 1, 4), 35)
     closes = [100.0 + (0.2 if index % 2 == 0 else -0.2) for index in range(35)]
-    bars = list(_bars_from_closes(scenario_id="volatility-shock", dates=dates, closes=closes))
+    bars = list(
+        _bars_from_closes(
+            scenario_id="volatility-shock",
+            dates=dates,
+            closes=closes,
+        )
+    )
     shock_index = 20
     shock_date = dates[shock_index]
     instrument_id = bars[shock_index].instrument_id
@@ -377,7 +446,9 @@ def volatility_shock_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="volatility-shock",
         kind=SyntheticScenarioKind.VOLATILITY_SHOCK,
-        description="Low-volatility history interrupted by one extreme intraday range and volume shock.",
+        description=(
+            "Low-volatility history interrupted by one extreme intraday range and volume shock."
+        ),
         raw_bars=tuple(bars),
         annotations=(
             SyntheticAnnotation(
@@ -399,7 +470,11 @@ def nested_bases_scenario() -> SyntheticMarketScenario:
     inner = [107.0 + (0.35 if index % 2 == 0 else -0.35) for index in range(10)]
     breakout = [109.5, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0]
     closes = tuple(lead_in + broad + inner + breakout)
-    bars = _bars_from_closes(scenario_id="nested-bases", dates=dates, closes=closes)
+    bars = _bars_from_closes(
+        scenario_id="nested-bases",
+        dates=dates,
+        closes=closes,
+    )
     return SyntheticMarketScenario(
         scenario_id="nested-bases",
         kind=SyntheticScenarioKind.NESTED_BASES,
@@ -410,13 +485,21 @@ def nested_bases_scenario() -> SyntheticMarketScenario:
                 kind=SyntheticAnnotationKind.CONSOLIDATION,
                 start_date=dates[15],
                 end_date=dates[39],
-                values={"scope": "outer", "upper_boundary": 108.5, "lower_boundary": 105.5},
+                values={
+                    "scope": "outer",
+                    "upper_boundary": 108.5,
+                    "lower_boundary": 105.5,
+                },
             ),
             SyntheticAnnotation(
                 kind=SyntheticAnnotationKind.NESTED_BASE,
                 start_date=dates[30],
                 end_date=dates[39],
-                values={"scope": "inner", "upper_boundary": 107.35, "lower_boundary": 106.65},
+                values={
+                    "scope": "inner",
+                    "upper_boundary": 107.35,
+                    "lower_boundary": 106.65,
+                },
             ),
             SyntheticAnnotation(
                 kind=SyntheticAnnotationKind.BREAKOUT,
@@ -433,7 +516,13 @@ def gap_down_scenario() -> SyntheticMarketScenario:
 
     dates = _trading_dates(date(2021, 5, 3), 25)
     closes = tuple(100.0 + 0.25 * index for index in range(25))
-    bars = list(_bars_from_closes(scenario_id="gap-down", dates=dates, closes=closes))
+    bars = list(
+        _bars_from_closes(
+            scenario_id="gap-down",
+            dates=dates,
+            closes=closes,
+        )
+    )
     gap_index = 15
     prior_close = bars[gap_index - 1].close
     gap_date = dates[gap_index]
@@ -458,7 +547,11 @@ def gap_down_scenario() -> SyntheticMarketScenario:
                 kind=SyntheticAnnotationKind.GAP_DOWN,
                 start_date=gap_date,
                 end_date=gap_date,
-                values={"prior_close": prior_close, "open": gap_open, "gap_fraction": -0.12},
+                values={
+                    "prior_close": prior_close,
+                    "open": gap_open,
+                    "gap_fraction": -0.12,
+                },
             ),
         ),
     )
@@ -469,7 +562,13 @@ def stop_out_scenario() -> SyntheticMarketScenario:
 
     dates = _trading_dates(date(2021, 7, 1), 12)
     closes = [100.0, 101.0, 99.0, 97.0, 96.0, 98.0, 101.0, 104.0, 106.0, 108.0, 110.0, 112.0]
-    bars = list(_bars_from_closes(scenario_id="stop-out", dates=dates, closes=closes))
+    bars = list(
+        _bars_from_closes(
+            scenario_id="stop-out",
+            dates=dates,
+            closes=closes,
+        )
+    )
     stop_index = 4
     instrument_id = bars[stop_index].instrument_id
     bars[stop_index] = _bar(
@@ -483,14 +582,20 @@ def stop_out_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="stop-out",
         kind=SyntheticScenarioKind.STOP_OUT,
-        description="Entry at 100, subsequent 95 stop breach, then later recovery above the entry price.",
+        description=(
+            "Entry at 100, subsequent 95 stop breach, then later recovery above the entry price."
+        ),
         raw_bars=tuple(bars),
         annotations=(
             SyntheticAnnotation(
                 kind=SyntheticAnnotationKind.STOP_HIT,
                 start_date=dates[stop_index],
                 end_date=dates[stop_index],
-                values={"entry_price": 100.0, "stop_price": 95.0, "intraday_low": 94.0},
+                values={
+                    "entry_price": 100.0,
+                    "stop_price": 95.0,
+                    "intraday_low": 94.0,
+                },
             ),
         ),
     )
@@ -534,14 +639,20 @@ def ambiguous_daily_bar_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="ambiguous-daily-bar",
         kind=SyntheticScenarioKind.AMBIGUOUS_DAILY_BAR,
-        description="One daily bar touches both a 95 stop and 105 target, leaving intraday order unknowable.",
+        description=(
+            "One daily bar touches both a 95 stop and 105 target, leaving intraday order unknowable."
+        ),
         raw_bars=bars,
         annotations=(
             SyntheticAnnotation(
                 kind=SyntheticAnnotationKind.AMBIGUOUS_BAR,
                 start_date=dates[1],
                 end_date=dates[1],
-                values={"entry_price": 100.0, "stop_price": 95.0, "target_price": 105.0},
+                values={
+                    "entry_price": 100.0,
+                    "stop_price": 95.0,
+                    "target_price": 105.0,
+                },
             ),
         ),
     )
@@ -562,4 +673,4 @@ def standard_market_laboratory() -> Mapping[SyntheticScenarioKind, SyntheticMark
         stop_out_scenario(),
         ambiguous_daily_bar_scenario(),
     )
-    return {scenario.kind: scenario for scenario in scenarios}
+    return MappingProxyType({scenario.kind: scenario for scenario in scenarios})
