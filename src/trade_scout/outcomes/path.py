@@ -136,19 +136,14 @@ def _measure_event_horizon(
 ) -> OutcomePath:
     signal = bars[event.signal_index]
     entry_index = event.signal_index + 1
-    common = {
-        "event_id": event.event_id,
-        "instrument_id": event.instrument_id,
-        "signal_index": event.signal_index,
-        "signal_date": event.signal_date,
-        "horizon": horizon,
-        "dataset_version": event.dataset_version,
-        "price_representation": signal.price_representation,
-    }
 
     if entry_index >= len(bars):
         return OutcomePath(
-            **common,
+            event_id=event.event_id,
+            instrument_id=event.instrument_id,
+            signal_index=event.signal_index,
+            signal_date=event.signal_date,
+            horizon=horizon,
             status=OutcomePathStatus.NO_ENTRY_BAR,
             observed_sessions=0,
             entry_index=None,
@@ -176,12 +171,18 @@ def _measure_event_horizon(
             max_gap_down_return=None,
             max_gap_down_date=None,
             truncation_date=None,
+            dataset_version=event.dataset_version,
+            price_representation=signal.price_representation,
         )
 
     entry = bars[entry_index]
     if not _usable(entry):
         return OutcomePath(
-            **common,
+            event_id=event.event_id,
+            instrument_id=event.instrument_id,
+            signal_index=event.signal_index,
+            signal_date=event.signal_date,
+            horizon=horizon,
             status=OutcomePathStatus.ENTRY_UNUSABLE,
             observed_sessions=0,
             entry_index=entry_index,
@@ -209,6 +210,8 @@ def _measure_event_horizon(
             max_gap_down_return=None,
             max_gap_down_date=None,
             truncation_date=entry.trade_date,
+            dataset_version=event.dataset_version,
+            price_representation=signal.price_representation,
         )
 
     requested_end = entry_index + horizon
@@ -242,7 +245,11 @@ def _measure_event_horizon(
     complete = status is OutcomePathStatus.COMPLETE
     exit_bar = path[-1] if complete else None
     return OutcomePath(
-        **common,
+        event_id=event.event_id,
+        instrument_id=event.instrument_id,
+        signal_index=event.signal_index,
+        signal_date=event.signal_date,
+        horizon=horizon,
         status=status,
         observed_sessions=len(path),
         entry_index=entry_index,
@@ -270,6 +277,8 @@ def _measure_event_horizon(
         max_gap_down_return=metrics.max_gap_down_return,
         max_gap_down_date=metrics.max_gap_down_date,
         truncation_date=truncation_date,
+        dataset_version=event.dataset_version,
+        price_representation=signal.price_representation,
     )
 
 
