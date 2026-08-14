@@ -123,8 +123,10 @@ def _snapshot(
     challenge_id: str | None = None,
     primary: bool = False,
 ) -> EvidenceSnapshot:
-    metrics = _primary_metrics() if primary else (
-        MetricEstimate("mean_outcome", 0.03, "return_fraction"),
+    metrics = (
+        _primary_metrics()
+        if primary
+        else (MetricEstimate("mean_outcome", 0.03, "return_fraction"),)
     )
     effects = (_effect(),) if primary else ()
     return EvidenceSnapshot(
@@ -304,9 +306,7 @@ def test_package_checksum_is_deterministic_and_changes_with_evidence() -> None:
 
 
 def test_missing_standard_metric_fails_closed() -> None:
-    incomplete = tuple(
-        metric for metric in _primary_metrics() if metric.metric != "expectancy"
-    )
+    incomplete = tuple(metric for metric in _primary_metrics() if metric.metric != "expectancy")
     with pytest.raises(ValueError, match="missing required reporting metrics"):
         build_research_evidence_package(
             manifest=_manifest(),
