@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from trade_scout.experiments.contracts import ResearchMode
+from trade_scout.experiments.contracts import JSONValue, ResearchMode
 from trade_scout.experiments.first_research_program import FirstProgramExperiment
 from trade_scout.experiments.first_program_templates import (
     FIRST_PROGRAM_TEMPLATES,
@@ -16,7 +16,7 @@ from trade_scout.experiments.first_program_templates import (
 def _runtime(
     experiment: FirstProgramExperiment,
     *,
-    resolved_values: dict[str, object] | None = None,
+    resolved_values: dict[str, JSONValue] | None = None,
     completed: frozenset[FirstProgramExperiment] | None = None,
     final_holdout_uninspected: bool = True,
 ) -> FirstProgramRuntime:
@@ -28,7 +28,7 @@ def _runtime(
         config_schema_version="experiment-config-v0.1",
         available_capabilities=frozenset(template.required_capabilities),
         completed_experiments=completed or frozenset(),
-        resolved_values=resolved_values,  # type: ignore[arg-type]
+        resolved_values=resolved_values,
         final_holdout_uninspected=final_holdout_uninspected,
     )
 
@@ -75,17 +75,19 @@ def test_duration_template_blocks_until_prior_evidence_and_fixed_inputs_exist() 
     assert "unresolved research input: selected_trend_contexts" in blocked.blockers
     assert "unresolved research input: fixed_tightness_definition" in blocked.blockers
 
+    resolved: dict[str, JSONValue] = {
+        "selected_trend_contexts": ["T1", "T2"],
+        "fixed_tightness_definition": {"kind": "range_pct", "max_range_pct": 0.12},
+    }
     ready = dry_run_first_program_experiment(
         FirstProgramExperiment.B_DURATION,
         _runtime(
             FirstProgramExperiment.B_DURATION,
             completed=frozenset({FirstProgramExperiment.A_TREND_BASELINE}),
-            resolved_values={
-                "selected_trend_contexts": ["T1", "T2"],
-                "fixed_tightness_definition": {"kind": "range_pct", "max_range_pct": 0.12},
-            },
+            resolved_values=resolved,
         ),
     )
+
     assert ready.ready is True
     assert ready.batch_plan is not None
     assert ready.batch_plan.run_count == 8 * 7
@@ -98,9 +100,7 @@ def test_tightness_and_breakout_thresholds_remain_explicit_dynamic_variants() ->
     assert tightness.dynamic_parameter_grids == {
         "variables.tightness_variant": "tightness_variants"
     }
-    assert breakout.dynamic_parameter_grids == {
-        "variables.breakout_variant": "breakout_variants"
-    }
+    assert breakout.dynamic_parameter_grids == {"variables.breakout_variant": "breakout_variants"}
     assert "tightness_variants" in tightness.required_resolution_keys
     assert "breakout_variants" in breakout.required_resolution_keys
 
@@ -121,7 +121,7 @@ def test_experiment_h_preserves_simple_stop_family_search_space() -> None:
 
 def test_confirmatory_i_has_no_search_grid_and_requires_frozen_validation_inputs() -> None:
     completed = frozenset(item for item in FirstProgramExperiment if item.value <= "H")
-    resolved = {
+    resolved: dict[str, JSONValue] = {
         "frozen_candidate_definition": {"candidate_id": "candidate-v1"},
         "frozen_primary_outcome": {"metric": "forward_return", "horizon": 20},
         "frozen_comparator": "same_trend_without_target_pattern",
@@ -145,8 +145,12 @@ def test_confirmatory_i_has_no_search_grid_and_requires_frozen_validation_inputs
 
 
 def test_final_holdout_cannot_be_reused_after_inspection() -> None:
-    completed = frozenset(item for item in FirstProgramExperiment if item is not FirstProgramExperiment.J_WALK_FORWARD_HOLDOUT)
-    resolved = {
+    completed = frozenset(
+        item
+        for item in FirstProgramExperiment
+        if item is not FirstProgramExperiment.J_WALK_FORWARD_HOLDOUT
+    )
+    resolved: dict[str, JSONValue] = {
         "frozen_candidate_definition": {"candidate_id": "candidate-v1"},
         "frozen_primary_outcome": {"metric": "forward_return", "horizon": 20},
         "frozen_comparator": "same_trend_without_target_pattern",
