@@ -301,7 +301,7 @@ def false_breakout_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="false-breakout",
         kind=SyntheticScenarioKind.FALSE_BREAKOUT,
-        description="Base with a one-session upside escape followed by immediate structural failure.",
+        description="Base with a one-session upside escape followed by immediate failure.",
         raw_bars=bars,
         annotations=(
             SyntheticAnnotation(
@@ -477,7 +477,7 @@ def nested_bases_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="nested-bases",
         kind=SyntheticScenarioKind.NESTED_BASES,
-        description="Broad base containing a tighter nested consolidation before upside resolution.",
+        description="Broad base containing a tighter nested consolidation before resolution.",
         raw_bars=bars,
         annotations=(
             SyntheticAnnotation(
@@ -638,9 +638,7 @@ def ambiguous_daily_bar_scenario() -> SyntheticMarketScenario:
     return SyntheticMarketScenario(
         scenario_id="ambiguous-daily-bar",
         kind=SyntheticScenarioKind.AMBIGUOUS_DAILY_BAR,
-        description=(
-            "One daily bar touches both a 95 stop and 105 target, leaving intraday order unknowable."
-        ),
+        description="Daily bar touches both a 95 stop and 105 target; intraday order is unknowable.",
         raw_bars=bars,
         annotations=(
             SyntheticAnnotation(
