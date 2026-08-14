@@ -12,6 +12,7 @@ from datetime import date
 
 from trade_scout.data.contracts import (
     CorporateActionRecord,
+    InstrumentId,
     PriceRepresentation,
     QualityStatus,
     ResearchBar,
@@ -66,7 +67,7 @@ class ConsolidationPatternTracker:
         self._active_end_index: int | None = None
         self._last_terminal_index: int | None = None
         self._last_terminal_date: date | None = None
-        self._instrument_id: object | None = None
+        self._instrument_id: InstrumentId | None = None
         self._dataset_version: str | None = None
         self._representation: PriceRepresentation | None = None
 
@@ -241,7 +242,9 @@ class ConsolidationPatternTracker:
         for index, bar in enumerate(self._bars):
             if bar.trade_date == target:
                 return index
-        raise ValueError(f"pattern formation date {target.isoformat()} is absent from observed bars")
+        raise ValueError(
+            f"pattern formation date {target.isoformat()} is absent from observed bars"
+        )
 
     def _record_terminal(self, index: int, terminal_date: date) -> None:
         self._last_terminal_index = index
