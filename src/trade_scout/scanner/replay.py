@@ -156,7 +156,8 @@ def _publication_class(
         return ReplayPublicationClass.RESEARCH_PREVIEW
     if not strategy.production_eligible:
         raise ScannerEligibilityError(
-            "production-compatible replay requires an explicit PRODUCTION-ELIGIBLE strategy decision"
+            "production-compatible replay requires an explicit PRODUCTION-ELIGIBLE "
+            "strategy decision"
         )
     return ReplayPublicationClass.PRODUCTION_COMPATIBLE
 
