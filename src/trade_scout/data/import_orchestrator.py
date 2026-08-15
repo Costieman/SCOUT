@@ -169,6 +169,16 @@ def tiingo_sp500_stage_plan(
                 "--apply",
             ),
         ),
+        ImportStage(
+            "remaining_only_queue_v1",
+            "Build queue from unresolved symbols only; exclude locked reviewed symbols",
+            (
+                python,
+                str(scripts / "build_tiingo_remaining_identity_queue.py"),
+                "--root",
+                root,
+            ),
+        ),
     )
 
 
