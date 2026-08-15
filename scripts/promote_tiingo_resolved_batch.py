@@ -100,8 +100,24 @@ def main() -> int:
             deferred_remaining_path=deferred_remaining_path,
             historical_ready_path=historical_ready_path,
         )
+        existing_symbols = _tiingo_symbols(existing)
         if not batch.evidence:
-            raise ResolvedBatchPromotionError("resolved evidence batch is empty")
+            summary: dict[str, object] = {
+                "status": "COMPLETE_NO_NEW_READY" if args.apply else "PREFLIGHT_NO_NEW_READY",
+                "canonical_state_mutated": False,
+                "provider_calls_made": False,
+                "sec_calls_made": False,
+                "existing_reviewed_symbol_count": len(existing_symbols),
+                "deferred_resolver_ready_count": batch.deferred_resolver_count,
+                "historical_index_ready_count": batch.historical_index_count,
+                "resolved_batch_count": 0,
+                "new_symbols": [],
+                "target_reviewed_symbol_count": len(existing_symbols),
+                "message": "no newly proven identities are available for promotion",
+            }
+            _atomic_json(summary_path, summary)
+            print(json.dumps(summary, indent=2, sort_keys=True))
+            return 0
 
         generated = build_auto_reviewed_candidate(existing=existing, ready_evidence=batch.evidence)
         _validate_generated_candidate(existing, generated, batch.evidence)
@@ -112,12 +128,11 @@ def main() -> int:
                 "staged resolved-batch candidate failed exact persistence/reload verification"
             )
 
-        existing_symbols = _tiingo_symbols(existing)
         generated_symbols = _tiingo_symbols(generated)
         new_symbols = sorted(generated_symbols - existing_symbols)
         dataset_version_text = candidate_dataset_version(generated)
 
-        summary: dict[str, object] = {
+        summary = {
             "status": "PREFLIGHT_PASS",
             "canonical_state_mutated": False,
             "provider_calls_made": False,
