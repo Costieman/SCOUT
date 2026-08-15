@@ -29,8 +29,8 @@ from trade_scout.scanner import (
     ConsolidationReplayEvaluator,
     ReplayPublicationClass,
     ScanCandidateState,
-    strategy_from_research_evidence,
     run_historical_replay,
+    strategy_from_research_evidence,
 )
 from trade_scout.statistics import run_risk_policy_comparison
 from trade_scout.synthetic import SyntheticAnnotationKind, consolidation_breakout_scenario
