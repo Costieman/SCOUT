@@ -113,14 +113,12 @@ def run_historical_replay(
         for record in records
         if record.status is not ReplayInstrumentStatus.EVALUATED
     )
-    output_checksum = sha256_json(
-        {
-            "scan_run_id": scan_run_id,
-            "instrument_records": records,
-            "candidates": candidates,
-            "candidate_state_counts": state_counts,
-            "warnings": warnings,
-        }
+    output_checksum = _output_checksum(
+        scan_run_id=scan_run_id,
+        records=tuple(records),
+        candidates=tuple(candidates),
+        state_counts=state_counts,
+        warnings=warnings,
     )
     return HistoricalReplayResult(
         scan_run_id=scan_run_id,
@@ -190,6 +188,77 @@ def _scan_run_id(
         }
     )
     return f"scanner_replay_{checksum[:20]}"
+
+
+def _output_checksum(
+    *,
+    scan_run_id: str,
+    records: tuple[ReplayInstrumentRecord, ...],
+    candidates: tuple[ScanCandidate, ...],
+    state_counts: tuple[CandidateStateCount, ...],
+    warnings: tuple[str, ...],
+) -> str:
+    """Hash a JSON-safe projection of replay output without changing domain date types."""
+
+    record_payload = [
+        {
+            "instrument_id": str(record.instrument_id),
+            "status": record.status,
+            "latest_available_date": (
+                record.latest_available_date.isoformat()
+                if record.latest_available_date is not None
+                else None
+            ),
+            "candidate_id": record.candidate_id,
+            "detail": record.detail,
+        }
+        for record in records
+    ]
+    candidate_payload = [
+        {
+            "candidate_id": candidate.candidate_id,
+            "scan_run_id": candidate.scan_run_id,
+            "as_of_date": candidate.as_of_date.isoformat(),
+            "instrument_id": str(candidate.instrument_id),
+            "ticker_display": candidate.ticker_display,
+            "strategy_family_id": candidate.strategy_family_id,
+            "strategy_version": candidate.strategy_version,
+            "pattern_instance_id": candidate.pattern_instance_id,
+            "event_id": candidate.event_id,
+            "candidate_state": candidate.candidate_state,
+            "current_feature_snapshot": [
+                {"name": item.name, "value": item.value}
+                for item in candidate.current_feature_snapshot
+            ],
+            "structural_levels": [
+                {"name": item.name, "value": item.value} for item in candidate.structural_levels
+            ],
+            "evidence_profile_id": candidate.evidence_profile_id,
+            "risk_policy_id": candidate.risk_policy_id,
+            "rank_model_version": candidate.rank_model_version,
+            "rank_score": candidate.rank_score,
+            "rank_components": [
+                {"name": item.name, "value": item.value} for item in candidate.rank_components
+            ],
+            "data_freshness": candidate.data_freshness,
+            "quality_status": candidate.quality_status,
+            "dataset_version": candidate.dataset_version,
+            "replay_publication_class": candidate.replay_publication_class,
+            "reasons": list(candidate.reasons),
+        }
+        for candidate in candidates
+    ]
+    return sha256_json(
+        {
+            "scan_run_id": scan_run_id,
+            "instrument_records": record_payload,
+            "candidates": candidate_payload,
+            "candidate_state_counts": [
+                {"state": item.state, "count": item.count} for item in state_counts
+            ],
+            "warnings": list(warnings),
+        }
+    )
 
 
 def _replay_instrument(
