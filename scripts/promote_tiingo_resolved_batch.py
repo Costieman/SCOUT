@@ -87,6 +87,9 @@ def main() -> int:
         historical_ready_path = (
             root / "evidence" / "deferred-resolution" / "historical-index" / "ready.json"
         )
+        extended_ready_path = (
+            root / "evidence" / "deferred-resolution" / "extended" / "ready.json"
+        )
         output_root = root / "evidence" / "resolved-batch-promotion"
         output_root.mkdir(parents=True, exist_ok=True)
         staged_candidate_path = (
@@ -99,6 +102,7 @@ def main() -> int:
             deferred_ready_path=deferred_ready_path,
             deferred_remaining_path=deferred_remaining_path,
             historical_ready_path=historical_ready_path,
+            extended_ready_path=extended_ready_path,
         )
         existing_symbols = _tiingo_symbols(existing)
         if not batch.evidence:
@@ -110,6 +114,7 @@ def main() -> int:
                 "existing_reviewed_symbol_count": len(existing_symbols),
                 "deferred_resolver_ready_count": batch.deferred_resolver_count,
                 "historical_index_ready_count": batch.historical_index_count,
+                "extended_resolver_ready_count": batch.extended_resolver_count,
                 "resolved_batch_count": 0,
                 "new_symbols": [],
                 "target_reviewed_symbol_count": len(existing_symbols),
@@ -140,6 +145,7 @@ def main() -> int:
             "existing_reviewed_symbol_count": len(existing_symbols),
             "deferred_resolver_ready_count": batch.deferred_resolver_count,
             "historical_index_ready_count": batch.historical_index_count,
+            "extended_resolver_ready_count": batch.extended_resolver_count,
             "resolved_batch_count": len(batch.evidence),
             "new_symbols": new_symbols,
             "new_identity_snapshot_version": generated.snapshot_version,
@@ -177,7 +183,6 @@ def main() -> int:
         )
         persist_tiingo_canonical_promotion_report(promotion_report_path, promotion)
 
-        # Advance the standard reviewed candidate only after canonical promotion succeeds.
         persist_reviewed_identity_snapshot_candidate(candidate_path, generated)
         selected = False
         if not args.no_select:
