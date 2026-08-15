@@ -25,7 +25,9 @@ def _config() -> ConsolidationBreakoutConfig:
     )
 
 
-def _strategy(evaluator: ConsolidationReplayEvaluator, dataset_version: str) -> ScanStrategyDefinition:
+def _strategy(
+    evaluator: ConsolidationReplayEvaluator, dataset_version: str
+) -> ScanStrategyDefinition:
     decision = ResearchDecision(
         decision_id="scanner-replay-production-decision",
         subject_id="consolidation-breakout-strategy-v1",
