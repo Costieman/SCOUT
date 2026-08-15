@@ -172,8 +172,7 @@ def test_missing_as_of_session_is_blocked_not_treated_as_no_candidate() -> None:
 
     assert result.candidates == ()
     assert (
-        result.instrument_records[0].status
-        is ReplayInstrumentStatus.BLOCKED_MISSING_AS_OF_SESSION
+        result.instrument_records[0].status is ReplayInstrumentStatus.BLOCKED_MISSING_AS_OF_SESSION
     )
     assert result.warnings
 
