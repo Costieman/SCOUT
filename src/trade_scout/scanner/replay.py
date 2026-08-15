@@ -233,9 +233,7 @@ def _replay_instrument(
             instrument_id,
             ReplayInstrumentStatus.BLOCKED_QUALITY,
             latest_available_date=latest.trade_date,
-            detail=(
-                "requested replay session is not both universe-eligible and quality PASS"
-            ),
+            detail=("requested replay session is not both universe-eligible and quality PASS"),
         )
     if ticker_display is None or not ticker_display.strip():
         return _blocked_record(
