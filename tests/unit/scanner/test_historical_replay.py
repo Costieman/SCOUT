@@ -171,7 +171,10 @@ def test_missing_as_of_session_is_blocked_not_treated_as_no_candidate() -> None:
     result = _run(bars, as_of_date=bars[-1].trade_date + timedelta(days=1))
 
     assert result.candidates == ()
-    assert result.instrument_records[0].status is ReplayInstrumentStatus.BLOCKED_MISSING_AS_OF_SESSION
+    assert (
+        result.instrument_records[0].status
+        is ReplayInstrumentStatus.BLOCKED_MISSING_AS_OF_SESSION
+    )
     assert result.warnings
 
 
