@@ -16,7 +16,11 @@ from trade_scout.scanner.contracts import (
     StructuralLevel,
     strategy_from_research_evidence,
 )
-from trade_scout.scanner.replay import ReplayEvaluator, ScannerEligibilityError, run_historical_replay
+from trade_scout.scanner.replay import (
+    ReplayEvaluator,
+    ScannerEligibilityError,
+    run_historical_replay,
+)
 
 __all__ = [
     "CandidateStateCount",
