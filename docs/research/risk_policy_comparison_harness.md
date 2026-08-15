@@ -6,6 +6,12 @@ This harness implements the controlled risk-comparison boundary after outcome-pa
 
 The harness is exploratory infrastructure. It does not select, validate, or promote a stop policy.
 
+## Architecture boundary
+
+Event-level stop placement, stop triggering, fill assumptions, cost application, and per-event risk results belong to `trade_scout.risk`. Cross-policy aggregation and comparison belong to `trade_scout.statistics`.
+
+Accordingly, `run_risk_policy_comparison()` and the baseline comparison grid are exposed from `trade_scout.statistics`, while the risk module remains independently usable for one-event/one-policy evaluation. This preserves the accepted downstream dependency direction: statistics may consume risk outputs; risk does not import statistical interpretation.
+
 ## Policy families
 
 The comparison harness supports:
