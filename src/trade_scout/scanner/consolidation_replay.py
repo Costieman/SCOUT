@@ -89,7 +89,7 @@ class ConsolidationReplayEvaluator:
             return None
         reason = f"canonical pattern lifecycle state is {pattern.state.value}"
         invalidation = pattern.resolved_parameters.get("invalidation_reason")
-        reasons = (reason,)
+        reasons: tuple[str, ...] = (reason,)
         if isinstance(invalidation, str) and invalidation.strip():
             reasons = (reason, f"invalidation reason: {invalidation}")
         return _observation(
