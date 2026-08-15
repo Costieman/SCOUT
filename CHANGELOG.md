@@ -30,6 +30,10 @@ All notable software changes to Trade Scout will be recorded here. Dataset, stra
 - Immutable versioned instrument-master and symbol-history Parquet snapshots registered in the shared DuckDB metadata catalog with logical/physical checksums and identity/history integrity validation.
 - Tiingo EOD secondary-validation candidate adapter with explicit stable identity links, raw OHLCV, split/dividend evidence, header-only token authentication, and deliberate rejection of Tiingo total-return adjusted OHLC as Trade Scout split-adjusted prices.
 - Provider-neutral corporate-action normalization with permanent identity resolution plus immutable versioned corporate-action Parquet/DuckDB storage and integrity/provenance checks.
+- CI-enforced architecture acceptance checks for module skeleton, dependency direction, governance files, and unique ADR identities.
+- Synthetic end-to-end research-to-replay acceptance coverage preserving pattern/event, evidence-package, risk-policy, and dataset provenance.
 
 ### Changed
 - Provider, canonical, Parquet, research-serving, and reconciliation volume contracts now preserve provider-reported fractional volume instead of requiring integer coercion.
+- Risk-policy comparison aggregation now lives in the statistics layer so event-level risk evaluation no longer depends on downstream statistical interpretation.
+- Repository status documentation now distinguishes software-foundation completion from real-data research acceptance and production readiness.
