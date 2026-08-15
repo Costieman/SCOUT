@@ -31,12 +31,6 @@ class ImportStageStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ImportStage:
-    """One explicit orchestration stage.
-
-    ``command`` is an operational boundary only. Analytical/domain behavior must remain outside
-    this orchestrator.
-    """
-
     stage_id: str
     label: str
     command: tuple[str, ...]
@@ -85,17 +79,9 @@ ProgressSink = Callable[[ImportProgressEvent], None]
 
 
 def tiingo_sp500_stage_plan(
-    *,
-    repository_root: Path,
-    workspace_root: Path,
-    sec_sleep: float = 0.6,
+    *, repository_root: Path, workspace_root: Path, sec_sleep: float = 0.6
 ) -> tuple[ImportStage, ...]:
-    """Return the current Tiingo/S&P 500 import pipeline as explicit resumable stages.
-
-    This is intentionally a composition layer over already-tested operational entry points. As
-    those entry points are migrated into public application services, this plan can swap command
-    adapters without changing run-state semantics or the future UI contract.
-    """
+    """Return the current Tiingo/S&P 500 import pipeline as explicit resumable stages."""
 
     python = sys.executable
     root = str(workspace_root)
@@ -104,13 +90,7 @@ def tiingo_sp500_stage_plan(
         ImportStage(
             "profile",
             "Profile durable provider history",
-            (
-                python,
-                str(scripts / "trade_scout_workspace.py"),
-                "profile-tiingo",
-                "--root",
-                root,
-            ),
+            (python, str(scripts / "trade_scout_workspace.py"), "profile-tiingo", "--root", root),
         ),
         ImportStage(
             "review_queue",
@@ -162,18 +142,25 @@ def tiingo_sp500_stage_plan(
             ),
         ),
         ImportStage(
-            "resolved_batch_preflight",
-            "Preflight resolved identity batch",
+            "extended_identity",
+            "Resolve remaining identities with broader SEC filing evidence",
             (
                 python,
-                str(scripts / "promote_tiingo_resolved_batch.py"),
+                str(scripts / "resolve_tiingo_extended_identities.py"),
                 "--root",
                 root,
+                "--sleep",
+                str(sec_sleep),
             ),
         ),
         ImportStage(
-            "resolved_batch_promote",
-            "Promote all proven identities and prices",
+            "resolved_batch_preflight_v2",
+            "Preflight all newly proven identity evidence",
+            (python, str(scripts / "promote_tiingo_resolved_batch.py"), "--root", root),
+        ),
+        ImportStage(
+            "resolved_batch_promote_v2",
+            "Promote all newly proven identities and prices",
             (
                 python,
                 str(scripts / "promote_tiingo_resolved_batch.py"),
@@ -299,8 +286,7 @@ def _subprocess_runner(command: tuple[str, ...], *, cwd: Path) -> int:
 
 
 def _reconcile_records(
-    existing: ImportRunState | None,
-    stages: tuple[ImportStage, ...],
+    existing: ImportRunState | None, stages: tuple[ImportStage, ...]
 ) -> dict[str, ImportStageRecord]:
     prior = {item.stage_id: item for item in existing.stages} if existing is not None else {}
     result: dict[str, ImportStageRecord] = {}
@@ -378,9 +364,7 @@ def _persist_state(path: Path, state: ImportRunState) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(".json.tmp")
     payload = asdict(state)
-    payload["stages"] = [
-        {**item, "status": str(item["status"])} for item in payload["stages"]
-    ]
+    payload["stages"] = [{**item, "status": str(item["status"])} for item in payload["stages"]]
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(path)
 
