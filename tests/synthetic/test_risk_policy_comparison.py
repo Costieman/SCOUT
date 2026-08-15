@@ -17,9 +17,9 @@ from trade_scout.risk import (
     StopFamily,
     StopPolicy,
     evaluate_stop_policy,
-    run_risk_policy_comparison,
     structural_stop_context_from_pattern_state,
 )
+from trade_scout.statistics import run_risk_policy_comparison
 from trade_scout.synthetic import (
     ambiguous_daily_bar_scenario,
     consolidation_breakout_scenario,
