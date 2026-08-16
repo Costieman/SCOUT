@@ -5,7 +5,10 @@ from datetime import date, timedelta
 
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
 from trade_scout.outcomes.path import OutcomePathStatus
-from trade_scout.statistics.strategy_research import StrategyDefinition, run_feature_strategy_research
+from trade_scout.statistics.strategy_research import (
+    StrategyDefinition,
+    run_feature_strategy_research,
+)
 
 
 def _bars(instrument: str, *, rising: bool, count: int = 90) -> tuple[DailyBar, ...]:
