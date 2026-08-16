@@ -66,6 +66,17 @@ from trade_scout.validation.reporting import (
     assemble_validation_review_bundle,
     summarize_validation_review,
 )
+from trade_scout.validation.research_package import (
+    RESEARCH_EVIDENCE_PACKAGE_VERSION,
+    MetricFamilyRequirement,
+    ResearchEvidencePackage,
+    ResearchEvidenceReportingProfile,
+    ResearchEvidenceSummary,
+    StageArtifactEvidence,
+    build_research_evidence_package,
+    canonical_research_reporting_profile,
+    summarize_research_evidence_package,
+)
 from trade_scout.validation.robustness import (
     RobustnessChallenge,
     RobustnessKind,
@@ -84,6 +95,7 @@ from trade_scout.validation.store import FileValidationReviewStore, ValidationRe
 from trade_scout.validation.time_ordered import build_fixed_holdout_plan, build_walk_forward_plan
 
 __all__ = [
+    "RESEARCH_EVIDENCE_PACKAGE_VERSION",
     "AdjustedPValue",
     "ComparatorDefinition",
     "ComparatorKind",
@@ -105,15 +117,20 @@ __all__ = [
     "HypothesisFamily",
     "IncompleteValidationEvidenceError",
     "MetricEstimate",
+    "MetricFamilyRequirement",
     "MultiplicityMethod",
     "MultiplicitySummary",
     "ParameterAxis",
     "ParameterCell",
     "ParameterSurface",
+    "ResearchEvidencePackage",
+    "ResearchEvidenceReportingProfile",
+    "ResearchEvidenceSummary",
     "RobustnessChallenge",
     "RobustnessKind",
     "RobustnessPlan",
     "SampleAccounting",
+    "StageArtifactEvidence",
     "ValidationCompleteness",
     "ValidationEvidenceExtractor",
     "ValidationEvidenceReport",
@@ -141,9 +158,12 @@ __all__ = [
     "assess_validation_completeness",
     "build_fixed_holdout_plan",
     "build_parameter_surface",
+    "build_research_evidence_package",
     "build_walk_forward_plan",
+    "canonical_research_reporting_profile",
     "consolidation_breakout_robustness_plan",
     "execute_validation_design",
     "materialize_validation_targets",
+    "summarize_research_evidence_package",
     "summarize_validation_review",
 ]

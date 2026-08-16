@@ -1,4 +1,4 @@
-# ADR-0004: Free-data-first provider strategy
+# ADR-0007: Free-data-first provider strategy
 
 Status: Accepted
 Date: 2026-08-09

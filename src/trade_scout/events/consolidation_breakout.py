@@ -35,9 +35,12 @@ def event_from_pattern_state(
     *,
     signal_index: int,
 ) -> ConsolidationBreakoutEvent | None:
-    """Emit one close breakout event from a qualified point-in-time pattern state."""
+    """Emit one close breakout event from an event-eligible pattern state."""
 
-    if pattern.state is not PatternLifecycleState.QUALIFIED:
+    if pattern.state not in {
+        PatternLifecycleState.QUALIFIED,
+        PatternLifecycleState.TRIGGER_READY,
+    }:
         return None
     if pattern.instrument_id != signal_bar.instrument_id:
         raise ValueError("pattern and signal bar must reference the same instrument")

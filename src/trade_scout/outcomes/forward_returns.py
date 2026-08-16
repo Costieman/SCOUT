@@ -12,11 +12,12 @@ from statistics import median
 
 from trade_scout.data.contracts import InstrumentId, QualityStatus, ResearchBar
 from trade_scout.events.contracts import EventRecord
+from trade_scout.outcomes.path import OutcomePathStatus, measure_outcome_paths
 
 
 @dataclass(frozen=True, slots=True)
 class ForwardOutcome:
-    """One event/horizon outcome under next-session-open entry."""
+    """One complete event/horizon outcome under next-session-open entry."""
 
     event_id: str
     instrument_id: InstrumentId
@@ -55,43 +56,47 @@ def measure_forward_outcomes(
     *,
     horizons: tuple[int, ...] = (5, 10, 20, 40, 60),
 ) -> tuple[ForwardOutcome, ...]:
-    """Measure all complete event/horizon paths; truncated horizons remain absent."""
+    """Measure complete event/horizon paths using the canonical outcome-path engine.
 
-    _validate_inputs(bars, horizons)
+    This compatibility surface retains the original behavior in which incomplete horizons are
+    absent. New research requiring explicit truncation, gaps, timing, or daily-bar ambiguity
+    should consume :func:`trade_scout.outcomes.path.measure_outcome_paths` directly.
+    """
+
+    paths = measure_outcome_paths(bars, events, horizons=horizons)
     outcomes: list[ForwardOutcome] = []
-    for event in events:
-        entry_index = event.signal_index + 1
-        if entry_index >= len(bars):
+    for path in paths:
+        if path.status is not OutcomePathStatus.COMPLETE:
             continue
-        entry = bars[entry_index]
-        if not _usable(entry):
-            continue
-        for horizon in horizons:
-            exit_index = entry_index + horizon - 1
-            if exit_index >= len(bars):
-                continue
-            path = bars[entry_index : exit_index + 1]
-            if any(not _usable(item) for item in path):
-                continue
-            entry_price = entry.open
-            exit_price = path[-1].close
-            outcomes.append(
-                ForwardOutcome(
-                    event_id=event.event_id,
-                    instrument_id=event.instrument_id,
-                    horizon=horizon,
-                    entry_index=entry_index,
-                    entry_date=entry.trade_date.isoformat(),
-                    entry_price=entry_price,
-                    exit_date=path[-1].trade_date.isoformat(),
-                    exit_price=exit_price,
-                    forward_return=(exit_price / entry_price) - 1.0,
-                    mfe=max(item.high / entry_price - 1.0 for item in path),
-                    mae=min(item.low / entry_price - 1.0 for item in path),
-                    max_drawdown=_max_drawdown(path, entry_price),
-                    dataset_version=str(entry.dataset_version),
-                )
+        if (
+            path.entry_index is None
+            or path.entry_date is None
+            or path.entry_price is None
+            or path.exit_date is None
+            or path.exit_price is None
+            or path.forward_return is None
+            or path.mfe is None
+            or path.mae is None
+            or path.max_drawdown_lower_bound is None
+        ):
+            raise RuntimeError("complete outcome path is missing required complete-path metrics")
+        outcomes.append(
+            ForwardOutcome(
+                event_id=path.event_id,
+                instrument_id=path.instrument_id,
+                horizon=path.horizon,
+                entry_index=path.entry_index,
+                entry_date=path.entry_date.isoformat(),
+                entry_price=path.entry_price,
+                exit_date=path.exit_date.isoformat(),
+                exit_price=path.exit_price,
+                forward_return=path.forward_return,
+                mfe=path.mfe,
+                mae=path.mae,
+                max_drawdown=path.max_drawdown_lower_bound,
+                dataset_version=path.dataset_version,
             )
+        )
     return tuple(outcomes)
 
 
@@ -179,16 +184,6 @@ def summarize_outcomes(
             )
         )
     return tuple(summaries)
-
-
-def _max_drawdown(path: tuple[ResearchBar, ...], entry_price: float) -> float:
-    peak = entry_price
-    worst = 0.0
-    for bar in path:
-        peak = max(peak, bar.high)
-        drawdown = bar.low / peak - 1.0
-        worst = min(worst, drawdown)
-    return worst
 
 
 def _quantile(values: tuple[float, ...], probability: float) -> float:
