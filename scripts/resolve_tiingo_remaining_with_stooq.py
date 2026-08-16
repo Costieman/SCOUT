@@ -11,8 +11,13 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from trade_scout.data.contracts import PriceRepresentation
-from trade_scout.data.provider import DailyBarRequest
-from trade_scout.data.providers.stooq import StooqAdapter, StooqApiError, StooqInstrumentLink
+from trade_scout.data.provider import DailyBarRequest, ProviderDailyBar
+from trade_scout.data.providers.stooq import (
+    StooqAdapter,
+    StooqApiError,
+    StooqInstrumentLink,
+    StooqResponseError,
+)
 from trade_scout.data.reviewed_identity_snapshot import load_reviewed_identity_snapshot_candidate
 from trade_scout.data.stooq_boundary_evidence import classify_stooq_boundary_evidence
 
@@ -41,10 +46,11 @@ def main() -> int:
 
         links = tuple(
             StooqInstrumentLink(
-                query_symbol=symbol,
-                provider_instrument_id=f"stooq-boundary-evidence:{symbol}",
+                query_symbol=query_symbol,
+                provider_instrument_id=f"stooq-boundary-evidence:{symbol}:{query_symbol}",
             )
             for symbol in sorted(rows)
+            for query_symbol in _stooq_query_candidates(symbol)
         )
         adapter = StooqAdapter.from_http(instrument_links=links, raw_root=raw_root)
 
@@ -57,16 +63,12 @@ def main() -> int:
             end = boundary + timedelta(days=15)
             print(f"[{index}/{len(rows)}] {symbol}: Stooq boundary evidence", flush=True)
             try:
-                bars = tuple(
-                    adapter.get_daily_bars(
-                        DailyBarRequest(
-                            start=start,
-                            end=end,
-                            provider_symbols=(symbol,),
-                            adjustment=PriceRepresentation.RAW,
-                            run_id=f"stooq-boundary:{symbol}:{boundary.isoformat()}",
-                        )
-                    )
+                bars, query_symbol = _fetch_stooq_bars(
+                    adapter=adapter,
+                    symbol=symbol,
+                    start=start,
+                    end=end,
+                    boundary=boundary,
                 )
             except StooqApiError as exc:
                 _write(
@@ -79,6 +81,22 @@ def main() -> int:
                 )
                 print(f"    -> PAUSED {exc}", file=sys.stderr, flush=True)
                 return 2
+
+            if bars is None:
+                completed[symbol] = {
+                    "symbol": symbol,
+                    "boundary": boundary.isoformat(),
+                    "status": "STOOQ_EVIDENCE_UNAVAILABLE",
+                    "pre_boundary_count": 0,
+                    "on_or_after_boundary_count": 0,
+                    "first_trade_date": None,
+                    "last_trade_date": None,
+                    "stooq_query_symbol": None,
+                    "ready_for_promotion": False,
+                }
+                _persist_checkpoint(checkpoint_path, completed)
+                print("    -> STOOQ_EVIDENCE_UNAVAILABLE", flush=True)
+                continue
 
             result = classify_stooq_boundary_evidence(
                 symbol=symbol,
@@ -93,17 +111,11 @@ def main() -> int:
             payload["last_trade_date"] = (
                 result.last_trade_date.isoformat() if result.last_trade_date else None
             )
+            payload["stooq_query_symbol"] = query_symbol
             payload["ready_for_promotion"] = False
             completed[symbol] = payload
-            _write(
-                checkpoint_path,
-                {
-                    "schema_version": "tiingo-stooq-boundary-checkpoint-v0.1",
-                    "completed": completed,
-                    "last_failure": None,
-                },
-            )
-            print(f"    -> {result.status}", flush=True)
+            _persist_checkpoint(checkpoint_path, completed)
+            print(f"    -> {result.status} via {query_symbol}", flush=True)
 
         counts = Counter(str(item.get("status")) for item in completed.values())
         summary = {
@@ -129,6 +141,55 @@ def main() -> int:
     except (OSError, ValueError, json.JSONDecodeError, RemainingStooqResolutionError) as exc:
         print(f"remaining Stooq boundary resolution error: {exc}", file=sys.stderr)
         return 2
+
+
+def _fetch_stooq_bars(
+    *,
+    adapter: StooqAdapter,
+    symbol: str,
+    start: date,
+    end: date,
+    boundary: date,
+) -> tuple[tuple[ProviderDailyBar, ...] | None, str | None]:
+    """Try Stooq's common US ticker spellings; malformed/no-data CSV is not a campaign failure."""
+
+    for query_symbol in _stooq_query_candidates(symbol):
+        try:
+            bars = tuple(
+                adapter.get_daily_bars(
+                    DailyBarRequest(
+                        start=start,
+                        end=end,
+                        provider_symbols=(query_symbol,),
+                        adjustment=PriceRepresentation.RAW,
+                        run_id=f"stooq-boundary:{symbol}:{boundary.isoformat()}:{query_symbol}",
+                    )
+                )
+            )
+        except StooqResponseError:
+            continue
+        if bars:
+            return bars, query_symbol
+    return None, None
+
+
+def _stooq_query_candidates(symbol: str) -> tuple[str, ...]:
+    normalized = symbol.strip().upper()
+    variants = [f"{normalized}.US", normalized]
+    if "." in normalized:
+        variants.insert(0, f"{normalized.replace('.', '-')}.US")
+    return tuple(dict.fromkeys(variants))
+
+
+def _persist_checkpoint(path: Path, completed: dict[str, dict[str, object]]) -> None:
+    _write(
+        path,
+        {
+            "schema_version": "tiingo-stooq-boundary-checkpoint-v0.1",
+            "completed": completed,
+            "last_failure": None,
+        },
+    )
 
 
 def _locked_symbols(path: Path) -> set[str]:
