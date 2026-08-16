@@ -15,7 +15,6 @@ from statistics import median
 
 from trade_scout.data.contracts import (
     DailyBar,
-    DatasetVersion,
     InstrumentId,
     PriceRepresentation,
     QualityStatus,
@@ -282,9 +281,7 @@ def _summaries(
             if item.horizon == horizon and item.status is OutcomePathStatus.COMPLETE
         )
         returns = tuple(
-            float(item.forward_return)
-            for item in complete
-            if item.forward_return is not None
+            float(item.forward_return) for item in complete if item.forward_return is not None
         )
         if not returns:
             summaries.append(
