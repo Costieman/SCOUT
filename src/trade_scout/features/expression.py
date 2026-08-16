@@ -114,7 +114,10 @@ def _evaluate_node(
         numeric = float(feature_value)
         return numeric if math.isfinite(numeric) else _UNAVAILABLE
     if isinstance(node, ast.Constant):
-        return float(node.value)
+        value = node.value
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise FeatureExpressionError("only finite numeric constants are allowed")
+        return float(value)
     if isinstance(node, ast.UnaryOp):
         operand_value = _evaluate_node(node.operand, values, allowed_names)
         if isinstance(operand_value, _Unavailable):
