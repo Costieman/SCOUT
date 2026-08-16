@@ -179,6 +179,16 @@ def tiingo_sp500_stage_plan(
                 root,
             ),
         ),
+        ImportStage(
+            "stooq_boundary_evidence_v1",
+            "Corroborate unresolved Tiingo boundaries with Stooq; keep locked symbols excluded",
+            (
+                python,
+                str(scripts / "resolve_tiingo_remaining_with_stooq.py"),
+                "--root",
+                root,
+            ),
+        ),
     )
 
 
