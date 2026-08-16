@@ -89,9 +89,15 @@ def main() -> int:
 
     if requested_symbols:
         if not symbol_by_instrument:
-            raise SystemExit("--symbols requires a reviewed identity candidate for symbol resolution")
-        instrument_by_symbol = {symbol: instrument for instrument, symbol in symbol_by_instrument.items()}
-        missing = tuple(symbol for symbol in requested_symbols if symbol not in instrument_by_symbol)
+            raise SystemExit(
+                "--symbols requires a reviewed identity candidate for symbol resolution"
+            )
+        instrument_by_symbol = {
+            symbol: instrument for instrument, symbol in symbol_by_instrument.items()
+        }
+        missing = tuple(
+            symbol for symbol in requested_symbols if symbol not in instrument_by_symbol
+        )
         if missing:
             raise SystemExit("unknown or blocked reviewed symbols: " + ", ".join(missing))
         selected_ids = {instrument_by_symbol[symbol] for symbol in requested_symbols}
@@ -193,7 +199,9 @@ def _date(value: str | None) -> date | None:
 
 
 def _safe_slug(value: str) -> str:
-    result = "".join(character if character.isalnum() or character in "-_." else "_" for character in value)
+    result = "".join(
+        character if character.isalnum() or character in "-_." else "_" for character in value
+    )
     return result[:128] or "research"
 
 
