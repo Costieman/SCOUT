@@ -44,9 +44,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--symbols",
         default=None,
-        help=(
-            "Optional comma-separated reviewed symbols; default is every "
-            "instrument in the dataset"
+        help=" ".join(
+            (
+                "Optional comma-separated reviewed symbols; default is every",
+                "instrument in the dataset",
+            )
         ),
     )
     parser.add_argument("--identity-candidate", type=Path, default=None)
