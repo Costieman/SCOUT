@@ -20,9 +20,7 @@ def test_feature_expression_supports_boolean_arithmetic_and_comparisons() -> Non
         "return_20 >= 0.05 and relative_volume_20 >= 1.5 and atr_pct_14 < 4",
         allowed_names=_ALLOWED,
     )
-    assert expression.evaluate(
-        {"return_20": 0.08, "relative_volume_20": 2.0, "atr_pct_14": 3.2}
-    )
+    assert expression.evaluate({"return_20": 0.08, "relative_volume_20": 2.0, "atr_pct_14": 3.2})
     assert not expression.evaluate(
         {"return_20": 0.02, "relative_volume_20": 2.0, "atr_pct_14": 3.2}
     )
