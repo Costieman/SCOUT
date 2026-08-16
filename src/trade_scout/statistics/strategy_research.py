@@ -240,14 +240,19 @@ def run_feature_strategy_research(
         outcomes=ordered_outcomes,
         summaries=_summaries(ordered_outcomes, horizons),
         warnings=(
-            "Exploratory descriptive research only; results are not validation or production eligibility.",
             (
-                "The supplied canonical instrument cohort is evaluated as provided. This runner does not "
-                "invent historical index membership or survivorship-bias corrections."
+                "Exploratory descriptive research only; results are not validation "
+                "or production eligibility."
             ),
             (
-                "Strategy selection is point-in-time and post-signal paths use the canonical OutcomePath "
-                "engine with next-session-open entry and explicit daily-bar ambiguity."
+                "The supplied canonical instrument cohort is evaluated as provided. "
+                "This runner does not invent historical index membership or "
+                "survivorship-bias corrections."
+            ),
+            (
+                "Strategy selection is point-in-time and post-signal paths use the "
+                "canonical OutcomePath engine with next-session-open entry and explicit "
+                "daily-bar ambiguity."
             ),
         ),
     )
