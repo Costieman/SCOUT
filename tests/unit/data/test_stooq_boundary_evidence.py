@@ -1,6 +1,5 @@
 from datetime import date
 
-from trade_scout.data.contracts import PriceRepresentation
 from trade_scout.data.provider import ProviderDailyBar
 from trade_scout.data.stooq_boundary_evidence import classify_stooq_boundary_evidence
 
@@ -16,7 +15,6 @@ def _bar(day: date) -> ProviderDailyBar:
         low=1.0,
         close=1.0,
         volume=1.0,
-        price_representation=PriceRepresentation.RAW,
     )
 
 
