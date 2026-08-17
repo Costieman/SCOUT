@@ -67,7 +67,7 @@ def test_parameterized_indicator_uses_existing_signal_and_outcome_path() -> None
 
     assert report.signal_count > 0
     assert report.outcomes
-    assert "parameterized-indicators-v0.1" in report.feature_set_version
+    assert "parameterized-indicators-v0.2" in report.feature_set_version
     assert {signal.event_definition_version for signal in report.signals} == {
         "feature-expression-strategy-signal-v0.1"
     }
