@@ -47,7 +47,8 @@ STRATEGY_BUILDER_CLEAN_DEFAULTS_JS = r"""
 
   if (signalLimit) {
     signalLimit.value = '500';
-    signalLimit.title = '500 is the current application maximum and avoids truncating the present reviewed cohort.';
+    signalLimit.title =
+      '500 is the current application maximum and avoids truncating the present reviewed cohort.';
   }
 })();
 """
