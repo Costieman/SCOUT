@@ -147,13 +147,13 @@ def _numeric_constant(node: ast.AST) -> float | None:
         and not isinstance(node.value, bool)
         and isinstance(node.value, (int, float))
     ):
-        value = float(node.value)
-        return value if math.isfinite(value) else None
+        numeric_value = float(node.value)
+        return numeric_value if math.isfinite(numeric_value) else None
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
-        value = _numeric_constant(node.operand)
-        if value is None:
+        operand_value = _numeric_constant(node.operand)
+        if operand_value is None:
             return None
-        return -value if isinstance(node.op, ast.USub) else value
+        return -operand_value if isinstance(node.op, ast.USub) else operand_value
     return None
 
 
