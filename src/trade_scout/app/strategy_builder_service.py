@@ -18,6 +18,7 @@ from trade_scout.app.entry_strategy_registry import (
 )
 from trade_scout.app.strategy_presets import StrategyPreset, strategy_preset
 from trade_scout.app.universe_research_service import UniverseOption
+from trade_scout.app.visual_rule_builder import VisualCondition, VisualRuleSet
 from trade_scout.data.contracts import DailyBar, ResearchBar
 from trade_scout.events.contracts import EventRecord
 from trade_scout.patterns.consolidation_breakout import (
@@ -71,6 +72,7 @@ class StrategyBuilderRequest:
     horizon: int = 20
     entry_family: EntryFamily = EntryFamily.FEATURE_EXPRESSION
     preset_id: str | None = None
+    visual_conditions: tuple[VisualCondition, ...] = ()
     expression: str = "return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"
     rank_feature: str = "return_20"
     descending: bool = True
@@ -97,18 +99,22 @@ class StrategyBuilderRequest:
             raise ValueError("unsupported research horizon")
         entry_strategy_option(self.entry_family)
         if self.entry_family is EntryFamily.FEATURE_EXPRESSION:
-            if self.preset_id is not None:
+            if self.visual_conditions and self.preset_id is not None:
+                raise ValueError("visual rules and strategy presets cannot be selected together")
+            if self.visual_conditions:
+                object.__setattr__(self, "expression", VisualRuleSet(self.visual_conditions).expression)
+            elif self.preset_id is not None:
                 strategy_preset(self.preset_id)
             elif not self.expression.strip():
                 raise ValueError(
-                    "feature-expression entry requires a preset or non-empty expression"
+                    "feature-expression entry requires visual rules, a preset, or an expression"
                 )
             if self.rank_feature not in available_strategy_features():
                 raise ValueError(f"unknown rank feature {self.rank_feature!r}")
             if not 1 <= self.per_session_limit <= 500:
                 raise ValueError("per_session_limit must be between 1 and 500")
-        elif self.preset_id is not None:
-            raise ValueError("feature presets apply only to feature-expression entries")
+        elif self.preset_id is not None or self.visual_conditions:
+            raise ValueError("visual rules and feature presets apply only to feature-expression entries")
         if not 5 <= self.duration <= 252:
             raise ValueError("duration must be between 5 and 252 sessions")
         if not 0 < self.max_range_pct <= 1:
@@ -149,6 +155,7 @@ class StrategyBuilderReport:
     entry_option: EntryStrategyOption
     entry_event_count: int
     entry_definition_version: str
+    visual_conditions: tuple[VisualCondition, ...]
     feature_preset: StrategyPreset | None
     feature_strategy_report: StrategyResearchReport | None
     consolidation_config: ConsolidationBreakoutConfig | None
@@ -156,7 +163,7 @@ class StrategyBuilderReport:
     comparison: ExitResearchComparison
     provider_calls_made: bool = False
     research_state: str = "EXPLORATORY"
-    application_version: str = "strategy-builder-v0.2"
+    application_version: str = "strategy-builder-v0.3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -270,6 +277,7 @@ class StrategyBuilderService:
             entry_option=entry_option,
             entry_event_count=entry_count,
             entry_definition_version=entry_definition_version,
+            visual_conditions=request.visual_conditions,
             feature_preset=feature_preset,
             feature_strategy_report=feature_report,
             consolidation_config=consolidation_config,
@@ -285,13 +293,21 @@ def _feature_strategy_definition(
         preset = strategy_preset(request.preset_id)
         return preset, preset.definition()
     return None, StrategyDefinition(
-        strategy_id="strategy-builder-custom-expression",
-        name="Strategy Builder custom expression",
+        strategy_id="strategy-builder-visual-rules"
+        if request.visual_conditions
+        else "strategy-builder-custom-expression",
+        name="Strategy Builder visual rule set"
+        if request.visual_conditions
+        else "Strategy Builder custom expression",
         expression=request.expression,
         rank_feature=request.rank_feature,
         descending=request.descending,
         per_session_limit=request.per_session_limit,
-        description="Operator-defined point-in-time Strategy Builder expression.",
+        description=(
+            "Operator-composed point-in-time visual rule set."
+            if request.visual_conditions
+            else "Operator-defined point-in-time Strategy Builder expression."
+        ),
     )
 
 
