@@ -17,6 +17,7 @@ class WindowedCanonicalUniverseResearchSource(CanonicalUniverseResearchSource):
     """Canonical source that can fetch an exact signal window plus indicator warm-up."""
 
     __slots__ = ("_window_reader",)
+    _window_reader: CanonicalDailyBarWindowReader
 
     def __init__(
         self,
