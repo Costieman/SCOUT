@@ -164,7 +164,7 @@ class StrategyBuilderService:
         series = self.source.research_series(request.universe_id)
         if not series:
             raise StrategyBuilderError("strategy builder received an empty research universe")
-        latest = max(bars[-1].trade_date for bars in series.values())
+        latest = max(series_bars[-1].trade_date for series_bars in series.values())
         start = _subtract_years(latest, request.lookback_years)
         entry_option = entry_strategy_option(request.entry_family)
 
@@ -201,15 +201,19 @@ class StrategyBuilderService:
                 volume_lookback_sessions=20,
             )
             entry_count = 0
-            for bars in series.values():
-                events = tuple(
+            for series_bars in series.values():
+                detected_events = tuple(
                     event
-                    for event in detect_consolidation_breakouts(bars, consolidation_config)
+                    for event in detect_consolidation_breakouts(
+                        series_bars, consolidation_config
+                    )
                     if start <= event.signal_date <= latest
                 )
-                entry_count += len(events)
-                if events:
-                    events_by_instrument.setdefault(str(bars[0].instrument_id), []).extend(events)
+                entry_count += len(detected_events)
+                if detected_events:
+                    events_by_instrument.setdefault(
+                        str(series_bars[0].instrument_id), []
+                    ).extend(detected_events)
             entry_definition_version = entry_option.definition_version
 
         policies = exit_policy_grid(
@@ -225,26 +229,32 @@ class StrategyBuilderService:
             commission_bps_per_side=request.commission_bps_per_side,
         )
         research_by_instrument = {
-            str(bars[0].instrument_id): bars for bars in series.values() if bars
+            str(series_bars[0].instrument_id): series_bars
+            for series_bars in series.values()
+            if series_bars
         }
         results: list[ExitPolicyResult] = []
-        for instrument_id, events in sorted(events_by_instrument.items()):
-            bars = research_by_instrument.get(instrument_id)
-            if bars is None:
+        for instrument_id, entry_events in sorted(events_by_instrument.items()):
+            instrument_bars = research_by_instrument.get(instrument_id)
+            if instrument_bars is None:
                 raise StrategyBuilderError(
                     f"entry event references instrument outside research series: {instrument_id}"
                 )
             results.extend(
                 evaluate_exit_policy_grid(
-                    bars,
-                    tuple(events),
+                    instrument_bars,
+                    tuple(entry_events),
                     horizon=request.horizon,
                     policies=policies,
                     cost_model=cost_model,
                 )
             )
 
-        versions = {str(bars[0].dataset_version) for bars in series.values() if bars}
+        versions = {
+            str(series_bars[0].dataset_version)
+            for series_bars in series.values()
+            if series_bars
+        }
         if len(versions) != 1:
             raise StrategyBuilderError("strategy builder cannot mix canonical dataset versions")
         comparison = summarize_exit_policy_results(
