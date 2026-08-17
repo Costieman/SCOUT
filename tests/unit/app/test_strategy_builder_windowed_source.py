@@ -68,9 +68,7 @@ class _WindowedSource:
         assert universe_id == "reviewed_canonical"
         before = tuple(item for item in self.daily if item.trade_date < signal_start)
         warmup = before[-warmup_observations:]
-        active = tuple(
-            item for item in self.daily if signal_start <= item.trade_date <= signal_end
-        )
+        active = tuple(item for item in self.daily if signal_start <= item.trade_date <= signal_end)
         return (*warmup, *active)
 
 
@@ -99,7 +97,9 @@ def test_windowed_source_skips_full_history_loads() -> None:
 
     assert report.performance.dataset_daily_bar_count == 1_200
     assert 0 < report.performance.canonical_daily_bar_count < 1_200
-    assert report.performance.working_daily_bar_count == report.performance.canonical_daily_bar_count
+    assert (
+        report.performance.working_daily_bar_count == report.performance.canonical_daily_bar_count
+    )
     assert report.feature_strategy_report is not None
     assert report.feature_strategy_report.outcomes == ()
     assert report.comparison.complete_event_count > 0
