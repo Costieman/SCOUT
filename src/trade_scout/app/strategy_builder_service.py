@@ -465,9 +465,7 @@ def _trim_research_series_to_daily_window(
         first_date = first_dates.get(instrument_id)
         if first_date is None:
             continue
-        retained = tuple(
-            bar for bar in rows if first_date <= bar.trade_date <= latest
-        )
+        retained = tuple(bar for bar in rows if first_date <= bar.trade_date <= latest)
         if tuple(item.trade_date for item in retained) != tuple(daily_dates[instrument_id]):
             raise StrategyBuilderError(
                 "canonical daily bars and research-series dates diverged after window trimming for "
