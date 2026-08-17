@@ -277,7 +277,9 @@ def _observation_sets(
         for outcome in measure_forward_outcomes(bars, events, horizons=(selected_horizon,)):
             if date.fromisoformat(outcome.exit_date) <= analysis_end:
                 event = event_by_id[outcome.event_id]
-                strategy.append(ReturnObservation(symbol, event.signal_date, outcome.forward_return))
+                strategy.append(
+                    ReturnObservation(symbol, event.signal_date, outcome.forward_return)
+                )
 
         candidates = _eligible_signals(bars, frame=frame, config=config)
         random_candidates[symbol] = tuple(
