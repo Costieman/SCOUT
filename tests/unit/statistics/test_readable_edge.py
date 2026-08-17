@@ -66,7 +66,9 @@ def _report():
 def test_readable_edge_reproduces_source_samples_and_adds_controls() -> None:
     report = _report()
 
-    assert report.performance.sample_size == report.source_report.selected_horizon_summary.sample_size
+    assert (
+        report.performance.sample_size == report.source_report.selected_horizon_summary.sample_size
+    )
     assert report.simple_baseline.sample_size == report.source_report.baseline_sample_size
     assert report.randomized_timing.matched_event_count == report.performance.sample_size
     assert 0.0 <= report.randomized_timing.one_sided_p_value <= 1.0
