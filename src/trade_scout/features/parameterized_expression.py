@@ -32,28 +32,43 @@ def parse_parameterized_feature_name(feature_name: str) -> ParameterizedIndicato
     period = int(period_token[1:])
     suffix = parts[5]
 
-    kwargs: dict[str, object] = {
-        "family": family,
-        "metric": metric,
-        "period": period,
-        "source": source,
-    }
     if family is IndicatorFamily.MOVING_AVERAGE:
-        kwargs["moving_average_type"] = MovingAverageType(suffix)
-    elif family is IndicatorFamily.BOLLINGER_BANDS:
+        return ParameterizedIndicatorSpec(
+            family=family,
+            metric=metric,
+            period=period,
+            source=source,
+            moving_average_type=MovingAverageType(suffix),
+        )
+    if family is IndicatorFamily.BOLLINGER_BANDS:
         if not suffix.startswith("k"):
             raise ValueError(f"invalid Bollinger deviation token: {suffix!r}")
-        kwargs["standard_deviations"] = _decode_number(suffix[1:])
-    elif family is IndicatorFamily.MACD:
+        return ParameterizedIndicatorSpec(
+            family=family,
+            metric=metric,
+            period=period,
+            source=source,
+            standard_deviations=_decode_number(suffix[1:]),
+        )
+    if family is IndicatorFamily.MACD:
         match = _MACD_SUFFIX.match(suffix)
         if match is None:
             raise ValueError(f"invalid MACD parameter token: {suffix!r}")
-        kwargs.update(
+        return ParameterizedIndicatorSpec(
+            family=family,
+            metric=metric,
+            period=period,
+            source=source,
             fast_period=int(match.group("fast")),
             slow_period=int(match.group("slow")),
             signal_period=int(match.group("signal")),
         )
-    return ParameterizedIndicatorSpec(**kwargs)  # type: ignore[arg-type]
+    return ParameterizedIndicatorSpec(
+        family=family,
+        metric=metric,
+        period=period,
+        source=source,
+    )
 
 
 def extract_parameterized_specs(expression: str) -> tuple[ParameterizedIndicatorSpec, ...]:
