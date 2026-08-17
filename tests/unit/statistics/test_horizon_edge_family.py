@@ -11,7 +11,7 @@ from trade_scout.data.contracts import (
 )
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
 from trade_scout.patterns.timeframes import PatternTimeframe
-from trade_scout.statistics.horizon_edge_family import build_horizon_edge_family_report
+from trade_scout.validation.horizon_edge_family import build_horizon_edge_family_report
 from trade_scout.validation.multiplicity import MultiplicityMethod
 
 
