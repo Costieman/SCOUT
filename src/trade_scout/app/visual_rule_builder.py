@@ -8,6 +8,7 @@ second backtest implementation.
 
 from __future__ import annotations
 
+import ast
 import math
 from dataclasses import dataclass
 from enum import StrEnum
@@ -82,10 +83,102 @@ class VisualRuleSet:
         return resolved
 
 
+def recover_visual_conditions(source: str) -> tuple[VisualCondition, ...]:
+    """Recover simple visual rows from a compatible expression, otherwise return an empty tuple.
+
+    This is presentation recovery only. The executed research definition remains the original safe
+    expression. Recovery accepts comparison leaves joined by AND/OR and rejects arithmetic or other
+    constructs rather than guessing how they should appear in the visual UI.
+    """
+
+    try:
+        tree = ast.parse(source.strip(), mode="eval")
+        recovered = _recover_node(tree.body)
+    except (SyntaxError, TypeError, ValueError):
+        return ()
+    return tuple(recovered) if recovered else ()
+
+
+def _recover_node(node: ast.AST) -> list[VisualCondition] | None:
+    leaf = _recover_comparison(node)
+    if leaf is not None:
+        return [leaf]
+    if not isinstance(node, ast.BoolOp) or not isinstance(node.op, (ast.And, ast.Or)):
+        return None
+    join = RuleJoin.AND if isinstance(node.op, ast.And) else RuleJoin.OR
+    result: list[VisualCondition] = []
+    for index, child in enumerate(node.values):
+        child_conditions = _recover_node(child)
+        if not child_conditions:
+            return None
+        if index > 0:
+            first = child_conditions[0]
+            child_conditions[0] = VisualCondition(
+                feature_name=first.feature_name,
+                operator=first.operator,
+                value=first.value,
+                join=join,
+            )
+        result.extend(child_conditions)
+    return result
+
+
+def _recover_comparison(node: ast.AST) -> VisualCondition | None:
+    if not isinstance(node, ast.Compare) or len(node.ops) != 1 or len(node.comparators) != 1:
+        return None
+    if not isinstance(node.left, ast.Name):
+        return None
+    value = _numeric_constant(node.comparators[0])
+    if value is None:
+        return None
+    operator = _operator_from_ast(node.ops[0])
+    if operator is None:
+        return None
+    try:
+        return VisualCondition(node.left.id, operator, value)
+    except ValueError:
+        return None
+
+
+def _numeric_constant(node: ast.AST) -> float | None:
+    if isinstance(node, ast.Constant) and not isinstance(node.value, bool) and isinstance(
+        node.value, (int, float)
+    ):
+        value = float(node.value)
+        return value if math.isfinite(value) else None
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        value = _numeric_constant(node.operand)
+        if value is None:
+            return None
+        return -value if isinstance(node.op, ast.USub) else value
+    return None
+
+
+def _operator_from_ast(node: ast.cmpop) -> RuleOperator | None:
+    mapping: tuple[tuple[type[ast.cmpop], RuleOperator], ...] = (
+        (ast.Gt, RuleOperator.GREATER_THAN),
+        (ast.GtE, RuleOperator.GREATER_THAN_OR_EQUAL),
+        (ast.Lt, RuleOperator.LESS_THAN),
+        (ast.LtE, RuleOperator.LESS_THAN_OR_EQUAL),
+        (ast.Eq, RuleOperator.EQUAL),
+        (ast.NotEq, RuleOperator.NOT_EQUAL),
+    )
+    for node_type, resolved in mapping:
+        if isinstance(node, node_type):
+            return resolved
+    return None
+
+
 def _format_number(value: float) -> str:
     if value == 0:
         return "0"
     return format(value, ".12g")
 
 
-__all__ = ["RuleJoin", "RuleOperator", "VisualCondition", "VisualRuleSet"]
+__all__ = [
+    "RuleJoin",
+    "RuleOperator",
+    "VisualCondition",
+    "VisualRuleSet",
+    "recover_visual_conditions",
+]
