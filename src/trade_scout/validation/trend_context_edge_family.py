@@ -109,6 +109,23 @@ class TrendContextEdgeFamilyReport:
     report_definition_version: str = "trend-context-edge-family-v0.1"
 
 
+@dataclass(frozen=True, slots=True)
+class _ProvisionalReadout:
+    sample_size: int
+    mean_return: float
+    median_return: float
+    win_rate: float
+    profit_factor: float | None
+    median_mfe: float
+    median_mae: float
+    mean_interval: Interval
+    parent: TrendContext | None
+    parent_mean: float | None
+    paired_excess: float | None
+    paired_interval: Interval | None
+    raw_p: float | None
+
+
 def build_trend_context_edge_family_report(
     series_by_symbol: Mapping[str, tuple[ResearchBar, ...]],
     *,
@@ -165,9 +182,7 @@ def build_trend_context_edge_family_report(
                 stride=sampling_stride,
             )
             collected.extend(
-                item
-                for item in measured
-                if date.fromisoformat(item.exit_date) <= analysis_end
+                item for item in measured if date.fromisoformat(item.exit_date) <= analysis_end
             )
         outcomes = tuple(collected)
         if not outcomes:
@@ -179,7 +194,7 @@ def build_trend_context_edge_family_report(
         )
 
     raw_p_values: dict[str, float] = {}
-    provisional: dict[TrendContext, dict[str, object]] = {}
+    provisional: dict[TrendContext, _ProvisionalReadout] = {}
     for context in _CONTEXTS:
         outcomes = outcomes_by_context[context]
         returns = tuple(item.forward_return for item in outcomes)
@@ -212,25 +227,25 @@ def build_trend_context_edge_family_report(
             )
             raw_p_values[_hypothesis_id(context)] = raw_p
 
-        provisional[context] = {
-            "sample_size": len(outcomes),
-            "mean_return": fmean(returns),
-            "median_return": median(returns),
-            "win_rate": sum(value > 0 for value in returns) / len(returns),
-            "profit_factor": _profit_factor(returns),
-            "median_mfe": median(item.mfe for item in outcomes),
-            "median_mae": median(item.mae for item in outcomes),
-            "mean_interval": _month_cluster_mean_interval(
+        provisional[context] = _ProvisionalReadout(
+            sample_size=len(outcomes),
+            mean_return=fmean(returns),
+            median_return=median(returns),
+            win_rate=sum(value > 0 for value in returns) / len(returns),
+            profit_factor=_profit_factor(returns),
+            median_mfe=median(item.mfe for item in outcomes),
+            median_mae=median(item.mae for item in outcomes),
+            mean_interval=_month_cluster_mean_interval(
                 outcomes,
                 resamples=bootstrap_resamples,
                 seed=random_seed + 100 + int(context.value[1:]),
             ),
-            "parent": parent,
-            "parent_mean": parent_mean,
-            "paired_excess": paired_excess,
-            "paired_interval": paired_interval,
-            "raw_p": raw_p,
-        }
+            parent=parent,
+            parent_mean=parent_mean,
+            paired_excess=paired_excess,
+            paired_interval=paired_interval,
+            raw_p=raw_p,
+        )
 
     family = HypothesisFamily(
         family_id="first-program-A-T1-T5-parent-increment-family-v0.1",
@@ -246,41 +261,44 @@ def build_trend_context_edge_family_report(
     results: list[TrendContextReadout] = []
     for context in _CONTEXTS:
         values = provisional[context]
-        parent = values["parent"]
-        adjusted_p = adjusted.get(_hypothesis_id(context)) if parent is not None else None
-        failures = _gate_failures(
-            mean_interval=values["mean_interval"],
-            paired_excess=values["paired_excess"],
-            paired_interval=values["paired_interval"],
-            adjusted_p=adjusted_p,
-            alpha=alpha,
-        ) if parent is not None else ()
+        adjusted_p = (
+            adjusted.get(_hypothesis_id(context)) if values.parent is not None else None
+        )
+        failures = (
+            _gate_failures(
+                mean_interval=values.mean_interval,
+                paired_excess=values.paired_excess,
+                paired_interval=values.paired_interval,
+                adjusted_p=adjusted_p,
+                alpha=alpha,
+            )
+            if values.parent is not None
+            else ()
+        )
         results.append(
             TrendContextReadout(
                 context=context,
-                parent_context=parent,
-                sample_size=values["sample_size"],
-                mean_return=values["mean_return"],
-                median_return=values["median_return"],
-                win_rate=values["win_rate"],
-                profit_factor=values["profit_factor"],
-                median_mfe=values["median_mfe"],
-                median_mae=values["median_mae"],
-                mean_interval=values["mean_interval"],
-                parent_mean_return=values["parent_mean"],
-                paired_month_excess=values["paired_excess"],
-                paired_month_excess_interval=values["paired_interval"],
-                raw_parent_randomization_p_value=values["raw_p"],
+                parent_context=values.parent,
+                sample_size=values.sample_size,
+                mean_return=values.mean_return,
+                median_return=values.median_return,
+                win_rate=values.win_rate,
+                profit_factor=values.profit_factor,
+                median_mfe=values.median_mfe,
+                median_mae=values.median_mae,
+                mean_interval=values.mean_interval,
+                parent_mean_return=values.parent_mean,
+                paired_month_excess=values.paired_excess,
+                paired_month_excess_interval=values.paired_interval,
+                raw_parent_randomization_p_value=values.raw_p,
                 adjusted_parent_randomization_p_value=adjusted_p,
-                preliminary_gate_passed=parent is not None and not failures,
+                preliminary_gate_passed=values.parent is not None and not failures,
                 gate_failures=failures,
             )
         )
 
     readouts = tuple(results)
-    candidates = tuple(
-        item.context for item in readouts if item.preliminary_gate_passed
-    )
+    candidates = tuple(item.context for item in readouts if item.preliminary_gate_passed)
     verdict = _verdict(candidates)
     _emit(
         progress,
@@ -316,10 +334,7 @@ def _paired_month_differences(
     child_months = _monthly_returns(child)
     parent_months = _monthly_returns(parent)
     common = tuple(sorted(set(child_months) & set(parent_months)))
-    return tuple(
-        fmean(child_months[key]) - fmean(parent_months[key])
-        for key in common
-    )
+    return tuple(fmean(child_months[key]) - fmean(parent_months[key]) for key in common)
 
 
 def _monthly_returns(
@@ -356,10 +371,7 @@ def _bootstrap_scalar_interval(
     seed: int,
 ) -> Interval:
     rng = Random(seed)
-    estimates = [
-        fmean(rng.choice(values) for _ in values)
-        for _ in range(resamples)
-    ]
+    estimates = [fmean(rng.choice(values) for _ in values) for _ in range(resamples)]
     return _percentile_interval(estimates)
 
 
@@ -394,21 +406,18 @@ def _profit_factor(returns: tuple[float, ...]) -> float | None:
 
 def _gate_failures(
     *,
-    mean_interval: object,
-    paired_excess: object,
-    paired_interval: object,
+    mean_interval: Interval,
+    paired_excess: float | None,
+    paired_interval: Interval | None,
     adjusted_p: float | None,
     alpha: float,
 ) -> tuple[str, ...]:
-    interval = mean_interval
-    excess = paired_excess
-    excess_interval = paired_interval
     failures: list[str] = []
-    if not isinstance(interval, Interval) or interval.lower <= 0:
+    if mean_interval.lower <= 0:
         failures.append("RAW_MEAN_CI_INCLUDES_ZERO")
-    if not isinstance(excess, float) or excess <= 0:
+    if paired_excess is None or paired_excess <= 0:
         failures.append("NON_POSITIVE_PARENT_INCREMENT")
-    if not isinstance(excess_interval, Interval) or excess_interval.lower <= 0:
+    if paired_interval is None or paired_interval.lower <= 0:
         failures.append("PARENT_INCREMENT_CI_INCLUDES_ZERO")
     if adjusted_p is None or adjusted_p >= alpha:
         failures.append("PARENT_INCREMENT_NOT_SIGNIFICANT_AFTER_BH")
