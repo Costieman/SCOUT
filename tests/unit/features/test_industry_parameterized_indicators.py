@@ -76,7 +76,9 @@ def test_industry_indicator_periods_are_operator_parameterized(
 ) -> None:
     spec = ParameterizedIndicatorSpec(family, metric, period=period)
 
-    assert _last_value(spec) == pytest.approx(_last_value(parse_parameterized_feature_name(spec.feature_name)))
+    assert _last_value(spec) == pytest.approx(
+        _last_value(parse_parameterized_feature_name(spec.feature_name))
+    )
     assert spec.resolved_parameters["period"] == period
     assert spec.resolved_parameters["timeframe"] == "daily"
 
@@ -102,13 +104,21 @@ def test_macd_periods_round_trip_and_cross_output_is_binary() -> None:
     assert parse_parameterized_feature_name(line.feature_name) == line
     assert parse_parameterized_feature_name(cross.feature_name) == cross
     frame = compute_parameterized_indicator_frame(_bars(), (line, cross))
-    cross_values = [item.value for item in frame if item.feature_name == cross.feature_name and item.value is not None]
+    cross_values = [
+        item.value
+        for item in frame
+        if item.feature_name == cross.feature_name and item.value is not None
+    ]
     assert cross_values
     assert set(cross_values) <= {0.0, 1.0}
 
 
 def test_atr_uses_wilder_smoothing_and_reports_percent_of_price() -> None:
-    spec = ParameterizedIndicatorSpec(IndicatorFamily.ATR, IndicatorMetric.ATR_PCT, period=14)
+    spec = ParameterizedIndicatorSpec(
+        IndicatorFamily.ATR,
+        IndicatorMetric.ATR_PCT,
+        period=14,
+    )
 
     value = _last_value(spec)
 
