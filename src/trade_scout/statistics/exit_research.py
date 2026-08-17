@@ -157,9 +157,7 @@ def _summary(
         stop_out_rate=len(stopped) / len(results) if results else 0.0,
         expectancy=expectancy,
         expectancy_delta_vs_hold=(
-            expectancy - hold_mean
-            if expectancy is not None and hold_mean is not None
-            else None
+            expectancy - hold_mean if expectancy is not None and hold_mean is not None else None
         ),
         median_return=median(returns) if returns else None,
         win_probability=sum(value > 0 for value in returns) / len(returns) if returns else None,
