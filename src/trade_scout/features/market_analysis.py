@@ -424,9 +424,7 @@ def _calculate(
         if any(value is None or value <= 0 for value in closes):
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
         numeric = _require_values(closes)
-        log_returns = [
-            math.log(numeric[pos] / numeric[pos - 1]) for pos in range(1, len(numeric))
-        ]
+        log_returns = [math.log(numeric[pos] / numeric[pos - 1]) for pos in range(1, len(numeric))]
         value = stdev(log_returns) * math.sqrt(252.0)
         return FeatureAvailabilityStatus.AVAILABLE, value
 
@@ -621,9 +619,7 @@ def _ema_series(values: Sequence[float | None], period: int) -> tuple[float | No
     return tuple(result)
 
 
-def _wilder_rsi_series(
-    closes: Sequence[float | None], period: int
-) -> tuple[float | None, ...]:
+def _wilder_rsi_series(closes: Sequence[float | None], period: int) -> tuple[float | None, ...]:
     if period < 1:
         raise ValueError("RSI period must be positive")
     result: list[float | None] = [None] * len(closes)
