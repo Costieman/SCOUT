@@ -1,8 +1,8 @@
 """Thin local-console adapter for interactive research-workbench presentation assets.
 
 Research calculations still delegate to ``local_console.build_console_response``. This adapter only
-serves the self-hosted Strategy Builder JavaScript and extends the existing CSP to permit scripts
-from the same loopback origin; it does not add provider access or analytical logic.
+serves self-hosted Strategy Builder JavaScript and extends the existing CSP to permit scripts from
+the same loopback origin; it does not add provider access or analytical logic.
 """
 
 from __future__ import annotations
@@ -18,8 +18,15 @@ from trade_scout.app.local_console import (
     validate_bind_host,
 )
 from trade_scout.app.strategy_builder_assets import STRATEGY_BUILDER_JS
+from trade_scout.app.strategy_builder_clean_defaults import STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
 
 _ASSET_PATH = "/assets/strategy-builder.js"
+_CLEAN_DEFAULTS_ASSET_PATH = "/assets/strategy-builder-clean-defaults.js"
+_STRATEGY_PATH = "/research/strategy"
+_SCRIPT_MARKER = '<script src="/assets/strategy-builder.js" defer></script>'
+_CLEAN_DEFAULTS_SCRIPT = (
+    '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
+)
 
 
 def build_research_workbench_response(
@@ -28,18 +35,28 @@ def build_research_workbench_response(
 ) -> ConsoleResponse:
     """Serve one workbench response while keeping analytical routing in the existing console."""
 
-    if urlsplit(request_target).path == _ASSET_PATH:
-        return ConsoleResponse(
-            status_code=HTTPStatus.OK,
-            content_type="text/javascript; charset=utf-8",
-            body=STRATEGY_BUILDER_JS.encode("utf-8"),
-            headers=_interactive_security_headers(),
-        )
+    path = urlsplit(request_target).path
+    if path == _ASSET_PATH:
+        return _javascript_response(STRATEGY_BUILDER_JS)
+    if path == _CLEAN_DEFAULTS_ASSET_PATH:
+        return _javascript_response(STRATEGY_BUILDER_CLEAN_DEFAULTS_JS)
+
     response = build_console_response(request_target, config)
+    body = response.body
+    if path == _STRATEGY_PATH and response.content_type.startswith("text/html"):
+        html = body.decode("utf-8")
+        if _SCRIPT_MARKER not in html:
+            raise RuntimeError("Strategy Builder HTML omitted its interactive script marker")
+        body = html.replace(
+            _SCRIPT_MARKER,
+            f"{_SCRIPT_MARKER}\n{_CLEAN_DEFAULTS_SCRIPT}",
+            1,
+        ).encode("utf-8")
+
     return ConsoleResponse(
         status_code=response.status_code,
         content_type=response.content_type,
-        body=response.body,
+        body=body,
         headers=_replace_csp(response.headers),
     )
 
@@ -97,6 +114,15 @@ def serve_research_workbench_console(
         server.serve_forever(poll_interval=0.25)
     finally:
         server.server_close()
+
+
+def _javascript_response(source: str) -> ConsoleResponse:
+    return ConsoleResponse(
+        status_code=HTTPStatus.OK,
+        content_type="text/javascript; charset=utf-8",
+        body=source.encode("utf-8"),
+        headers=_interactive_security_headers(),
+    )
 
 
 def _replace_csp(headers: tuple[tuple[str, str], ...]) -> tuple[tuple[str, str], ...]:
