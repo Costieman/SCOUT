@@ -194,11 +194,7 @@ def _fixed_names(expression: str, allowed: frozenset[str]) -> set[str]:
         tree = ast.parse(expression.strip(), mode="eval")
     except SyntaxError as exc:
         raise ValueError("cannot inspect malformed strategy expression") from exc
-    return {
-        node.id
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Name) and node.id in allowed
-    }
+    return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and node.id in allowed}
 
 
 __all__ = ["run_feature_strategy_signal_family"]
