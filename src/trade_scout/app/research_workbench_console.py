@@ -20,14 +20,17 @@ from trade_scout.app.local_console import (
 from trade_scout.app.strategy_builder_assets import STRATEGY_BUILDER_JS
 from trade_scout.app.strategy_builder_clarity import STRATEGY_BUILDER_CLARITY_JS
 from trade_scout.app.strategy_builder_clean_defaults import STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
+from trade_scout.app.strategy_builder_help import STRATEGY_BUILDER_HELP_JS
 
 _ASSET_PATH = "/assets/strategy-builder.js"
 _CLEAN_DEFAULTS_ASSET_PATH = "/assets/strategy-builder-clean-defaults.js"
 _CLARITY_ASSET_PATH = "/assets/strategy-builder-clarity.js"
+_HELP_ASSET_PATH = "/assets/strategy-builder-help.js"
 _STRATEGY_PATH = "/research/strategy"
 _SCRIPT_MARKER = '<script src="/assets/strategy-builder.js" defer></script>'
 _CLEAN_DEFAULTS_SCRIPT = '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
 _CLARITY_SCRIPT = '<script src="/assets/strategy-builder-clarity.js" defer></script>'
+_HELP_SCRIPT = '<script src="/assets/strategy-builder-help.js" defer></script>'
 
 
 def build_research_workbench_response(
@@ -43,6 +46,8 @@ def build_research_workbench_response(
         return _javascript_response(STRATEGY_BUILDER_CLEAN_DEFAULTS_JS)
     if path == _CLARITY_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_CLARITY_JS)
+    if path == _HELP_ASSET_PATH:
+        return _javascript_response(STRATEGY_BUILDER_HELP_JS)
 
     response = build_console_response(request_target, config)
     body = response.body
@@ -50,7 +55,9 @@ def build_research_workbench_response(
         html = body.decode("utf-8")
         if _SCRIPT_MARKER not in html:
             raise RuntimeError("Strategy Builder HTML omitted its interactive script marker")
-        scripts = f"{_SCRIPT_MARKER}\n{_CLEAN_DEFAULTS_SCRIPT}\n{_CLARITY_SCRIPT}"
+        scripts = (
+            f"{_SCRIPT_MARKER}\n{_CLEAN_DEFAULTS_SCRIPT}\n{_CLARITY_SCRIPT}\n{_HELP_SCRIPT}"
+        )
         body = html.replace(_SCRIPT_MARKER, scripts, 1).encode("utf-8")
 
     return ConsoleResponse(
