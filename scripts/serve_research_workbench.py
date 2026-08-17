@@ -63,13 +63,17 @@ def main() -> int:
     base_url = f"http://{args.host}:{args.port}/"
     universe_url = f"{base_url}research/universe"
     edge_url = f"{base_url}research/edge"
+    risk_url = f"{base_url}research/risk"
+    exit_url = f"{base_url}research/exits"
     print(f"Trade Scout research console: {base_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
+    print(f"Risk & Stop Research: {risk_url}")
+    print(f"Configurable Exit Policy Lab: {exit_url}")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     if args.open_browser:
-        webbrowser.open(universe_url)
+        webbrowser.open(exit_url)
     try:
         serve_local_console(
             config,
