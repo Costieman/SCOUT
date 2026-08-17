@@ -17,7 +17,7 @@ from trade_scout.app.operator_workspace import load_operator_workspace, validate
 from trade_scout.app.universe_research_service import CanonicalUniverseResearchSource
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
 from trade_scout.patterns.timeframes import PatternTimeframe
-from trade_scout.statistics.horizon_edge_family import build_horizon_edge_family_report
+from trade_scout.validation.horizon_edge_family import build_horizon_edge_family_report
 
 
 def _parser() -> argparse.ArgumentParser:
