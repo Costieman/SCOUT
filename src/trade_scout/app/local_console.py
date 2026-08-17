@@ -27,6 +27,7 @@ from trade_scout.app.edge_explorer_service import (
     EdgeExplorerSource,
 )
 from trade_scout.app.edge_explorer_surface import render_edge_explorer_html
+from trade_scout.app.entry_strategy_registry import EntryFamily, available_entry_strategies
 from trade_scout.app.exit_policy_lab_service import (
     ExitPolicyLabError,
     ExitPolicyLabRequest,
@@ -42,6 +43,13 @@ from trade_scout.app.risk_research_service import (
     RiskResearchService,
 )
 from trade_scout.app.risk_research_surface import render_risk_research_html
+from trade_scout.app.strategy_builder_service import (
+    StrategyBuilderError,
+    StrategyBuilderRequest,
+    StrategyBuilderService,
+    StrategyBuilderSource,
+)
+from trade_scout.app.strategy_builder_surface import render_strategy_builder_html
 from trade_scout.app.universe_research_service import (
     UniverseResearchError,
     UniverseResearchRequest,
@@ -50,6 +58,7 @@ from trade_scout.app.universe_research_service import (
 )
 from trade_scout.app.universe_research_surface import render_universe_research_html
 from trade_scout.patterns.consolidation_breakout import TrendFilter
+from trade_scout.statistics.strategy_research import available_strategy_features
 
 
 class LocalConsoleConfigurationError(ValueError):
@@ -65,6 +74,7 @@ class LocalConsoleConfig:
     refresh_seconds: int = 15
     edge_explorer_source: EdgeExplorerSource | None = None
     universe_research_source: UniverseResearchSource | None = None
+    strategy_builder_source: StrategyBuilderSource | None = None
 
     def __post_init__(self) -> None:
         if not self.build_label.strip():
@@ -112,6 +122,7 @@ def build_console_response(
         "/research/universe",
         "/research/risk",
         "/research/exits",
+        "/research/strategy",
         "/api/snapshot.json",
         "/api/data-health.json",
         "/healthz",
@@ -130,6 +141,8 @@ def build_console_response(
         return _risk_research_response(parsed_target.query, config)
     if path == "/research/exits":
         return _exit_policy_lab_response(parsed_target.query, config)
+    if path == "/research/strategy":
+        return _strategy_builder_response(parsed_target.query, config)
 
     health = build_data_health_summary(config.sources)
     snapshot = build_phase1_application_snapshot(
@@ -152,6 +165,10 @@ def build_console_response(
         html = _with_exit_policy_lab_link(
             html,
             enabled=config.universe_research_source is not None,
+        )
+        html = _with_strategy_builder_link(
+            html,
+            enabled=config.strategy_builder_source is not None,
         )
         html = _with_local_console_metadata(html, refresh_seconds=config.refresh_seconds)
         return ConsoleResponse(
@@ -483,6 +500,106 @@ def _exit_policy_lab_response(query: str, config: LocalConsoleConfig) -> Console
         return _html_response(HTTPStatus.BAD_REQUEST, html)
 
 
+def _strategy_builder_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
+    source = config.strategy_builder_source
+    entries = available_entry_strategies()
+    features = available_strategy_features()
+    if source is None:
+        html = render_strategy_builder_html(
+            universes=(),
+            entries=entries,
+            features=features,
+            error=(
+                "Strategy Builder is not configured for this console. Use an operator workspace "
+                "with a selected canonical dataset and reviewed identity candidate."
+            ),
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+    try:
+        universes = source.available_universes()
+    except Exception as exc:
+        html = render_strategy_builder_html(
+            universes=(),
+            entries=entries,
+            features=features,
+            error=f"Cannot load research-universe scope: {type(exc).__name__}: {exc}",
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+    parameters = parse_qs(query, keep_blank_values=True)
+    if "universe" not in parameters:
+        return _html_response(
+            HTTPStatus.OK,
+            render_strategy_builder_html(
+                universes=universes,
+                entries=entries,
+                features=features,
+            ),
+        )
+    request: StrategyBuilderRequest | None = None
+    try:
+        request = StrategyBuilderRequest(
+            universe_id=_one(parameters, "universe", default="reviewed_canonical"),
+            entry_family=EntryFamily(
+                _one(parameters, "entry_family", default=EntryFamily.FEATURE_EXPRESSION.value)
+            ),
+            lookback_years=int(_one(parameters, "lookback_years", default="2")),
+            horizon=int(_one(parameters, "horizon", default="20")),
+            expression=_one(
+                parameters,
+                "expression",
+                default=(
+                    "return_20 >= 0.05 and relative_volume_20 >= 1.5 "
+                    "and distance_sma_200_pct > 0"
+                ),
+            ),
+            rank_feature=_one(parameters, "rank_feature", default="return_20"),
+            descending=_one(parameters, "rank_direction", default="desc") == "desc",
+            per_session_limit=int(_one(parameters, "per_session_limit", default="25")),
+            duration=int(_one(parameters, "duration", default="20")),
+            max_range_pct=float(_one(parameters, "max_range_pct", default="12")) / 100.0,
+            trend_filter=TrendFilter(
+                _one(parameters, "trend_filter", default=TrendFilter.ABOVE_SMA_50_100_200.value)
+            ),
+            min_breakout_volume_ratio=_optional_volume_ratio(
+                _one(parameters, "volume_ratio", default="none")
+            ),
+            fixed_percentages=parse_percentage_grid(
+                _one(parameters, "fixed_stops", default="2,3,4,5,7,10")
+            ),
+            trailing_percentages=parse_percentage_grid(
+                _one(parameters, "trailing_stops", default="2,3,5,7,10")
+            ),
+            atr_multiples=parse_multiple_grid(
+                _one(parameters, "atr_stops", default="1,1.5,2,2.5,3")
+            ),
+            trailing_atr_multiples=parse_multiple_grid(
+                _one(parameters, "trailing_atr", default="1,1.5,2,2.5,3")
+            ),
+            entry_slippage_bps=float(_one(parameters, "entry_slip", default="0")),
+            exit_slippage_bps=float(_one(parameters, "exit_slip", default="0")),
+            stop_slippage_bps=float(_one(parameters, "stop_slip", default="0")),
+            commission_bps_per_side=float(_one(parameters, "commission", default="0")),
+        )
+        report = StrategyBuilderService(source).run(request)
+        html = render_strategy_builder_html(
+            universes=universes,
+            entries=entries,
+            features=features,
+            request=request,
+            report=report,
+        )
+        return _html_response(HTTPStatus.OK, html)
+    except (ValueError, StrategyBuilderError) as exc:
+        html = render_strategy_builder_html(
+            universes=universes,
+            entries=entries,
+            features=features,
+            request=request,
+            error=str(exc),
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+
 def _optional_volume_ratio(value: str) -> float | None:
     if value.strip().lower() == "none":
         return None
@@ -583,6 +700,15 @@ def _with_exit_policy_lab_link(html: str, *, enabled: bool) -> str:
         html,
         href="/research/exits",
         label="Exit Policy Lab",
+        enabled=enabled,
+    )
+
+
+def _with_strategy_builder_link(html: str, *, enabled: bool) -> str:
+    return _with_research_link(
+        html,
+        href="/research/strategy",
+        label="Strategy Builder",
         enabled=enabled,
     )
 
