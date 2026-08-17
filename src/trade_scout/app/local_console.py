@@ -547,7 +547,9 @@ def _strategy_builder_response(query: str, config: LocalConsoleConfig) -> Consol
             expression=_one(
                 parameters,
                 "expression",
-                default=("return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"),
+                default=(
+                    "return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"
+                ),
             ),
             rank_feature=_one(parameters, "rank_feature", default="return_20"),
             descending=_one(parameters, "rank_direction", default="desc") == "desc",
