@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Presentation-only plain-English result readout for Strategy Builder."""
 
 STRATEGY_BUILDER_READOUT_JS = r"""
