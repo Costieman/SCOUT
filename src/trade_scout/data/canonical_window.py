@@ -18,6 +18,7 @@ import duckdb
 from trade_scout.data.canonical_storage import (
     CanonicalDailyBarStore,
     CanonicalDatasetIntegrityError,
+    CanonicalDatasetManifest,
     CanonicalDatasetNotFoundError,
 )
 from trade_scout.data.contracts import DailyBar, DatasetVersion, InstrumentId, QualityStatus
@@ -130,7 +131,7 @@ class CanonicalDailyBarWindowReader:
             connection.close()
         return tuple(_daily_bar_from_row(row) for row in rows)
 
-    def _manifest(self):
+    def _manifest(self) -> CanonicalDatasetManifest:
         manifest = CanonicalDailyBarStore(self.root).get_manifest(self.dataset_version)
         if manifest is None:
             raise CanonicalDatasetNotFoundError(str(self.dataset_version))
@@ -162,13 +163,13 @@ def _daily_bar_from_row(row: tuple[object, ...]) -> DailyBar:
     return DailyBar(
         instrument_id=InstrumentId(str(row[0])),
         trade_date=trade_date,
-        open_raw=float(row[2]),
-        high_raw=float(row[3]),
-        low_raw=float(row[4]),
-        close_raw=float(row[5]),
-        volume_raw=float(row[6]),
-        split_factor=float(row[7]),
-        dividend_cash=float(row[8]),
+        open_raw=_require_float(row[2]),
+        high_raw=_require_float(row[3]),
+        low_raw=_require_float(row[4]),
+        close_raw=_require_float(row[5]),
+        volume_raw=_require_float(row[6]),
+        split_factor=_require_float(row[7]),
+        dividend_cash=_require_float(row[8]),
         open_split_adjusted=_optional_float(row[9]),
         high_split_adjusted=_optional_float(row[10]),
         low_split_adjusted=_optional_float(row[11]),
@@ -179,8 +180,14 @@ def _daily_bar_from_row(row: tuple[object, ...]) -> DailyBar:
     )
 
 
+def _require_float(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise CanonicalDatasetIntegrityError("canonical window returned a non-numeric value")
+    return float(value)
+
+
 def _optional_float(value: object) -> float | None:
-    return None if value is None else float(value)
+    return None if value is None else _require_float(value)
 
 
 def _file_checksum(path: Path) -> str:
