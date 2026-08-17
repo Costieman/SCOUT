@@ -22,18 +22,21 @@ from trade_scout.app.strategy_builder_clarity import STRATEGY_BUILDER_CLARITY_JS
 from trade_scout.app.strategy_builder_clean_defaults import STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
 from trade_scout.app.strategy_builder_help import STRATEGY_BUILDER_HELP_JS
 from trade_scout.app.strategy_builder_readout import STRATEGY_BUILDER_READOUT_JS
+from trade_scout.app.strategy_builder_sweep import STRATEGY_BUILDER_SWEEP_JS
 
 _ASSET_PATH = "/assets/strategy-builder.js"
 _CLEAN_DEFAULTS_ASSET_PATH = "/assets/strategy-builder-clean-defaults.js"
 _CLARITY_ASSET_PATH = "/assets/strategy-builder-clarity.js"
 _HELP_ASSET_PATH = "/assets/strategy-builder-help.js"
 _READOUT_ASSET_PATH = "/assets/strategy-builder-readout.js"
+_SWEEP_ASSET_PATH = "/assets/strategy-builder-sweep.js"
 _STRATEGY_PATH = "/research/strategy"
 _SCRIPT_MARKER = '<script src="/assets/strategy-builder.js" defer></script>'
 _CLEAN_DEFAULTS_SCRIPT = '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
 _CLARITY_SCRIPT = '<script src="/assets/strategy-builder-clarity.js" defer></script>'
 _HELP_SCRIPT = '<script src="/assets/strategy-builder-help.js" defer></script>'
 _READOUT_SCRIPT = '<script src="/assets/strategy-builder-readout.js" defer></script>'
+_SWEEP_SCRIPT = '<script src="/assets/strategy-builder-sweep.js" defer></script>'
 
 
 def build_research_workbench_response(
@@ -53,6 +56,8 @@ def build_research_workbench_response(
         return _javascript_response(STRATEGY_BUILDER_HELP_JS)
     if path == _READOUT_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_READOUT_JS)
+    if path == _SWEEP_ASSET_PATH:
+        return _javascript_response(STRATEGY_BUILDER_SWEEP_JS)
 
     response = build_console_response(request_target, config)
     body = response.body
@@ -62,7 +67,7 @@ def build_research_workbench_response(
             raise RuntimeError("Strategy Builder HTML omitted its interactive script marker")
         scripts = (
             f"{_SCRIPT_MARKER}\n{_CLEAN_DEFAULTS_SCRIPT}\n{_CLARITY_SCRIPT}\n"
-            f"{_HELP_SCRIPT}\n{_READOUT_SCRIPT}"
+            f"{_HELP_SCRIPT}\n{_READOUT_SCRIPT}\n{_SWEEP_SCRIPT}"
         )
         body = html.replace(_SCRIPT_MARKER, scripts, 1).encode("utf-8")
 
