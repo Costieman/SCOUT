@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 
 from trade_scout.features.parameterized_indicators import (
     IndicatorFamily,
@@ -13,6 +14,7 @@ from trade_scout.features.parameterized_indicators import (
 )
 
 _PREFIX = "pi__"
+_MACD_SUFFIX = re.compile(r"^f(?P<fast>\d+)s(?P<slow>\d+)g(?P<signal>\d+)$")
 
 
 def parse_parameterized_feature_name(feature_name: str) -> ParameterizedIndicatorSpec:
@@ -29,6 +31,7 @@ def parse_parameterized_feature_name(feature_name: str) -> ParameterizedIndicato
         raise ValueError(f"invalid parameterized indicator period: {period_token!r}")
     period = int(period_token[1:])
     suffix = parts[5]
+
     if family is IndicatorFamily.MOVING_AVERAGE:
         return ParameterizedIndicatorSpec(
             family=family,
@@ -37,15 +40,34 @@ def parse_parameterized_feature_name(feature_name: str) -> ParameterizedIndicato
             source=source,
             moving_average_type=MovingAverageType(suffix),
         )
-    if not suffix.startswith("k"):
-        raise ValueError(f"invalid Bollinger deviation token: {suffix!r}")
-    deviations = _decode_number(suffix[1:])
+    if family is IndicatorFamily.BOLLINGER_BANDS:
+        if not suffix.startswith("k"):
+            raise ValueError(f"invalid Bollinger deviation token: {suffix!r}")
+        return ParameterizedIndicatorSpec(
+            family=family,
+            metric=metric,
+            period=period,
+            source=source,
+            standard_deviations=_decode_number(suffix[1:]),
+        )
+    if family is IndicatorFamily.MACD:
+        match = _MACD_SUFFIX.match(suffix)
+        if match is None:
+            raise ValueError(f"invalid MACD parameter token: {suffix!r}")
+        return ParameterizedIndicatorSpec(
+            family=family,
+            metric=metric,
+            period=period,
+            source=source,
+            fast_period=int(match.group("fast")),
+            slow_period=int(match.group("slow")),
+            signal_period=int(match.group("signal")),
+        )
     return ParameterizedIndicatorSpec(
         family=family,
         metric=metric,
         period=period,
         source=source,
-        standard_deviations=deviations,
     )
 
 
