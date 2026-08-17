@@ -11,7 +11,9 @@ from trade_scout.validation.trend_context_edge_family import (
 )
 
 
-def render_trend_context_edge_family_html(report: TrendContextEdgeFamilyReport, *, report_checksum: str | None = None) -> str:
+def render_trend_context_edge_family_html(
+    report: TrendContextEdgeFamilyReport, *, report_checksum: str | None = None
+) -> str:
     rows = "".join(_row(item) for item in report.context_results)
     candidates = ", ".join(item.value for item in report.candidate_contexts) or "None"
     checksum = escape(report_checksum) if report_checksum else "—"
@@ -40,12 +42,16 @@ def _row(item) -> str:
     parent = item.parent_context.value if item.parent_context is not None else "—"
     raw_p = _num(item.raw_parent_randomization_p_value, 4)
     adj_p = _num(item.adjusted_parent_randomization_p_value, 4)
-    gate = "REFERENCE" if item.parent_context is None else ("PASS" if item.preliminary_gate_passed else "; ".join(item.gate_failures))
+    gate = (
+        "REFERENCE"
+        if item.parent_context is None
+        else ("PASS" if item.preliminary_gate_passed else "; ".join(item.gate_failures))
+    )
     return (
         f"<tr><td><strong>{escape(item.context.value)}</strong></td><td>{escape(parent)}</td>"
         f"<td>{item.sample_size}</td><td class='{_value_class(item.mean_return)}'>{_pct(item.mean_return)}</td>"
-        f"<td>{_interval(item.mean_interval)}</td><td>{_pct(item.median_return)}</td><td>{item.win_rate*100:.1f}%</td>"
-        f"<td>{_num(item.profit_factor,3)}</td><td>{_pct(item.median_mfe)}</td><td>{_pct(item.median_mae)}</td>"
+        f"<td>{_interval(item.mean_interval)}</td><td>{_pct(item.median_return)}</td><td>{item.win_rate * 100:.1f}%</td>"
+        f"<td>{_num(item.profit_factor, 3)}</td><td>{_pct(item.median_mfe)}</td><td>{_pct(item.median_mae)}</td>"
         f"<td>{_pct(item.parent_mean_return)}</td><td class='{_value_class(item.paired_month_excess)}'>{_pct(item.paired_month_excess)}</td>"
         f"<td>{_interval(item.paired_month_excess_interval)}</td><td>{raw_p}</td><td>{adj_p}</td><td>{escape(gate)}</td></tr>"
     )
@@ -56,7 +62,7 @@ def _interval(value: Interval | None) -> str:
 
 
 def _pct(value: float | None) -> str:
-    return "—" if value is None else f"{value*100:+.2f}%"
+    return "—" if value is None else f"{value * 100:+.2f}%"
 
 
 def _num(value: float | None, digits: int) -> str:
