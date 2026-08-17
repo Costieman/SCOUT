@@ -43,7 +43,9 @@ def build_entry_sweep_page(
                 universes=(),
                 entries=entries,
                 features=features,
-                error="Strategy Builder entry sweeps require a configured canonical research source.",
+                error=(
+                    "Strategy Builder entry sweeps require a configured canonical research source."
+                ),
             ),
         )
     try:
