@@ -81,7 +81,11 @@ class IndicatorMetric(StrEnum):
 
 _METRICS_BY_FAMILY: dict[IndicatorFamily, frozenset[IndicatorMetric]] = {
     IndicatorFamily.MOVING_AVERAGE: frozenset(
-        {IndicatorMetric.MA_DISTANCE_PCT, IndicatorMetric.MA_CROSS_UP, IndicatorMetric.MA_CROSS_DOWN}
+        {
+            IndicatorMetric.MA_DISTANCE_PCT,
+            IndicatorMetric.MA_CROSS_UP,
+            IndicatorMetric.MA_CROSS_DOWN,
+        }
     ),
     IndicatorFamily.BOLLINGER_BANDS: frozenset(
         {
@@ -156,7 +160,10 @@ class ParameterizedIndicatorSpec:
             raise ValueError("indicator period must be between 2 and 1000 daily sessions")
         if self.metric not in _METRICS_BY_FAMILY[self.family]:
             raise ValueError(f"{self.metric.value} is not valid for {self.family.value}")
-        if not math.isfinite(self.standard_deviations) or not 0.01 <= self.standard_deviations <= 20:
+        if (
+            not math.isfinite(self.standard_deviations)
+            or not 0.01 <= self.standard_deviations <= 20
+        ):
             raise ValueError("Bollinger standard deviations must be between 0.01 and 20")
         if not 2 <= self.fast_period < self.slow_period <= 1000:
             raise ValueError("MACD periods require 2 <= fast < slow <= 1000")
@@ -281,7 +288,9 @@ def compute_parameterized_indicator_frame(
     for bar in materialized:
         key = (str(bar.instrument_id), bar.trade_date)
         if key in seen:
-            raise ValueError(f"duplicate canonical instrument/date for parameterized feature: {key}")
+            raise ValueError(
+                f"duplicate canonical instrument/date for parameterized feature: {key}"
+            )
         seen.add(key)
         by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
 
@@ -291,7 +300,10 @@ def compute_parameterized_indicator_frame(
         for spec in requested:
             values.extend(_compute_spec(ordered, spec))
     return tuple(
-        sorted(values, key=lambda item: (str(item.instrument_id), item.trade_date, item.feature_name))
+        sorted(
+            values,
+            key=lambda item: (str(item.instrument_id), item.trade_date, item.feature_name),
+        )
     )
 
 
@@ -526,9 +538,7 @@ def _relative_volume(bars: tuple[DailyBar, ...], period: int) -> tuple[float | N
     return tuple(result)
 
 
-def _average_dollar_volume(
-    bars: tuple[DailyBar, ...], period: int
-) -> tuple[float | None, ...]:
+def _average_dollar_volume(bars: tuple[DailyBar, ...], period: int) -> tuple[float | None, ...]:
     result: list[float | None] = [None] * len(bars)
     for index in range(period, len(bars)):
         values: list[float] = []
@@ -542,9 +552,7 @@ def _average_dollar_volume(
     return tuple(result)
 
 
-def _historical_volatility(
-    values: Sequence[float | None], period: int
-) -> tuple[float | None, ...]:
+def _historical_volatility(values: Sequence[float | None], period: int) -> tuple[float | None, ...]:
     result: list[float | None] = [None] * len(values)
     for index in range(period, len(values)):
         window = values[index - period : index + 1]
@@ -563,7 +571,10 @@ def _prior_high_metric(
 ) -> tuple[float | None, ...]:
     result: list[float | None] = [None] * len(bars)
     for index in range(spec.period, len(bars)):
-        highs = tuple(_split_price(item.high_split_adjusted) for item in bars[index - spec.period : index])
+        highs = tuple(
+            _split_price(item.high_split_adjusted)
+            for item in bars[index - spec.period : index]
+        )
         current = source[index]
         if current is None or any(item is None for item in highs):
             continue
@@ -605,9 +616,7 @@ def _ema_series(values: Sequence[float | None], period: int) -> tuple[float | No
     return tuple(result)
 
 
-def _ema_series_with_gaps(
-    values: Sequence[float | None], period: int
-) -> tuple[float | None, ...]:
+def _ema_series_with_gaps(values: Sequence[float | None], period: int) -> tuple[float | None, ...]:
     result: list[float | None] = [None] * len(values)
     first = next((index for index, value in enumerate(values) if value is not None), None)
     if first is None or first + period > len(values):
