@@ -155,8 +155,14 @@ def run_feature_strategy_signal_family(
                 )
 
     warnings = (
-        "Exploratory one-variable strategy-family research only; no child is validated by this sweep.",
-        "All child expressions are evaluated point-in-time from one shared canonical working window.",
+        (
+            "Exploratory one-variable strategy-family research only; "
+            "no child is validated by this sweep."
+        ),
+        (
+            "All child expressions are evaluated point-in-time from one shared "
+            "canonical working window."
+        ),
         "Outcome measurement is intentionally deferred to the shared downstream exit engine.",
     )
     reports: list[StrategyResearchReport] = []
