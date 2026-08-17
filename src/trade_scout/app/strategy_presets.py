@@ -12,6 +12,19 @@ from dataclasses import dataclass
 
 from trade_scout.statistics.strategy_research import StrategyDefinition, available_strategy_features
 
+_RSI_PULLBACK_EXPRESSION = " ".join(
+    (
+        "rsi_wilder_14 <= 40 and distance_sma_200_pct > 0",
+        "and sma_200_slope_20_pct > 0",
+    )
+)
+_MOMENTUM_VOLUME_EXPRESSION = " ".join(
+    (
+        "return_20 >= 0.05 and relative_volume_20 >= 1.5",
+        "and distance_sma_200_pct > 0",
+    )
+)
+
 
 @dataclass(frozen=True, slots=True)
 class StrategyPreset:
@@ -86,16 +99,16 @@ _PRESETS = (
     StrategyPreset(
         preset_id="rsi_pullback_rising_200",
         label="RSI pullback in rising long-term trend",
-        description="RSI at or below 40 while price is above a rising SMA200; ranked from lowest RSI upward.",
-        expression="rsi_wilder_14 <= 40 and distance_sma_200_pct > 0 and sma_200_slope_20_pct > 0",
+        description="RSI <= 40 while price is above a rising SMA200; lowest RSI ranks first.",
+        expression=_RSI_PULLBACK_EXPRESSION,
         rank_feature="rsi_wilder_14",
         descending=False,
     ),
     StrategyPreset(
         preset_id="momentum_volume_trend",
         label="20-session momentum + volume + trend",
-        description="At least 5% 20-session return, relative volume at least 1.5x, and price above SMA200.",
-        expression="return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0",
+        description="20-session momentum, elevated relative volume, and price above SMA200.",
+        expression=_MOMENTUM_VOLUME_EXPRESSION,
         rank_feature="return_20",
         descending=True,
     ),
