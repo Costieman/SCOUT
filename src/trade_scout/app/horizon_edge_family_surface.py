@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from html import escape
 
-from trade_scout.statistics.horizon_edge_family import (
+from trade_scout.statistics.readable_edge import ConfidenceInterval
+from trade_scout.validation.horizon_edge_family import (
     HorizonEdgeFamilyReport,
     HorizonEdgeReadout,
 )
-from trade_scout.statistics.readable_edge import ConfidenceInterval
 
 
 def render_horizon_edge_family_html(
