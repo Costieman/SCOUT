@@ -21,6 +21,11 @@ from trade_scout.app.universe_research_service import UniverseOption
 from trade_scout.app.visual_rule_builder import VisualCondition, VisualRuleSet
 from trade_scout.data.contracts import DailyBar, ResearchBar
 from trade_scout.events.contracts import EventRecord
+from trade_scout.features.parameterized_expression import extract_parameterized_specs
+from trade_scout.features.parameterized_indicators import (
+    ParameterizedIndicatorSpec,
+    compute_parameterized_indicator_frame,
+)
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
     TrendFilter,
@@ -160,6 +165,7 @@ class StrategyBuilderReport:
     entry_event_count: int
     entry_definition_version: str
     visual_conditions: tuple[VisualCondition, ...]
+    parameterized_indicator_specs: tuple[ParameterizedIndicatorSpec, ...]
     feature_preset: StrategyPreset | None
     feature_strategy_report: StrategyResearchReport | None
     consolidation_config: ConsolidationBreakoutConfig | None
@@ -167,7 +173,7 @@ class StrategyBuilderReport:
     comparison: ExitResearchComparison
     provider_calls_made: bool = False
     research_state: str = "EXPLORATORY"
-    application_version: str = "strategy-builder-v0.3"
+    application_version: str = "strategy-builder-v0.4"
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,18 +194,23 @@ class StrategyBuilderService:
         start = _subtract_years(latest, request.lookback_years)
         entry_option = entry_strategy_option(request.entry_family)
 
+        parameterized_specs: tuple[ParameterizedIndicatorSpec, ...] = ()
         feature_preset: StrategyPreset | None = None
         feature_report: StrategyResearchReport | None = None
         consolidation_config: ConsolidationBreakoutConfig | None = None
         events_by_instrument: dict[str, list[EventRecord]] = {}
         if request.entry_family is EntryFamily.FEATURE_EXPRESSION:
             feature_preset, strategy_definition = _feature_strategy_definition(request)
+            daily_bars = self.source.canonical_daily_bars(request.universe_id)
+            parameterized_specs = extract_parameterized_specs(strategy_definition.expression)
+            extra_features = compute_parameterized_indicator_frame(daily_bars, parameterized_specs)
             feature_report = run_feature_strategy_research(
-                self.source.canonical_daily_bars(request.universe_id),
+                daily_bars,
                 strategy=strategy_definition,
                 horizons=(request.horizon,),
                 signal_start=start,
                 signal_end=latest,
+                extra_features=extra_features,
             )
             for signal in feature_report.signals:
                 events_by_instrument.setdefault(str(signal.instrument_id), []).append(signal)
@@ -282,6 +293,7 @@ class StrategyBuilderService:
             entry_event_count=entry_count,
             entry_definition_version=entry_definition_version,
             visual_conditions=request.visual_conditions,
+            parameterized_indicator_specs=parameterized_specs,
             feature_preset=feature_preset,
             feature_strategy_report=feature_report,
             consolidation_config=consolidation_config,
