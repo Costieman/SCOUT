@@ -1,5 +1,18 @@
 """Stop, exit, and risk-policy evaluation applied after event definition."""
 
+from trade_scout.risk.exit_policies import (
+    DEFAULT_ATR_GRID,
+    DEFAULT_FIXED_PERCENT_GRID,
+    DEFAULT_TRAILING_ATR_GRID,
+    DEFAULT_TRAILING_PERCENT_GRID,
+    ExitFamily,
+    ExitPolicy,
+    ExitPolicyResult,
+    ExitReason,
+    evaluate_exit_policy,
+    evaluate_exit_policy_grid,
+    exit_policy_grid,
+)
 from trade_scout.risk.initial_stops import (
     ATR_STOP_GRID,
     FIXED_STOP_GRID,
@@ -21,8 +34,16 @@ from trade_scout.risk.initial_stops import (
 
 __all__ = [
     "ATR_STOP_GRID",
+    "DEFAULT_ATR_GRID",
+    "DEFAULT_FIXED_PERCENT_GRID",
+    "DEFAULT_TRAILING_ATR_GRID",
+    "DEFAULT_TRAILING_PERCENT_GRID",
     "FIXED_STOP_GRID",
     "CostModel",
+    "ExitFamily",
+    "ExitPolicy",
+    "ExitPolicyResult",
+    "ExitReason",
     "PrematureStopDefinition",
     "PrematureStopStatus",
     "PrematureStopSuccessKind",
@@ -31,8 +52,11 @@ __all__ = [
     "StopFamily",
     "StopPolicy",
     "StructuralStopContext",
+    "evaluate_exit_policy",
+    "evaluate_exit_policy_grid",
     "evaluate_stop_policy",
     "evaluate_stop_policy_grid",
+    "exit_policy_grid",
     "initial_stop_policy_grid",
     "pre_entry_atr",
     "structural_stop_context_from_pattern_state",

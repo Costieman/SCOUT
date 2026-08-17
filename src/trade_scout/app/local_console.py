@@ -27,6 +27,14 @@ from trade_scout.app.edge_explorer_service import (
     EdgeExplorerSource,
 )
 from trade_scout.app.edge_explorer_surface import render_edge_explorer_html
+from trade_scout.app.exit_policy_lab_service import (
+    ExitPolicyLabError,
+    ExitPolicyLabRequest,
+    ExitPolicyLabService,
+    parse_multiple_grid,
+    parse_percentage_grid,
+)
+from trade_scout.app.exit_policy_lab_surface import render_exit_policy_lab_html
 from trade_scout.app.operational_surface import render_operational_application_html
 from trade_scout.app.risk_research_service import (
     RiskResearchError,
@@ -103,6 +111,7 @@ def build_console_response(
         "/research/edge",
         "/research/universe",
         "/research/risk",
+        "/research/exits",
         "/api/snapshot.json",
         "/api/data-health.json",
         "/healthz",
@@ -119,6 +128,8 @@ def build_console_response(
         return _universe_research_response(parsed_target.query, config)
     if path == "/research/risk":
         return _risk_research_response(parsed_target.query, config)
+    if path == "/research/exits":
+        return _exit_policy_lab_response(parsed_target.query, config)
 
     health = build_data_health_summary(config.sources)
     snapshot = build_phase1_application_snapshot(
@@ -135,6 +146,10 @@ def build_console_response(
             enabled=config.universe_research_source is not None,
         )
         html = _with_risk_research_link(
+            html,
+            enabled=config.universe_research_source is not None,
+        )
+        html = _with_exit_policy_lab_link(
             html,
             enabled=config.universe_research_source is not None,
         )
@@ -170,9 +185,7 @@ def validate_bind_host(host: str, *, allow_remote: bool) -> None:
     normalized = host.strip().lower()
     if not normalized:
         raise LocalConsoleConfigurationError("host must be non-empty")
-    if allow_remote:
-        return
-    if normalized == "localhost":
+    if allow_remote or normalized == "localhost":
         return
     try:
         address = ipaddress.ip_address(normalized)
@@ -198,7 +211,6 @@ def serve_local_console(
     validate_bind_host(host, allow_remote=allow_remote)
     if not 1 <= port <= 65535:
         raise LocalConsoleConfigurationError("port must be between 1 and 65535")
-
     handler_type = _handler_for(config)
     server = ThreadingHTTPServer((host, port), handler_type)
     try:
@@ -263,7 +275,6 @@ def _edge_explorer_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
             ),
         )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
-
     try:
         symbols = source.available_symbols()
     except Exception as exc:
@@ -272,12 +283,9 @@ def _edge_explorer_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
             error=f"Cannot load reviewed symbol scope: {type(exc).__name__}: {exc}",
         )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
-
     parameters = parse_qs(query, keep_blank_values=False)
     if "symbol" not in parameters:
-        html = render_edge_explorer_html(symbols=symbols)
-        return _html_response(HTTPStatus.OK, html)
-
+        return _html_response(HTTPStatus.OK, render_edge_explorer_html(symbols=symbols))
     request: EdgeExplorerRequest | None = None
     try:
         request = EdgeExplorerRequest(
@@ -294,11 +302,7 @@ def _edge_explorer_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
         html = render_edge_explorer_html(symbols=symbols, request=request, report=report)
         return _html_response(HTTPStatus.OK, html)
     except (ValueError, EdgeExplorerError) as exc:
-        html = render_edge_explorer_html(
-            symbols=symbols,
-            request=request,
-            error=str(exc),
-        )
+        html = render_edge_explorer_html(symbols=symbols, request=request, error=str(exc))
         return _html_response(HTTPStatus.BAD_REQUEST, html)
 
 
@@ -313,7 +317,6 @@ def _universe_research_response(query: str, config: LocalConsoleConfig) -> Conso
             ),
         )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
-
     try:
         universes = source.available_universes()
     except Exception as exc:
@@ -322,12 +325,9 @@ def _universe_research_response(query: str, config: LocalConsoleConfig) -> Conso
             error=f"Cannot load research-universe scope: {type(exc).__name__}: {exc}",
         )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
-
     parameters = parse_qs(query, keep_blank_values=False)
     if "universe" not in parameters:
-        html = render_universe_research_html(universes=universes)
-        return _html_response(HTTPStatus.OK, html)
-
+        return _html_response(HTTPStatus.OK, render_universe_research_html(universes=universes))
     request: UniverseResearchRequest | None = None
     try:
         request = UniverseResearchRequest(
@@ -371,7 +371,6 @@ def _risk_research_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
             ),
         )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
-
     try:
         universes = source.available_universes()
     except Exception as exc:
@@ -380,12 +379,9 @@ def _risk_research_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
             error=f"Cannot load research-universe scope: {type(exc).__name__}: {exc}",
         )
         return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
-
     parameters = parse_qs(query, keep_blank_values=False)
     if "universe" not in parameters:
-        html = render_risk_research_html(universes=universes)
-        return _html_response(HTTPStatus.OK, html)
-
+        return _html_response(HTTPStatus.OK, render_risk_research_html(universes=universes))
     request: RiskResearchRequest | None = None
     try:
         request = RiskResearchRequest(
@@ -411,6 +407,75 @@ def _risk_research_response(query: str, config: LocalConsoleConfig) -> ConsoleRe
         return _html_response(HTTPStatus.OK, html)
     except (ValueError, RiskResearchError) as exc:
         html = render_risk_research_html(
+            universes=universes,
+            request=request,
+            error=str(exc),
+        )
+        return _html_response(HTTPStatus.BAD_REQUEST, html)
+
+
+def _exit_policy_lab_response(query: str, config: LocalConsoleConfig) -> ConsoleResponse:
+    source = config.universe_research_source
+    if source is None:
+        html = render_exit_policy_lab_html(
+            universes=(),
+            error=(
+                "Exit Policy Lab is not configured for this console. Use an operator workspace "
+                "with a selected canonical dataset and reviewed identity candidate."
+            ),
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+    try:
+        universes = source.available_universes()
+    except Exception as exc:
+        html = render_exit_policy_lab_html(
+            universes=(),
+            error=f"Cannot load research-universe scope: {type(exc).__name__}: {exc}",
+        )
+        return _html_response(HTTPStatus.SERVICE_UNAVAILABLE, html)
+    parameters = parse_qs(query, keep_blank_values=True)
+    if "universe" not in parameters:
+        return _html_response(HTTPStatus.OK, render_exit_policy_lab_html(universes=universes))
+    request: ExitPolicyLabRequest | None = None
+    try:
+        request = ExitPolicyLabRequest(
+            universe_id=_one(parameters, "universe", default="reviewed_canonical"),
+            lookback_years=int(_one(parameters, "lookback_years", default="2")),
+            horizon=int(_one(parameters, "horizon", default="20")),
+            duration=int(_one(parameters, "duration", default="20")),
+            max_range_pct=float(_one(parameters, "max_range_pct", default="12")) / 100.0,
+            trend_filter=TrendFilter(
+                _one(parameters, "trend_filter", default=TrendFilter.ABOVE_SMA_50_100_200.value)
+            ),
+            min_breakout_volume_ratio=_optional_volume_ratio(
+                _one(parameters, "volume_ratio", default="none")
+            ),
+            fixed_percentages=parse_percentage_grid(
+                _one(parameters, "fixed_stops", default="2,3,4,5,7,10")
+            ),
+            trailing_percentages=parse_percentage_grid(
+                _one(parameters, "trailing_stops", default="2,3,5,7,10")
+            ),
+            atr_multiples=parse_multiple_grid(
+                _one(parameters, "atr_stops", default="1,1.5,2,2.5,3")
+            ),
+            trailing_atr_multiples=parse_multiple_grid(
+                _one(parameters, "trailing_atr", default="1,1.5,2,2.5,3")
+            ),
+            entry_slippage_bps=float(_one(parameters, "entry_slip", default="0")),
+            exit_slippage_bps=float(_one(parameters, "exit_slip", default="0")),
+            stop_slippage_bps=float(_one(parameters, "stop_slip", default="0")),
+            commission_bps_per_side=float(_one(parameters, "commission", default="0")),
+        )
+        report = ExitPolicyLabService(source).run(request)
+        html = render_exit_policy_lab_html(
+            universes=universes,
+            request=request,
+            report=report,
+        )
+        return _html_response(HTTPStatus.OK, html)
+    except (ValueError, ExitPolicyLabError) as exc:
+        html = render_exit_policy_lab_html(
             universes=universes,
             request=request,
             error=str(exc),
@@ -487,27 +552,47 @@ def _with_local_console_metadata(html: str, *, refresh_seconds: int) -> str:
 
 
 def _with_edge_explorer_link(html: str, *, enabled: bool) -> str:
-    marker = '<a href="#research">Research</a>'
-    if marker not in html:
-        raise RuntimeError("application renderer omitted Research navigation marker")
-    label = "Edge Explorer" if enabled else "Edge Explorer (not configured)"
-    return html.replace(marker, marker + f'<a href="/research/edge">{label}</a>', 1)
+    return _with_research_link(
+        html,
+        href="/research/edge",
+        label="Edge Explorer",
+        enabled=enabled,
+    )
 
 
 def _with_universe_research_link(html: str, *, enabled: bool) -> str:
-    marker = '<a href="#research">Research</a>'
-    if marker not in html:
-        raise RuntimeError("application renderer omitted Research navigation marker")
-    label = "Universe Research" if enabled else "Universe Research (not configured)"
-    return html.replace(marker, marker + f'<a href="/research/universe">{label}</a>', 1)
+    return _with_research_link(
+        html,
+        href="/research/universe",
+        label="Universe Research",
+        enabled=enabled,
+    )
 
 
 def _with_risk_research_link(html: str, *, enabled: bool) -> str:
+    return _with_research_link(
+        html,
+        href="/research/risk",
+        label="Risk Research",
+        enabled=enabled,
+    )
+
+
+def _with_exit_policy_lab_link(html: str, *, enabled: bool) -> str:
+    return _with_research_link(
+        html,
+        href="/research/exits",
+        label="Exit Policy Lab",
+        enabled=enabled,
+    )
+
+
+def _with_research_link(html: str, *, href: str, label: str, enabled: bool) -> str:
     marker = '<a href="#research">Research</a>'
     if marker not in html:
         raise RuntimeError("application renderer omitted Research navigation marker")
-    label = "Risk Research" if enabled else "Risk Research (not configured)"
-    return html.replace(marker, marker + f'<a href="/research/risk">{label}</a>', 1)
+    resolved_label = label if enabled else f"{label} (not configured)"
+    return html.replace(marker, marker + f'<a href="{href}">{resolved_label}</a>', 1)
 
 
 def _json_ready(value: object) -> object:
