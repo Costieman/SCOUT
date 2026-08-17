@@ -448,18 +448,22 @@ def _rsi_wilder(values: Sequence[float | None], period: int) -> tuple[float | No
     gains: list[float] = []
     losses: list[float] = []
     for index in range(1, period + 1):
-        if values[index] is None or values[index - 1] is None:
+        current = values[index]
+        previous = values[index - 1]
+        if current is None or previous is None:
             return tuple(result)
-        change = float(values[index]) - float(values[index - 1])
+        change = current - previous
         gains.append(max(change, 0.0))
         losses.append(max(-change, 0.0))
     avg_gain = math.fsum(gains) / period
     avg_loss = math.fsum(losses) / period
     result[period] = _rsi_value(avg_gain, avg_loss)
     for index in range(period + 1, len(values)):
-        if values[index] is None or values[index - 1] is None:
+        current = values[index]
+        previous = values[index - 1]
+        if current is None or previous is None:
             return tuple(result)
-        change = float(values[index]) - float(values[index - 1])
+        change = current - previous
         gain, loss = max(change, 0.0), max(-change, 0.0)
         avg_gain = (avg_gain * (period - 1) + gain) / period
         avg_loss = (avg_loss * (period - 1) + loss) / period
@@ -556,7 +560,11 @@ def _historical_volatility(values: Sequence[float | None], period: int) -> tuple
         window = values[index - period : index + 1]
         if any(item is None or item <= 0 for item in window):
             continue
-        logs = [math.log(float(window[i]) / float(window[i - 1])) for i in range(1, len(window))]
+        numeric_window = [item for item in window if item is not None]
+        logs = [
+            math.log(numeric_window[i] / numeric_window[i - 1])
+            for i in range(1, len(numeric_window))
+        ]
         if len(logs) >= 2:
             result[index] = stdev(logs) * math.sqrt(252.0) * 100.0
     return tuple(result)
