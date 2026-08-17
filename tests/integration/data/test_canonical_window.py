@@ -46,9 +46,7 @@ def _request() -> DatasetPromotionRequest:
 
 def test_window_reader_filters_instruments_dates_and_exact_warmup(tmp_path) -> None:
     bars = tuple(
-        _bar(instrument_id, offset)
-        for instrument_id in ("tsi_1", "tsi_2")
-        for offset in range(10)
+        _bar(instrument_id, offset) for instrument_id in ("tsi_1", "tsi_2") for offset in range(10)
     )
     CanonicalDailyBarStore(tmp_path).promote(bars, _request())
     reader = CanonicalDailyBarWindowReader(tmp_path, VERSION)
