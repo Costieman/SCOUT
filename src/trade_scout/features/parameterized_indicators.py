@@ -157,7 +157,7 @@ def compute_parameterized_indicator_frame(
     bars: Iterable[DailyBar],
     specs: Iterable[ParameterizedIndicatorSpec],
 ) -> tuple[FeatureValue, ...]:
-    """Materialize requested indicator metrics using information available through each session t."""
+    """Materialize requested metrics with information available through each session t."""
 
     materialized = tuple(bars)
     requested = tuple(dict.fromkeys(specs))
@@ -402,10 +402,10 @@ def _number_token(value: float) -> str:
 
 
 __all__ = [
+    "PARAMETERIZED_INDICATOR_FEATURE_SET_VERSION",
     "IndicatorFamily",
     "IndicatorMetric",
     "MovingAverageType",
-    "PARAMETERIZED_INDICATOR_FEATURE_SET_VERSION",
     "ParameterizedIndicatorSpec",
     "PriceSource",
     "compute_parameterized_indicator_frame",
