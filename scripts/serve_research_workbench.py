@@ -59,13 +59,16 @@ def main() -> int:
         refresh_seconds=15,
         edge_explorer_source=edge_source,
         universe_research_source=universe_source,
+        strategy_builder_source=universe_source,
     )
     base_url = f"http://{args.host}:{args.port}/"
     universe_url = f"{base_url}research/universe"
     edge_url = f"{base_url}research/edge"
     risk_url = f"{base_url}research/risk"
     exit_url = f"{base_url}research/exits"
+    strategy_url = f"{base_url}research/strategy"
     print(f"Trade Scout research console: {base_url}")
+    print(f"Strategy Builder: {strategy_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
     print(f"Risk & Stop Research: {risk_url}")
@@ -73,7 +76,7 @@ def main() -> int:
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     if args.open_browser:
-        webbrowser.open(exit_url)
+        webbrowser.open(strategy_url)
     try:
         serve_local_console(
             config,
