@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from html import escape
 
-from trade_scout.statistics.horizon_edge_family import HorizonEdgeFamilyReport
+from trade_scout.statistics.horizon_edge_family import (
+    HorizonEdgeFamilyReport,
+    HorizonEdgeReadout,
+)
 from trade_scout.statistics.readable_edge import ConfidenceInterval
 
 
@@ -47,7 +50,7 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 <header><div><h1>Holding Horizon Edge Family</h1><div class="subtle">One fixed consolidation-breakout definition, seven predeclared holding horizons, explicit control comparisons and within-family multiplicity correction.</div></div><span class="pill">{escape(report.research_state)} · {escape(report.report_definition_version)}</span></header>
 <div class="card verdict"><div class="verdict-code">{escape(report.verdict.code)}</div><h2>{escape(report.verdict.headline)}</h2><div>{escape(report.verdict.explanation)}</div></div>
 <div class="card"><h2>Family verdict at a glance</h2><table>
-<tr><th>Horizon family</th><td>{escape(', '.join(str(value) for value in report.horizon_family))} daily sessions</td></tr>
+<tr><th>Horizon family</th><td>{escape(", ".join(str(value) for value in report.horizon_family))} daily sessions</td></tr>
 <tr><th>Multiplicity method</th><td>{escape(report.multiplicity_method.value)} across {len(report.horizon_family)} horizon hypotheses</td></tr>
 <tr><th>Alpha</th><td>{report.alpha:.3f}</td></tr>
 <tr><th>Preliminary candidate horizons</th><td>{escape(candidate_text)}</td></tr>
@@ -63,7 +66,7 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 </div></body></html>"""
 
 
-def _row(item) -> str:
+def _row(item: HorizonEdgeReadout) -> str:
     performance = item.performance
     baseline = item.simple_baseline
     randomized = item.randomized_timing
