@@ -188,6 +188,23 @@ def evaluate_exit_policy(
     if horizon < 1:
         raise ValueError("exit-policy horizon must be positive")
     _validate_event_series(bars, event)
+    return _evaluate_exit_policy_validated(
+        bars,
+        event,
+        horizon=horizon,
+        policy=policy,
+        cost_model=cost_model,
+    )
+
+
+def _evaluate_exit_policy_validated(
+    bars: tuple[ResearchBar, ...],
+    event: EventRecord,
+    *,
+    horizon: int,
+    policy: ExitPolicy,
+    cost_model: CostModel,
+) -> ExitPolicyResult | None:
     entry_index = event.signal_index + 1
     exit_index = entry_index + horizon - 1
     if entry_index >= len(bars) or exit_index >= len(bars):
@@ -291,16 +308,26 @@ def evaluate_exit_policy_grid(
     policies: tuple[ExitPolicy, ...],
     cost_model: CostModel = _DEFAULT_COST_MODEL,
 ) -> tuple[ExitPolicyResult, ...]:
-    """Evaluate a complete policy family on an exact common event population."""
+    """Evaluate a complete policy family on an exact common event population.
 
+    Series-wide invariants are checked once per instrument batch rather than once for every
+    event-policy pair. This preserves the direct-call safety of ``evaluate_exit_policy`` while
+    avoiding repeated O(history) validation in large Strategy Builder runs.
+    """
+
+    if horizon < 1:
+        raise ValueError("exit-policy horizon must be positive")
     if not policies:
         raise ValueError("at least one exit policy is required")
     if len({item.policy_id for item in policies}) != len(policies):
         raise ValueError("exit policy IDs must be unique")
+    _validate_series(bars)
+
     results: list[ExitPolicyResult] = []
     for event in events:
+        _validate_event_against_series(bars, event)
         event_results = tuple(
-            evaluate_exit_policy(
+            _evaluate_exit_policy_validated(
                 bars,
                 event,
                 horizon=horizon,
@@ -438,23 +465,38 @@ def _apply_exit_costs(price: float, model: CostModel, *, stop_exit: bool) -> flo
 
 
 def _validate_event_series(bars: tuple[ResearchBar, ...], event: EventRecord) -> None:
+    _validate_series(bars)
+    _validate_event_against_series(bars, event)
+
+
+def _validate_series(bars: tuple[ResearchBar, ...]) -> None:
     if not bars:
         raise ValueError("exit-policy evaluation requires research bars")
-    if event.signal_index < 0 or event.signal_index >= len(bars):
-        raise ValueError("event signal index is outside supplied research bars")
     instruments = {bar.instrument_id for bar in bars}
     versions = {str(bar.dataset_version) for bar in bars}
     representations = {bar.price_representation for bar in bars}
-    if len(instruments) != 1 or event.instrument_id not in instruments:
-        raise ValueError("exit-policy evaluation requires one matching instrument")
-    if len(versions) != 1 or event.dataset_version not in versions:
-        raise ValueError("event and exit-policy bars must use one dataset version")
+    if len(instruments) != 1:
+        raise ValueError("exit-policy evaluation requires one instrument")
+    if len(versions) != 1:
+        raise ValueError("exit-policy bars must use one dataset version")
     if len(representations) != 1:
         raise ValueError("exit-policy evaluation cannot mix price representations")
     dates = tuple(bar.trade_date for bar in bars)
     if dates != tuple(sorted(dates)) or len(set(dates)) != len(dates):
         raise ValueError("exit-policy bars must be unique and date-increasing")
+
+
+def _validate_event_against_series(
+    bars: tuple[ResearchBar, ...],
+    event: EventRecord,
+) -> None:
+    if event.signal_index < 0 or event.signal_index >= len(bars):
+        raise ValueError("event signal index is outside supplied research bars")
     signal = bars[event.signal_index]
+    if signal.instrument_id != event.instrument_id:
+        raise ValueError("exit-policy evaluation requires one matching instrument")
+    if str(signal.dataset_version) != event.dataset_version:
+        raise ValueError("event and exit-policy bars must use one dataset version")
     if signal.trade_date != event.signal_date:
         raise ValueError("event signal date/index does not match supplied bars")
     if not _usable(signal):

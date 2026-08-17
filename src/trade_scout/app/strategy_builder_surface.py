@@ -133,17 +133,26 @@ def _empty_state(entries: tuple[EntryStrategyOption, ...]) -> str:
 
 def _render_report(report: StrategyBuilderReport) -> str:
     comparison = report.comparison
-    hold = next(item for item in comparison.policy_summaries if item.family is ExitFamily.HOLD_TO_HORIZON)
     rows = "".join(_row(item) for item in comparison.policy_summaries)
     warnings = "".join(f"<li>{escape(item)}</li>" for item in comparison.warnings)
+    performance_rows = "".join(
+        f"<tr><th>{escape(name)}</th><td>{seconds:.2f}s</td></tr>"
+        for name, seconds in report.performance.phase_seconds
+    )
+    history_reduction = (
+        "n/a"
+        if report.performance.canonical_daily_bar_count <= 0
+        else f"{report.performance.working_daily_bar_count / report.performance.canonical_daily_bar_count:.1%}"
+    )
     return f"""<div class="grid">
 <div class="card s3"><div class="metric-label">Entry events</div><div class="metric">{report.entry_event_count}</div></div>
 <div class="card s3"><div class="metric-label">Common complete events</div><div class="metric">{comparison.complete_event_count}</div></div>
 <div class="card s3"><div class="metric-label">Exit candidates + hold</div><div class="metric">{len(comparison.policy_summaries)}</div></div>
-<div class="card s3"><div class="metric-label">Hold expectancy</div><div class="metric {_value_class(hold.expectancy)}">{_pct(hold.expectancy)}</div></div>
+<div class="card s3"><div class="metric-label">Run time</div><div class="metric">{report.performance.total_seconds:.1f}s</div></div>
 <div class="card s12 scroll"><h2>Exit comparison on frozen entry population</h2><table><thead><tr><th>Exit policy</th><th>N</th><th>Stop-out</th><th>Expectancy</th><th>Delta vs hold</th><th>Win rate</th><th>PF</th><th>Payoff</th><th>P05</th><th>Avg hold</th><th>Median hold</th><th>Median MAE</th><th>Median MFE</th><th>Median drawdown</th><th>Gap-through</th></tr></thead><tbody>{rows}</tbody></table></div>
 <div class="card s6"><h2>Frozen entry definition</h2>{_entry_detail(report)}<table><tr><th>Definition version</th><td><code>{escape(report.entry_definition_version)}</code></td></tr><tr><th>Window</th><td>{report.analysis_start.isoformat()} to {report.analysis_end.isoformat()}</td></tr><tr><th>Dataset</th><td><code>{escape(report.dataset_version)}</code></td></tr><tr><th>Provider calls</th><td>{str(report.provider_calls_made).lower()}</td></tr></table></div>
-<div class="card s6"><h2>Interpretation boundary</h2><ul>{warnings}</ul><div class="subtle">Research state: {escape(report.research_state)}. Flexible strategy design does not turn exploratory output into validated edge.</div></div>
+<div class="card s6"><h2>Run performance</h2><table><tr><th>Total</th><td>{report.performance.total_seconds:.2f}s</td></tr><tr><th>Canonical daily bars loaded</th><td>{report.performance.canonical_daily_bar_count}</td></tr><tr><th>Daily bars actually analyzed</th><td>{report.performance.working_daily_bar_count}</td></tr><tr><th>Working / loaded history</th><td>{history_reduction}</td></tr>{performance_rows}</table><div class="subtle">The builder retains only the requested signal window plus the warm-up history needed by the selected indicators. It no longer materializes every registered feature or duplicate OutcomePath results when the shared exit engine owns the comparison.</div></div>
+<div class="card s12"><h2>Interpretation boundary</h2><ul>{warnings}</ul><div class="subtle">Research state: {escape(report.research_state)}. Flexible strategy design does not turn exploratory output into validated edge.</div></div>
 </div>"""
 
 
@@ -164,7 +173,7 @@ def _row(item: ExitPolicySummary) -> str:
 
 def _label(item: ExitPolicySummary) -> str:
     if item.family is ExitFamily.HOLD_TO_HORIZON:
-        return "Hold to outcome horizon"
+        return "Hold to maximum holding period"
     if item.family is ExitFamily.FIXED_PERCENT_STOP:
         return f"Fixed {item.resolved_parameters['distance_pct'] * 100:g}% stop"
     if item.family is ExitFamily.TRAILING_PERCENT_STOP:
