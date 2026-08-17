@@ -13,6 +13,7 @@ from trade_scout.app.strategy_builder_service import StrategyBuilderReport, Stra
 from trade_scout.app.strategy_indicator_catalog import indicator_catalog_json_ready
 from trade_scout.app.strategy_presets import StrategyPreset, available_strategy_presets
 from trade_scout.app.universe_research_service import UniverseOption
+from trade_scout.app.visual_rule_builder import recover_visual_conditions
 from trade_scout.risk.exit_policies import ExitFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary
 
@@ -45,6 +46,7 @@ def render_strategy_builder_html(
     )
     warning = f'<div class="error"><strong>Cannot run strategy:</strong> {escape(error)}</div>' if error else ""
     result = _render_report(report) if report is not None else _empty_state(entries)
+    recovered_conditions = selected.visual_conditions or recover_visual_conditions(selected.expression)
     initial_rules = [
         {
             "feature_name": item.feature_name,
@@ -52,7 +54,7 @@ def render_strategy_builder_html(
             "value": item.value,
             "join": item.join.value,
         }
-        for item in selected.visual_conditions
+        for item in recovered_conditions
     ]
     initial_stops = _initial_stops(selected, use_defaults=request is not None)
     catalog_json = escape(json.dumps(indicator_catalog_json_ready(), separators=(",", ":")))
