@@ -59,8 +59,7 @@ class ExitPolicy:
             return
         parameter_name = (
             "distance_pct"
-            if self.family
-            in {ExitFamily.FIXED_PERCENT_STOP, ExitFamily.TRAILING_PERCENT_STOP}
+            if self.family in {ExitFamily.FIXED_PERCENT_STOP, ExitFamily.TRAILING_PERCENT_STOP}
             else "atr_multiple"
         )
         if set(parameters) != {parameter_name}:
