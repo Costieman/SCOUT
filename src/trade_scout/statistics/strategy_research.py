@@ -21,7 +21,7 @@ from trade_scout.data.contracts import (
     ResearchBar,
     to_research_bar,
 )
-from trade_scout.features.contracts import FeatureAvailabilityStatus
+from trade_scout.features.contracts import FeatureAvailabilityStatus, FeatureValue
 from trade_scout.features.expression import compile_feature_expression
 from trade_scout.features.market_analysis import (
     MARKET_ANALYSIS_FEATURE_SET,
@@ -114,7 +114,7 @@ class StrategyResearchReport:
     summaries: tuple[StrategyHorizonSummary, ...]
     warnings: tuple[str, ...]
     research_state: str = "EXPLORATORY"
-    report_definition_version: str = "feature-strategy-research-v0.1"
+    report_definition_version: str = "feature-strategy-research-v0.2"
 
 
 def run_feature_strategy_research(
@@ -124,10 +124,17 @@ def run_feature_strategy_research(
     horizons: tuple[int, ...] = (5, 20, 60),
     signal_start: date | None = None,
     signal_end: date | None = None,
+    extra_features: Iterable[FeatureValue] = (),
 ) -> StrategyResearchReport:
-    """Evaluate a feature-expression strategy without provider calls or future-data leakage."""
+    """Evaluate a feature-expression strategy without provider calls or future-data leakage.
+
+    ``extra_features`` lets an application materialize requested parameterized indicators and feed
+    them through this same safe-expression and outcome path rather than creating a parallel
+    backtester. Extra feature names may not shadow the registered fixed feature pack.
+    """
 
     materialized = tuple(bars)
+    additional = tuple(extra_features)
     if not materialized:
         raise ValueError("strategy research requires canonical daily bars")
     if not horizons or any(item < 1 for item in horizons):
@@ -144,6 +151,16 @@ def run_feature_strategy_research(
         raise ValueError("strategy research requires PASS canonical bars")
     dataset_version = next(iter(versions))
 
+    extra_names = {item.feature_name for item in additional}
+    collisions = sorted(extra_names & _ALLOWED_FEATURES)
+    if collisions:
+        raise ValueError(f"extra features cannot shadow registered strategy features: {collisions}")
+    if additional and {str(item.dataset_version) for item in additional} != {dataset_version}:
+        raise ValueError("extra strategy features must use the same canonical dataset version")
+    extra_versions = sorted({item.feature_set_version for item in additional})
+    feature_set_version = "+".join((MARKET_ANALYSIS_FEATURE_SET_VERSION, *extra_versions))
+    allowed_features = _ALLOWED_FEATURES | frozenset(extra_names)
+
     by_instrument: dict[InstrumentId, list[DailyBar]] = {}
     for bar in materialized:
         by_instrument.setdefault(bar.instrument_id, []).append(bar)
@@ -156,13 +173,24 @@ def run_feature_strategy_research(
         if len(dates) != len(set(dates)):
             raise ValueError(f"duplicate canonical dates for {instrument_id}")
 
-    expression = compile_feature_expression(strategy.expression, allowed_names=_ALLOWED_FEATURES)
+    extra_by_instrument: dict[InstrumentId, list[FeatureValue]] = {}
+    seen_extra: set[tuple[InstrumentId, date, str]] = set()
+    for item in additional:
+        key = (item.instrument_id, item.trade_date, item.feature_name)
+        if key in seen_extra:
+            raise ValueError(f"duplicate extra strategy feature observation: {key}")
+        seen_extra.add(key)
+        if item.instrument_id not in ordered_by_instrument:
+            raise ValueError(f"extra feature references unknown instrument {item.instrument_id}")
+        extra_by_instrument.setdefault(item.instrument_id, []).append(item)
+
+    expression = compile_feature_expression(strategy.expression, allowed_names=allowed_features)
     candidates_by_date: dict[date, list[StrategySignal]] = {}
 
     for instrument_id, rows in ordered_by_instrument.items():
         frame = compute_market_analysis_feature_frame(rows)
         values_by_date: dict[date, dict[str, float | None]] = {}
-        for item in frame:
+        for item in (*frame, *extra_by_instrument.get(instrument_id, ())):
             values_by_date.setdefault(item.trade_date, {})[item.feature_name] = (
                 float(item.value)
                 if item.availability_status is FeatureAvailabilityStatus.AVAILABLE
@@ -171,6 +199,8 @@ def run_feature_strategy_research(
             )
         index_by_date = {bar.trade_date: index for index, bar in enumerate(rows)}
         for trade_date, values in values_by_date.items():
+            if trade_date not in index_by_date:
+                continue
             if signal_start is not None and trade_date < signal_start:
                 continue
             if signal_end is not None and trade_date > signal_end:
@@ -189,6 +219,7 @@ def run_feature_strategy_research(
                     rank_feature=strategy.rank_feature,
                     rank_value=rank_value,
                     dataset_version=dataset_version,
+                    feature_set_version=feature_set_version,
                 )
             )
 
@@ -230,7 +261,7 @@ def run_feature_strategy_research(
     return StrategyResearchReport(
         strategy=strategy,
         dataset_version=dataset_version,
-        feature_set_version=MARKET_ANALYSIS_FEATURE_SET_VERSION,
+        feature_set_version=feature_set_version,
         instrument_count=len(ordered_by_instrument),
         signal_count=len(signals),
         horizons=horizons,
@@ -259,7 +290,7 @@ def run_feature_strategy_research(
 
 
 def available_strategy_features() -> tuple[str, ...]:
-    """Return the registered feature names accepted by strategy expressions."""
+    """Return the fixed registered feature names accepted by strategy expressions."""
 
     return tuple(sorted(_ALLOWED_FEATURES))
 
