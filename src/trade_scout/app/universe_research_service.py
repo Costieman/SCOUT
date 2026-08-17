@@ -114,9 +114,7 @@ class CanonicalUniverseResearchSource:
         canonical = CanonicalDailyBarStore(self.canonical_root).load(
             DatasetVersion(self.dataset_version)
         )
-        selected = tuple(
-            bar for bar in canonical if str(bar.instrument_id) in symbol_by_instrument
-        )
+        selected = tuple(bar for bar in canonical if str(bar.instrument_id) in symbol_by_instrument)
         if not selected:
             raise UniverseResearchError(
                 "selected canonical dataset contains no fully reviewed instrument histories"
