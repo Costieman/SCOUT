@@ -65,7 +65,9 @@ def _expectancy_svg(report: StrategyBuilderEntrySweepReport) -> str:
     left, right, top, bottom = 72.0, 28.0, 28.0, 58.0
     x_min = min(item.value for item in points)
     x_max = max(item.value for item in points)
-    y_values = tuple(float(item.expectancy) * 100.0 for item in points if item.expectancy is not None)
+    y_values = tuple(
+        float(item.expectancy) * 100.0 for item in points if item.expectancy is not None
+    )
     y_min = min(y_values)
     y_max = max(y_values)
     if y_min == y_max:
