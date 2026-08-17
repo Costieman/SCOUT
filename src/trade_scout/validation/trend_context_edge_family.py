@@ -299,7 +299,10 @@ def build_trend_context_edge_family_report(
     verdict = _verdict(candidates)
     _emit(
         progress,
-        f"family complete: {len(candidates)} context(s) clear the preliminary parent-increment gate",
+        (
+            f"family complete: {len(candidates)} context(s) clear the "
+            "preliminary parent-increment gate"
+        ),
     )
 
     first_series = next(iter(series_by_symbol.values()))
@@ -426,16 +429,20 @@ def _verdict(candidates: tuple[TrendContext, ...]) -> TrendContextFamilyVerdict:
         names = ", ".join(item.value for item in candidates)
         return TrendContextFamilyVerdict(
             code="PRELIMINARY_TREND_COMPONENT_EDGE",
-            headline="At least one trend component adds measurable continuation over its parent rule.",
+            headline=(
+                "At least one trend component adds measurable continuation over its parent rule."
+            ),
             explanation=(
                 f"Candidate context(s): {names}. This is exploratory fixed-cohort evidence only; "
-                "T6 market-relative strength, broader family correction and out-of-sample validation "
-                "remain incomplete."
+                "T6 market-relative strength, broader family correction and out-of-sample "
+                "validation remain incomplete."
             ),
         )
     return TrendContextFamilyVerdict(
         code="NO_TREND_COMPONENT_CLEARS_PRELIMINARY_GATE",
-        headline="No T1-T5 trend component establishes a preliminary incremental continuation edge.",
+        headline=(
+            "No T1-T5 trend component establishes a preliminary incremental continuation edge."
+        ),
         explanation=(
             "None of the child trend rules simultaneously has a positive clustered raw-return "
             "interval, positive parent-context increment, positive parent-increment interval and "
