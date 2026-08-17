@@ -100,7 +100,9 @@ def serve_research_workbench_console(
 
 
 def _replace_csp(headers: tuple[tuple[str, str], ...]) -> tuple[tuple[str, str], ...]:
-    kept = tuple((name, value) for name, value in headers if name.lower() != "content-security-policy")
+    kept = tuple(
+        (name, value) for name, value in headers if name.lower() != "content-security-policy"
+    )
     return kept + (("Content-Security-Policy", _csp_value()),)
 
 
