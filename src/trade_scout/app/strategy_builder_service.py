@@ -100,7 +100,9 @@ class StrategyBuilderRequest:
             if self.preset_id is not None:
                 strategy_preset(self.preset_id)
             elif not self.expression.strip():
-                raise ValueError("feature-expression entry requires a preset or non-empty expression")
+                raise ValueError(
+                    "feature-expression entry requires a preset or non-empty expression"
+                )
             if self.rank_feature not in available_strategy_features():
                 raise ValueError(f"unknown rank feature {self.rank_feature!r}")
             if not 1 <= self.per_session_limit <= 500:
