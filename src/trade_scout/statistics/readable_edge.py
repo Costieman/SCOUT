@@ -115,7 +115,7 @@ class ParameterRobustnessReadout:
     selected_neighbor_count: int
     selected_positive_neighbor_fraction: float | None
     best_cell_duration: int | None
-    best_cell_max_range_pct: float | None
+    best_cell_max_range_pct: float
     best_cell_excess: float | None
 
 
@@ -564,7 +564,7 @@ def _parameter_readout(source: UniverseResearchReport) -> ParameterRobustnessRea
         ),
         None,
     )
-    neighbors = ()
+    neighbors = cells[:0]
     if selected is not None:
         di = durations.index(selected.duration)
         ti = tightness.index(selected.max_range_pct)
@@ -598,7 +598,7 @@ def _parameter_readout(source: UniverseResearchReport) -> ParameterRobustnessRea
         selected_neighbor_count=len(neighbors),
         selected_positive_neighbor_fraction=neighbor_fraction,
         best_cell_duration=best.duration if best else None,
-        best_cell_max_range_pct=best.max_range_pct if best else None,
+        best_cell_max_range_pct=best.max_range_pct if best else 0.0,
         best_cell_excess=best.excess_mean_return if best else None,
     )
 
