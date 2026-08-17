@@ -277,9 +277,7 @@ def _observation_sets(
         for outcome in measure_forward_outcomes(bars, events, horizons=(selected_horizon,)):
             if date.fromisoformat(outcome.exit_date) <= analysis_end:
                 event = event_by_id[outcome.event_id]
-                strategy.append(
-                    ReturnObservation(symbol, event.signal_date, outcome.forward_return)
-                )
+                strategy.append(ReturnObservation(symbol, event.signal_date, outcome.forward_return))
 
         candidates = _eligible_signals(bars, frame=frame, config=config)
         random_candidates[symbol] = tuple(
@@ -381,11 +379,7 @@ def _control_observation(
     entry = bars[entry_index].open
     if entry <= 0:
         return None
-    return ReturnObservation(
-        symbol,
-        signal.trade_date,
-        path[-1].close / entry - 1.0,
-    )
+    return ReturnObservation(symbol, signal.trade_date, path[-1].close / entry - 1.0)
 
 
 def _baseline_observations(
@@ -434,7 +428,10 @@ def _verify_source_report(
         if abs(fmean(item.forward_return for item in strategy) - selected.mean_return) > 1e-12:
             raise RuntimeError("readable-edge strategy mean does not reproduce the source report")
     if baseline and source.baseline_mean_return is not None:
-        if abs(fmean(item.forward_return for item in baseline) - source.baseline_mean_return) > 1e-12:
+        if (
+            abs(fmean(item.forward_return for item in baseline) - source.baseline_mean_return)
+            > 1e-12
+        ):
             raise RuntimeError("readable-edge baseline mean does not reproduce the source report")
 
 
@@ -716,11 +713,7 @@ def _wilson_interval(successes: int, n: int) -> ConfidenceInterval:
     p = successes / n
     denominator = 1.0 + _Z_95**2 / n
     center = (p + _Z_95**2 / (2.0 * n)) / denominator
-    half = (
-        _Z_95
-        * sqrt(p * (1.0 - p) / n + _Z_95**2 / (4.0 * n**2))
-        / denominator
-    )
+    half = _Z_95 * sqrt(p * (1.0 - p) / n + _Z_95**2 / (4.0 * n**2)) / denominator
     return ConfidenceInterval(
         max(0.0, center - half),
         min(1.0, center + half),
