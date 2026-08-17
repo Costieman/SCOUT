@@ -101,9 +101,10 @@ def build_horizon_edge_family_report(
 ) -> HorizonEdgeFamilyReport:
     """Evaluate one fixed strategy across a predeclared family of holding horizons.
 
-    The only research dimension changed here is the daily-session holding horizon. Randomized-timing
-    p-values are corrected across the complete supplied horizon family. This does not correct for other
-    strategy, timeframe, trend, duration, tightness, volume, stop, or regime searches.
+    The only research dimension changed here is the daily-session holding horizon.
+    Randomized-timing p-values are corrected across the complete supplied horizon family. This does
+    not correct for other strategy, timeframe, trend, duration, tightness, volume, stop, or regime
+    searches.
     """
 
     _validate_inputs(
@@ -287,25 +288,26 @@ def _verdict(candidate_horizons: tuple[int, ...]) -> HorizonFamilyVerdict:
             headline="At least one holding horizon clears the preliminary horizon-family gate.",
             explanation=(
                 f"Candidate horizon(s): {formatted} sessions. This clears the horizon-family "
-                "baseline, randomized-timing, clustered-uncertainty and BH multiplicity checks only. "
-                "Broader strategy-family correction and out-of-sample validation remain required."
+                "baseline, randomized-timing, clustered-uncertainty and BH multiplicity "
+                "checks only. Broader strategy-family correction and out-of-sample validation "
+                "remain required."
             ),
         )
     return HorizonFamilyVerdict(
         code="NO_HORIZON_CLEARS_PRELIMINARY_GATE",
         headline="No tested holding horizon establishes a preliminary incremental edge.",
         explanation=(
-            "None of the predeclared horizons simultaneously beats the current trend-context baseline, "
-            "shows positive randomized-timing excess with BH-adjusted significance, and has a positive "
-            "month-clustered raw-mean confidence interval."
+            "None of the predeclared horizons simultaneously beats the current trend-context "
+            "baseline, shows positive randomized-timing excess with BH-adjusted significance, "
+            "and has a positive month-clustered raw-mean confidence interval."
         ),
     )
 
 
 def _baseline_description(pattern_timeframe: PatternTimeframe) -> str:
     return (
-        f"same-instrument {pattern_timeframe.value} trend-context bars sampled every 5 pattern bars; "
-        "outcomes measured in daily trading sessions"
+        f"same-instrument {pattern_timeframe.value} trend-context bars sampled every 5 "
+        "pattern bars; outcomes measured in daily trading sessions"
     )
 
 
