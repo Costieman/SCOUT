@@ -119,7 +119,10 @@ def build_horizon_edge_family_report(
     raw: list[tuple[int, PerformanceReadout, BaselineComparison, RandomTimingControl]] = []
 
     for position, horizon in enumerate(ordered_horizons, start=1):
-        _emit(progress, f"[{position}/{len(ordered_horizons)}] evaluating {horizon}-session horizon")
+        _emit(
+            progress,
+            f"[{position}/{len(ordered_horizons)}] evaluating {horizon}-session horizon",
+        )
         strategy, baseline, random_candidates = _observation_sets(
             series_by_symbol,
             config=config,
@@ -213,7 +216,10 @@ def build_horizon_edge_family_report(
 
     readouts = tuple(results)
     candidates = tuple(item.horizon for item in readouts if item.preliminary_gate_passed)
-    lowest_adjusted = min(readouts, key=lambda item: (item.adjusted_random_timing_p_value, item.horizon))
+    lowest_adjusted = min(
+        readouts,
+        key=lambda item: (item.adjusted_random_timing_p_value, item.horizon),
+    )
     best_random_excess = max(
         readouts,
         key=lambda item: (item.randomized_timing.excess_vs_null_mean, -item.horizon),
