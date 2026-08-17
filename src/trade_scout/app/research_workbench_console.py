@@ -24,9 +24,7 @@ _ASSET_PATH = "/assets/strategy-builder.js"
 _CLEAN_DEFAULTS_ASSET_PATH = "/assets/strategy-builder-clean-defaults.js"
 _STRATEGY_PATH = "/research/strategy"
 _SCRIPT_MARKER = '<script src="/assets/strategy-builder.js" defer></script>'
-_CLEAN_DEFAULTS_SCRIPT = (
-    '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
-)
+_CLEAN_DEFAULTS_SCRIPT = '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
 
 
 def build_research_workbench_response(
