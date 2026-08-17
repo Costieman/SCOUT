@@ -8,6 +8,7 @@ canonical OutcomePath engine rather than reimplementing forward-path semantics.
 
 from __future__ import annotations
 
+import ast
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
@@ -21,7 +22,11 @@ from trade_scout.data.contracts import (
     ResearchBar,
     to_research_bar,
 )
-from trade_scout.features.contracts import FeatureAvailabilityStatus, FeatureValue
+from trade_scout.features.contracts import (
+    FeatureAvailabilityStatus,
+    FeatureSetDefinition,
+    FeatureValue,
+)
 from trade_scout.features.expression import compile_feature_expression
 from trade_scout.features.market_analysis import (
     MARKET_ANALYSIS_FEATURE_SET,
@@ -125,12 +130,17 @@ def run_feature_strategy_research(
     signal_start: date | None = None,
     signal_end: date | None = None,
     extra_features: Iterable[FeatureValue] = (),
+    measure_outcomes: bool = True,
 ) -> StrategyResearchReport:
     """Evaluate a feature-expression strategy without provider calls or future-data leakage.
 
     ``extra_features`` lets an application materialize requested parameterized indicators and feed
-    them through this same safe-expression and outcome path rather than creating a parallel
-    backtester. Extra feature names may not shadow the registered fixed feature pack.
+    them through this same safe-expression path rather than creating a parallel backtester.
+    Extra feature names may not shadow the registered fixed feature pack.
+
+    ``measure_outcomes=False`` is intended for callers such as Strategy Builder that only need the
+    frozen signal population before passing those signals to a separate shared exit engine. The
+    default remains the complete StrategyResearchReport behavior used by normal research callers.
     """
 
     materialized = tuple(bars)
@@ -161,6 +171,9 @@ def run_feature_strategy_research(
     feature_set_version = "+".join((MARKET_ANALYSIS_FEATURE_SET_VERSION, *extra_versions))
     allowed_features = _ALLOWED_FEATURES | frozenset(extra_names)
 
+    expression = compile_feature_expression(strategy.expression, allowed_names=allowed_features)
+    fixed_feature_set = _required_fixed_feature_set(strategy)
+
     by_instrument: dict[InstrumentId, list[DailyBar]] = {}
     for bar in materialized:
         by_instrument.setdefault(bar.instrument_id, []).append(bar)
@@ -184,11 +197,9 @@ def run_feature_strategy_research(
             raise ValueError(f"extra feature references unknown instrument {item.instrument_id}")
         extra_by_instrument.setdefault(item.instrument_id, []).append(item)
 
-    expression = compile_feature_expression(strategy.expression, allowed_names=allowed_features)
     candidates_by_date: dict[date, list[StrategySignal]] = {}
-
     for instrument_id, rows in ordered_by_instrument.items():
-        frame = compute_market_analysis_feature_frame(rows)
+        frame = compute_market_analysis_feature_frame(rows, feature_set=fixed_feature_set)
         values_by_date: dict[date, dict[str, float | None]] = {}
         for item in (*frame, *extra_by_instrument.get(instrument_id, ())):
             values_by_date.setdefault(item.trade_date, {})[item.feature_name] = (
@@ -233,31 +244,60 @@ def run_feature_strategy_research(
         selected.extend(daily[: strategy.per_session_limit])
     signals = tuple(selected)
 
-    signals_by_instrument: dict[InstrumentId, list[StrategySignal]] = {}
-    for signal in signals:
-        signals_by_instrument.setdefault(signal.instrument_id, []).append(signal)
+    ordered_outcomes: tuple[OutcomePath, ...]
+    summaries: tuple[StrategyHorizonSummary, ...]
+    if measure_outcomes:
+        signals_by_instrument: dict[InstrumentId, list[StrategySignal]] = {}
+        for signal in signals:
+            signals_by_instrument.setdefault(signal.instrument_id, []).append(signal)
 
-    outcomes: list[OutcomePath] = []
-    for instrument_id, instrument_signals in signals_by_instrument.items():
-        research_bars = _research_bars(ordered_by_instrument[instrument_id])
-        outcomes.extend(
-            measure_outcome_paths(
-                research_bars,
-                tuple(instrument_signals),
-                horizons=horizons,
+        outcomes: list[OutcomePath] = []
+        for instrument_id, instrument_signals in signals_by_instrument.items():
+            research_bars = _research_bars(ordered_by_instrument[instrument_id])
+            outcomes.extend(
+                measure_outcome_paths(
+                    research_bars,
+                    tuple(instrument_signals),
+                    horizons=horizons,
+                )
+            )
+        ordered_outcomes = tuple(
+            sorted(
+                outcomes,
+                key=lambda item: (
+                    item.signal_date,
+                    str(item.instrument_id),
+                    item.horizon,
+                ),
             )
         )
+        summaries = _summaries(ordered_outcomes, horizons)
+    else:
+        ordered_outcomes = ()
+        summaries = ()
 
-    ordered_outcomes = tuple(
-        sorted(
-            outcomes,
-            key=lambda item: (
-                item.signal_date,
-                str(item.instrument_id),
-                item.horizon,
-            ),
+    warnings = [
+        (
+            "Exploratory descriptive research only; results are not validation "
+            "or production eligibility."
+        ),
+        (
+            "The supplied canonical instrument cohort is evaluated as provided. "
+            "This runner does not invent historical index membership or "
+            "survivorship-bias corrections."
+        ),
+        (
+            "Strategy selection is point-in-time and post-signal paths use the "
+            "canonical OutcomePath engine with next-session-open entry and explicit "
+            "daily-bar ambiguity."
+        ),
+    ]
+    if not measure_outcomes:
+        warnings.append(
+            "OutcomePath measurement was intentionally skipped because the caller requested "
+            "signal selection only; a shared downstream exit engine owns realized outcomes."
         )
-    )
+
     return StrategyResearchReport(
         strategy=strategy,
         dataset_version=dataset_version,
@@ -269,23 +309,8 @@ def run_feature_strategy_research(
         signal_end=signal_end,
         signals=signals,
         outcomes=ordered_outcomes,
-        summaries=_summaries(ordered_outcomes, horizons),
-        warnings=(
-            (
-                "Exploratory descriptive research only; results are not validation "
-                "or production eligibility."
-            ),
-            (
-                "The supplied canonical instrument cohort is evaluated as provided. "
-                "This runner does not invent historical index membership or "
-                "survivorship-bias corrections."
-            ),
-            (
-                "Strategy selection is point-in-time and post-signal paths use the "
-                "canonical OutcomePath engine with next-session-open entry and explicit "
-                "daily-bar ambiguity."
-            ),
-        ),
+        summaries=summaries,
+        warnings=tuple(warnings),
     )
 
 
@@ -293,6 +318,40 @@ def available_strategy_features() -> tuple[str, ...]:
     """Return the fixed registered feature names accepted by strategy expressions."""
 
     return tuple(sorted(_ALLOWED_FEATURES))
+
+
+def required_strategy_warmup_observations(strategy: StrategyDefinition) -> int:
+    """Return fixed-feature observations needed before the first eligible signal date."""
+
+    feature_set = _required_fixed_feature_set(strategy)
+    return max(definition.minimum_observations for definition in feature_set.definitions)
+
+
+def _required_fixed_feature_set(strategy: StrategyDefinition) -> FeatureSetDefinition:
+    names = _fixed_names_in_expression(strategy.expression) | {strategy.rank_feature}
+    definitions = tuple(
+        definition
+        for definition in MARKET_ANALYSIS_FEATURE_SET.definitions
+        if definition.feature_name in names
+    )
+    if not definitions:
+        raise ValueError("strategy requires at least one registered fixed feature")
+    return FeatureSetDefinition(
+        feature_set_version=MARKET_ANALYSIS_FEATURE_SET_VERSION,
+        definitions=definitions,
+    )
+
+
+def _fixed_names_in_expression(expression: str) -> set[str]:
+    try:
+        tree = ast.parse(expression.strip(), mode="eval")
+    except SyntaxError as exc:
+        raise ValueError("cannot inspect malformed strategy expression") from exc
+    return {
+        node.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Name) and node.id in _ALLOWED_FEATURES
+    }
 
 
 def _research_bars(rows: tuple[DailyBar, ...]) -> tuple[ResearchBar, ...]:
@@ -364,5 +423,6 @@ __all__ = [
     "StrategyResearchReport",
     "StrategySignal",
     "available_strategy_features",
+    "required_strategy_warmup_observations",
     "run_feature_strategy_research",
 ]
