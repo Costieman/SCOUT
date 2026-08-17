@@ -23,8 +23,9 @@ from trade_scout.statistics.horizon_edge_family import build_horizon_edge_family
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate a fixed consolidation-breakout definition across a predeclared holding-horizon "
-            "family with randomized-timing controls and Benjamini-Hochberg correction."
+            "Evaluate a fixed consolidation-breakout definition across a predeclared "
+            "holding-horizon family with randomized-timing controls and Benjamini-Hochberg "
+            "correction."
         )
     )
     parser.add_argument("--root", type=Path, required=True, help="Private operator workspace root")
