@@ -78,9 +78,7 @@ def build_entry_sweep_page(
             trend_filter=TrendFilter(
                 _one(parameters, "trend_filter", default=TrendFilter.ABOVE_SMA_50_100_200.value)
             ),
-            fixed_percentages=parse_percentage_grid(
-                _one(parameters, "fixed_stops", default="")
-            ),
+            fixed_percentages=parse_percentage_grid(_one(parameters, "fixed_stops", default="")),
             trailing_percentages=parse_percentage_grid(
                 _one(parameters, "trailing_stops", default="")
             ),
