@@ -1,4 +1,5 @@
 # ruff: noqa: E501
+# fmt: off
 """Presentation-only HTML for composing reusable entry and exit families."""
 
 from __future__ import annotations
