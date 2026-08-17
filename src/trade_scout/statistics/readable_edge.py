@@ -435,7 +435,8 @@ def _verify_source_report(
     if (
         baseline
         and source.baseline_mean_return is not None
-        and abs(fmean(item.forward_return for item in baseline) - source.baseline_mean_return) > 1e-12
+        and abs(fmean(item.forward_return for item in baseline) - source.baseline_mean_return)
+        > 1e-12
     ):
         raise RuntimeError("readable-edge baseline mean does not reproduce the source report")
 
