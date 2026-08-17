@@ -327,7 +327,7 @@ def compute_market_analysis_feature_frame(
         indicators = _build_series_indicators(ordered)
         for index, bar in enumerate(ordered):
             for definition in feature_set.definitions:
-                status, value = _calculate(definition, ordered, index, indicators)
+                status, feature_value = _calculate(definition, ordered, index, indicators)
                 values.append(
                     FeatureValue(
                         instrument_id=bar.instrument_id,
@@ -335,7 +335,7 @@ def compute_market_analysis_feature_frame(
                         feature_name=definition.feature_name,
                         feature_version=definition.feature_version,
                         resolved_parameters=definition.resolved_parameters,
-                        value=value,
+                        value=feature_value,
                         units=definition.units,
                         availability_status=status,
                         dataset_version=bar.dataset_version,
@@ -402,15 +402,15 @@ def _calculate(
     if definition.feature_name in {"return_5", "return_20", "return_252"}:
         intervals = _integer_parameter(definition, "intervals")
         current = _split_close(bars[index])
-        prior = _split_close(bars[index - intervals])
-        if current is None or prior is None or prior <= 0:
+        prior_close = _split_close(bars[index - intervals])
+        if current is None or prior_close is None or prior_close <= 0:
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
-        return FeatureAvailabilityStatus.AVAILABLE, current / prior - 1.0
+        return FeatureAvailabilityStatus.AVAILABLE, current / prior_close - 1.0
 
     if definition.feature_name == "realized_volatility_20":
         intervals = _integer_parameter(definition, "return_intervals")
         closes = [_split_close(item) for item in bars[index - intervals : index + 1]]
-        if any(value is None or value <= 0 for value in closes):
+        if any(candidate is None or candidate <= 0 for candidate in closes):
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
         numeric = _require_values(closes)
         log_returns = [math.log(numeric[pos] / numeric[pos - 1]) for pos in range(1, len(numeric))]
@@ -424,7 +424,7 @@ def _calculate(
         if (
             not math.isfinite(current_volume)
             or current_volume < 0
-            or any(not math.isfinite(value) or value < 0 for value in prior_volumes)
+            or any(not math.isfinite(candidate) or candidate < 0 for candidate in prior_volumes)
         ):
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
         denominator = math.fsum(prior_volumes) / period
@@ -503,8 +503,8 @@ def _calculate(
         return FeatureAvailabilityStatus.AVAILABLE, 1.0 if crossed else 0.0
 
     if definition.feature_name == "rsi_wilder_14":
-        value = indicators.rsi_wilder_14[index]
-        return _indicator_value(value)
+        rsi_value = indicators.rsi_wilder_14[index]
+        return _indicator_value(rsi_value)
 
     if definition.feature_name in {
         "macd_line_pct",
@@ -539,10 +539,10 @@ def _calculate(
         "range_position_prior_20",
     }:
         period = _integer_parameter(definition, "period")
-        prior = bars[index - period : index]
-        highs = [_split_high(item) for item in prior]
+        prior_bars = bars[index - period : index]
+        highs = [_split_high(item) for item in prior_bars]
         current = _split_close(bars[index])
-        if current is None or current <= 0 or any(value is None for value in highs):
+        if current is None or current <= 0 or any(candidate is None for candidate in highs):
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
         numeric_highs = _require_values(highs)
         prior_high = max(numeric_highs)
@@ -550,8 +550,8 @@ def _calculate(
             if prior_high <= 0:
                 return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
             return FeatureAvailabilityStatus.AVAILABLE, (current / prior_high - 1.0) * 100.0
-        lows = [_split_low(item) for item in prior]
-        if any(value is None for value in lows):
+        lows = [_split_low(item) for item in prior_bars]
+        if any(candidate is None for candidate in lows):
             return FeatureAvailabilityStatus.INPUT_UNAVAILABLE, None
         prior_low = min(_require_values(lows))
         width = prior_high - prior_low
@@ -665,7 +665,7 @@ def _sma_at(bars: Sequence[DailyBar], index: int, period: int) -> float | None:
     if index < 0 or start < 0:
         return None
     closes = [_split_close(item) for item in bars[start : index + 1]]
-    if any(value is None for value in closes):
+    if any(candidate is None for candidate in closes):
         return None
     numeric = _require_values(closes)
     return math.fsum(numeric) / period
@@ -705,7 +705,7 @@ def _finite_optional(value: float | None) -> float | None:
 
 
 def _require_values(values: Sequence[float | None]) -> tuple[float, ...]:
-    if any(value is None for value in values):
+    if any(candidate is None for candidate in values):
         raise AssertionError("optional values must be checked before conversion")
     return tuple(float(value) for value in values if value is not None)
 
