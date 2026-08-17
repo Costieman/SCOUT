@@ -87,7 +87,11 @@ def test_trend_context_family_uses_predeclared_parent_map() -> None:
         assert item.raw_parent_randomization_p_value is not None
         assert item.adjusted_parent_randomization_p_value is not None
         assert 0.0 <= item.raw_parent_randomization_p_value <= 1.0
-        assert item.raw_parent_randomization_p_value <= item.adjusted_parent_randomization_p_value <= 1.0
+        assert (
+            item.raw_parent_randomization_p_value
+            <= item.adjusted_parent_randomization_p_value
+            <= 1.0
+        )
 
 
 def test_trend_context_family_is_deterministic_for_fixed_seed() -> None:
