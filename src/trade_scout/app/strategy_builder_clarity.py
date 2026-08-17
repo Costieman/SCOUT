@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Presentation-only clarity and execution-profile controls for Strategy Builder.
 
 This companion asset does not change research calculations. It makes execution assumptions explicit,
