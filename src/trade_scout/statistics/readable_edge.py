@@ -426,15 +426,18 @@ def _verify_source_report(
         raise RuntimeError("readable-edge strategy sample does not reproduce the source report")
     if source.baseline_sample_size != len(baseline):
         raise RuntimeError("readable-edge baseline sample does not reproduce the source report")
-    if strategy and selected.mean_return is not None:
-        if abs(fmean(item.forward_return for item in strategy) - selected.mean_return) > 1e-12:
-            raise RuntimeError("readable-edge strategy mean does not reproduce the source report")
-    if baseline and source.baseline_mean_return is not None:
-        if (
-            abs(fmean(item.forward_return for item in baseline) - source.baseline_mean_return)
-            > 1e-12
-        ):
-            raise RuntimeError("readable-edge baseline mean does not reproduce the source report")
+    if (
+        strategy
+        and selected.mean_return is not None
+        and abs(fmean(item.forward_return for item in strategy) - selected.mean_return) > 1e-12
+    ):
+        raise RuntimeError("readable-edge strategy mean does not reproduce the source report")
+    if (
+        baseline
+        and source.baseline_mean_return is not None
+        and abs(fmean(item.forward_return for item in baseline) - source.baseline_mean_return) > 1e-12
+    ):
+        raise RuntimeError("readable-edge baseline mean does not reproduce the source report")
 
 
 def _performance(
@@ -617,8 +620,9 @@ def _verdict(
             "No positive edge versus the current trend-context baseline.",
             (
                 "Raw event returns can still be positive, but the strategy mean is not above "
-                "the existing same-instrument trend-context baseline. That baseline is descriptive, "
-                "so this is adverse evidence rather than a final rejection."
+                "the existing same-instrument trend-context baseline. "
+                "That baseline is descriptive, so this is adverse evidence rather than a final "
+                "rejection."
             ),
         )
     if randomized.excess_vs_null_mean <= 0 or randomized.one_sided_p_value >= 0.05:
