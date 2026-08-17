@@ -1,4 +1,4 @@
-# ruff: noqa: E501
+# ruff: noqa: E501, RUF001
 """Presentation-only HTML for the canonical-only T0-T5 trend-context family."""
 
 from __future__ import annotations
