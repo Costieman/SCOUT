@@ -7,8 +7,9 @@ import webbrowser
 from pathlib import Path
 
 from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
-from trade_scout.app.local_console import LocalConsoleConfig, serve_local_console
+from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
+from trade_scout.app.research_workbench_console import serve_research_workbench_console
 from trade_scout.app.universe_research_service import CanonicalUniverseResearchSource
 
 
@@ -68,7 +69,7 @@ def main() -> int:
     exit_url = f"{base_url}research/exits"
     strategy_url = f"{base_url}research/strategy"
     print(f"Trade Scout research console: {base_url}")
-    print(f"Strategy Builder: {strategy_url}")
+    print(f"Visual Strategy Builder: {strategy_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
     print(f"Risk & Stop Research: {risk_url}")
@@ -78,7 +79,7 @@ def main() -> int:
     if args.open_browser:
         webbrowser.open(strategy_url)
     try:
-        serve_local_console(
+        serve_research_workbench_console(
             config,
             host=args.host,
             port=args.port,
