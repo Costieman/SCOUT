@@ -116,9 +116,7 @@ _METRICS_BY_FAMILY: dict[IndicatorFamily, frozenset[IndicatorMetric]] = {
     IndicatorFamily.ATR: frozenset({IndicatorMetric.ATR_PCT}),
     IndicatorFamily.RELATIVE_VOLUME: frozenset({IndicatorMetric.RVOL}),
     IndicatorFamily.AVERAGE_DOLLAR_VOLUME: frozenset({IndicatorMetric.AVERAGE_DOLLAR_VOLUME}),
-    IndicatorFamily.HISTORICAL_VOLATILITY: frozenset(
-        {IndicatorMetric.HISTORICAL_VOLATILITY_PCT}
-    ),
+    IndicatorFamily.HISTORICAL_VOLATILITY: frozenset({IndicatorMetric.HISTORICAL_VOLATILITY_PCT}),
     IndicatorFamily.PRIOR_HIGH: frozenset(
         {IndicatorMetric.PRIOR_HIGH_DISTANCE_PCT, IndicatorMetric.PRIOR_HIGH_BREAKOUT}
     ),
@@ -572,8 +570,7 @@ def _prior_high_metric(
     result: list[float | None] = [None] * len(bars)
     for index in range(spec.period, len(bars)):
         highs = tuple(
-            _split_price(item.high_split_adjusted)
-            for item in bars[index - spec.period : index]
+            _split_price(item.high_split_adjusted) for item in bars[index - spec.period : index]
         )
         current = source[index]
         if current is None or any(item is None for item in highs):
