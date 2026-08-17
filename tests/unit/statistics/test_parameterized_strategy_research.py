@@ -9,7 +9,10 @@ from trade_scout.features.parameterized_indicators import (
     ParameterizedIndicatorSpec,
     compute_parameterized_indicator_frame,
 )
-from trade_scout.statistics.strategy_research import StrategyDefinition, run_feature_strategy_research
+from trade_scout.statistics.strategy_research import (
+    StrategyDefinition,
+    run_feature_strategy_research,
+)
 
 
 def _bars() -> tuple[DailyBar, ...]:
