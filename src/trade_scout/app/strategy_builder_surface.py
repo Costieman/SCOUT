@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from html import escape
 
-from trade_scout.app.entry_strategy_registry import EntryFamily, EntryStrategyOption
+from trade_scout.app.entry_strategy_registry import EntryStrategyOption
 from trade_scout.app.strategy_builder_service import StrategyBuilderReport, StrategyBuilderRequest
 from trade_scout.app.universe_research_service import UniverseOption
 from trade_scout.risk.exit_policies import ExitFamily
