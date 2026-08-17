@@ -107,41 +107,44 @@ class CanonicalUniverseResearchSource:
             ),
         )
 
+    def canonical_daily_bars(self, universe_id: str) -> tuple[DailyBar, ...]:
+        """Return PASS canonical rows for the exact reviewed universe, without provider calls."""
+
+        symbol_by_instrument = self._reviewed_symbol_by_instrument(universe_id)
+        canonical = CanonicalDailyBarStore(self.canonical_root).load(
+            DatasetVersion(self.dataset_version)
+        )
+        selected = tuple(
+            bar for bar in canonical if str(bar.instrument_id) in symbol_by_instrument
+        )
+        if not selected:
+            raise UniverseResearchError(
+                "selected canonical dataset contains no fully reviewed instrument histories"
+            )
+        non_pass = tuple(item for item in selected if item.quality_status is not QualityStatus.PASS)
+        if non_pass:
+            first = non_pass[0]
+            symbol = symbol_by_instrument.get(str(first.instrument_id), str(first.instrument_id))
+            raise UniverseResearchError(f"canonical series {symbol} contains non-PASS quality rows")
+        return tuple(sorted(selected, key=lambda item: (str(item.instrument_id), item.trade_date)))
+
     def research_series(
         self,
         universe_id: str,
     ) -> dict[str, tuple[ResearchBar, ...]]:
-        if universe_id != "reviewed_canonical":
-            raise UniverseResearchError(f"unsupported research universe {universe_id!r}")
-
-        candidate = load_reviewed_identity_snapshot_candidate(self.identity_candidate_path)
-        blocked = {item.instrument_id for item in candidate.coverage_gaps}
-        links = tuple(
-            item
-            for item in candidate.provider_series_links
-            if item.provider_id == "tiingo" and item.instrument_id not in blocked
-        )
-        if not links:
-            raise UniverseResearchError("reviewed identity scope contains no fully covered series")
-
-        canonical = CanonicalDailyBarStore(self.canonical_root).load(
-            DatasetVersion(self.dataset_version)
-        )
+        symbol_by_instrument = self._reviewed_symbol_by_instrument(universe_id)
+        canonical = self.canonical_daily_bars(universe_id)
         bars_by_instrument: dict[str, list[DailyBar]] = {}
         for bar in canonical:
             bars_by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
 
         result: dict[str, tuple[ResearchBar, ...]] = {}
-        for link in links:
-            selected = tuple(bars_by_instrument.get(str(link.instrument_id), ()))
+        for instrument_id, symbol in sorted(symbol_by_instrument.items(), key=lambda item: item[1]):
+            selected = tuple(bars_by_instrument.get(instrument_id, ()))
             if not selected:
                 continue
-            if any(item.quality_status is not QualityStatus.PASS for item in selected):
-                raise UniverseResearchError(
-                    f"canonical series {link.query_symbol} contains non-PASS quality rows"
-                )
             try:
-                result[link.query_symbol.upper()] = tuple(
+                result[symbol] = tuple(
                     to_research_bar(
                         item,
                         representation=PriceRepresentation.SPLIT_ADJUSTED,
@@ -151,7 +154,7 @@ class CanonicalUniverseResearchSource:
                 )
             except ValueError as exc:
                 raise UniverseResearchError(
-                    f"split-adjusted canonical history is unavailable for {link.query_symbol}"
+                    f"split-adjusted canonical history is unavailable for {symbol}"
                 ) from exc
 
         if not result:
@@ -159,6 +162,20 @@ class CanonicalUniverseResearchSource:
                 "selected canonical dataset contains no fully reviewed instrument histories"
             )
         return dict(sorted(result.items()))
+
+    def _reviewed_symbol_by_instrument(self, universe_id: str) -> dict[str, str]:
+        if universe_id != "reviewed_canonical":
+            raise UniverseResearchError(f"unsupported research universe {universe_id!r}")
+        candidate = load_reviewed_identity_snapshot_candidate(self.identity_candidate_path)
+        blocked = {str(item.instrument_id) for item in candidate.coverage_gaps}
+        result = {
+            str(item.instrument_id): item.query_symbol.upper()
+            for item in candidate.provider_series_links
+            if item.provider_id == "tiingo" and str(item.instrument_id) not in blocked
+        }
+        if not result:
+            raise UniverseResearchError("reviewed identity scope contains no fully covered series")
+        return result
 
 
 @dataclass(frozen=True, slots=True)
