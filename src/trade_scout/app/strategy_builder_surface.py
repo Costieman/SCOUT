@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 from html import escape
+from urllib.parse import urlencode
 
 from trade_scout.app.entry_strategy_registry import EntryStrategyOption
 from trade_scout.app.strategy_builder_service import StrategyBuilderReport, StrategyBuilderRequest
+from trade_scout.app.strategy_presets import StrategyPreset, available_strategy_presets
 from trade_scout.app.universe_research_service import UniverseOption
 from trade_scout.risk.exit_policies import ExitFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary
@@ -22,25 +24,19 @@ def render_strategy_builder_html(
     report: StrategyBuilderReport | None = None,
     error: str | None = None,
 ) -> str:
-    """Render the first reusable strategy-builder application surface."""
+    """Render the reusable strategy-builder application surface."""
 
     selected = request or StrategyBuilderRequest()
     universe_options = "".join(
-        f'<option value="{escape(item.universe_id)}"'
-        + (" selected" if item.universe_id == selected.universe_id else "")
-        + f">{escape(item.label)}</option>"
+        f'<option value="{escape(item.universe_id)}"' + (" selected" if item.universe_id == selected.universe_id else "") + f">{escape(item.label)}</option>"
         for item in universes
     )
     entry_options = "".join(
-        f'<option value="{escape(item.family.value)}"'
-        + (" selected" if item.family is selected.entry_family else "")
-        + f">{escape(item.label)}</option>"
+        f'<option value="{escape(item.family.value)}"' + (" selected" if item.family is selected.entry_family else "") + f">{escape(item.label)}</option>"
         for item in entries
     )
     feature_options = "".join(
-        f'<option value="{escape(value)}"'
-        + (" selected" if value == selected.rank_feature else "")
-        + f">{escape(value)}</option>"
+        f'<option value="{escape(value)}"' + (" selected" if value == selected.rank_feature else "") + f">{escape(value)}</option>"
         for value in features
     )
     lookback_options = _integer_options((1, 2, 3, 5, 10, 20), selected.lookback_years, " years")
@@ -70,18 +66,21 @@ def render_strategy_builder_html(
         )
     )
     warning = f'<div class="error"><strong>Cannot run strategy:</strong> {escape(error)}</div>' if error else ""
+    presets = available_strategy_presets()
+    preset_cards = "".join(_preset_card(item, selected) for item in presets)
     result = _render_report(report) if report is not None else _empty_state(entries, features)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Trade Scout - Strategy Builder</title>
 <style>
 :root {{ color-scheme:dark; --bg:#0b0e13; --panel:#121720; --panel2:#171d27; --border:#293241; --text:#edf1f7; --muted:#98a6b8; --accent:#f1c84b; --good:#63d39a; --bad:#ef7b7b; --blue:#7fc8ff; }}
-* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1780px,97vw); margin:auto; padding:28px 0 70px; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:4px 0 10px; font-size:15px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin-top:14px; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin-top:14px; }} form {{ display:grid; grid-template-columns:repeat(6,minmax(130px,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} select,input,textarea,button {{ min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:10px 11px; font:inherit; }} textarea {{ min-height:76px; resize:vertical; }} button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }} .wide {{ grid-column:span 2; }} .full {{ grid-column:1/-1; }} .section {{ grid-column:1/-1; border-top:1px solid var(--border); padding-top:12px; margin-top:3px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin-top:14px; }} .s3 {{ grid-column:span 3; }} .s6 {{ grid-column:span 6; }} .s12 {{ grid-column:1/-1; }} .metric-label {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} .metric {{ font-size:24px; font-weight:760; margin-top:5px; }} table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} th:first-child,td:first-child {{ text-align:left; }} .scroll {{ overflow:auto; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .blue {{ color:var(--blue); }} code {{ color:#d9e3ef; }} .chips {{ display:flex; gap:6px; flex-wrap:wrap; }} .chip {{ border:1px solid var(--border); border-radius:999px; padding:4px 8px; color:var(--blue); font-size:12px; }}
-@media(max-width:1100px) {{ form {{ grid-template-columns:1fr 1fr; }} .wide {{ grid-column:span 1; }} .s3,.s6 {{ grid-column:1/-1; }} }}
-@media print {{ :root {{ color-scheme:light; }} body {{ background:white; color:#111; }} .card {{ background:white; border-color:#aaa; }} .subtle,th,label {{ color:#555; }} .scroll {{ overflow:visible; }} table {{ font-size:10px; }} }}
+* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1780px,97vw); margin:auto; padding:28px 0 70px; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:4px 0 10px; font-size:15px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin-top:14px; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin-top:14px; }} form {{ display:grid; grid-template-columns:repeat(6,minmax(130px,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} select,input,textarea,button {{ min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:10px 11px; font:inherit; }} textarea {{ min-height:76px; resize:vertical; }} button,.run-link {{ cursor:pointer; background:#2a2411; border:1px solid #6d5b24; border-radius:8px; color:#f7d66e; font-weight:760; padding:9px 11px; display:inline-block; }} .wide {{ grid-column:span 2; }} .full {{ grid-column:1/-1; }} .section {{ grid-column:1/-1; border-top:1px solid var(--border); padding-top:12px; margin-top:3px; }} .preset-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }} .preset {{ border:1px solid var(--border); border-radius:9px; padding:12px; background:var(--panel2); }} .preset code {{ display:block; margin:8px 0; white-space:normal; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin-top:14px; }} .s3 {{ grid-column:span 3; }} .s6 {{ grid-column:span 6; }} .s12 {{ grid-column:1/-1; }} .metric-label {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} .metric {{ font-size:24px; font-weight:760; margin-top:5px; }} table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} th:first-child,td:first-child {{ text-align:left; }} .scroll {{ overflow:auto; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .blue {{ color:var(--blue); }} code {{ color:#d9e3ef; }} .chips {{ display:flex; gap:6px; flex-wrap:wrap; }} .chip {{ border:1px solid var(--border); border-radius:999px; padding:4px 8px; color:var(--blue); font-size:12px; }}
+@media(max-width:1100px) {{ form {{ grid-template-columns:1fr 1fr; }} .wide {{ grid-column:span 1; }} .s3,.s6 {{ grid-column:1/-1; }} .preset-grid {{ grid-template-columns:1fr; }} }}
+@media print {{ :root {{ color-scheme:light; }} body {{ background:white; color:#111; }} .card,.preset {{ background:white; border-color:#aaa; }} .subtle,th,label {{ color:#555; }} .scroll {{ overflow:visible; }} table {{ font-size:10px; }} }}
 </style></head><body><div class="wrap">
 <a href="/research/exits">Exit Policy Lab</a><h1>Strategy Builder</h1><div class="subtle">Choose a setup family, configure its point-in-time rules, then apply the same reusable exit-policy engine.</div>
-<div class="banner"><strong>Composition rule:</strong> entry/setup selection and exit management are independent. Changing a stop cannot change which entry events existed. Feature expressions and consolidation breakouts both emit shared event-compatible records and use the same canonical data.</div>
+<div class="banner"><strong>Composition rule:</strong> entry/setup selection and exit management are independent. Changing a stop cannot change which entry events existed. Presets below are exploratory shortcuts into the same feature-expression engine, not separate backtests or recommendations.</div>
+<div class="card"><h2>Exploratory strategy presets</h2><div class="subtle">Clicking a preset runs its frozen expression/ranking configuration with the current default research horizon and exit family. You can then copy or modify its expression in the builder.</div><div class="preset-grid">{preset_cards}</div></div>
 <div class="card"><form action="/research/strategy" method="get">
 <label>Universe<select name="universe">{universe_options}</select></label>
 <label>Entry family<select name="entry_family">{entry_options}</select></label>
@@ -89,17 +88,17 @@ def render_strategy_builder_html(
 <label>Research horizon<select name="horizon">{horizon_options}</select></label>
 <label>Entry slip bps<input name="entry_slip" type="number" min="0" max="500" step="1" value="{selected.entry_slippage_bps:g}"></label>
 <label>Exit slip bps<input name="exit_slip" type="number" min="0" max="500" step="1" value="{selected.exit_slippage_bps:g}"></label>
-<div class="section"><h3>Feature-expression entry - used when Entry family = Feature expression</h3></div>
+<div class="section"><h3>Feature-expression entry</h3></div>
 <label class="full">Entry expression<textarea name="expression">{escape(selected.expression)}</textarea></label>
 <label>Rank feature<select name="rank_feature">{feature_options}</select></label>
 <label>Rank direction<select name="rank_direction">{direction_options}</select></label>
 <label>Max signals / session<input name="per_session_limit" type="number" min="1" max="500" value="{selected.per_session_limit}"></label>
-<div class="section"><h3>Consolidation-breakout entry - used when Entry family = Consolidation breakout</h3></div>
+<div class="section"><h3>Consolidation-breakout entry</h3></div>
 <label>Base sessions<input name="duration" type="number" min="5" max="252" value="{selected.duration}"></label>
 <label>Max base range %<input name="max_range_pct" type="number" min="0.5" max="100" step="0.5" value="{selected.max_range_pct * 100:.1f}"></label>
 <label>Trend<select name="trend_filter">{trend_options}</select></label>
 <label>Breakout volume<select name="volume_ratio">{volume_options}</select></label>
-<div class="section"><h3>Exit-policy family - applied to whichever entry family is selected</h3></div>
+<div class="section"><h3>Exit-policy family</h3></div>
 <label class="wide">Fixed stop % grid<input name="fixed_stops" value="{_pct_grid(selected.fixed_percentages)}"></label>
 <label class="wide">Trailing stop % grid<input name="trailing_stops" value="{_pct_grid(selected.trailing_percentages)}"></label>
 <label class="wide">ATR stop grid<input name="atr_stops" value="{_num_grid(selected.atr_multiples)}"></label>
@@ -110,10 +109,26 @@ def render_strategy_builder_html(
 </form></div>{warning}{result}</div></body></html>"""
 
 
+def _preset_card(preset: StrategyPreset, selected: StrategyBuilderRequest) -> str:
+    query = urlencode(
+        {
+            "universe": selected.universe_id,
+            "entry_family": "feature_expression",
+            "lookback_years": selected.lookback_years,
+            "horizon": selected.horizon,
+            "expression": preset.expression,
+            "rank_feature": preset.rank_feature,
+            "rank_direction": "desc" if preset.descending else "asc",
+            "per_session_limit": preset.per_session_limit,
+        }
+    )
+    return f"""<div class="preset"><strong>{escape(preset.label)}</strong><div class="subtle">{escape(preset.description)}</div><code>{escape(preset.expression)}</code><a class="run-link" href="/research/strategy?{escape(query)}">Run preset</a></div>"""
+
+
 def _empty_state(entries: tuple[EntryStrategyOption, ...], features: tuple[str, ...]) -> str:
     entry_cards = "".join(f"<li><strong>{escape(item.label)}</strong> - {escape(item.description)}</li>" for item in entries)
     chips = "".join(f'<span class="chip">{escape(value)}</span>' for value in features)
-    return f"""<div class="grid"><div class="card s6"><h2>Registered entry families</h2><ul>{entry_cards}</ul></div><div class="card s6"><h2>Feature-expression vocabulary</h2><div class="chips">{chips}</div><p class="subtle">Expressions use only point-in-time registered features. Additions to the feature catalog automatically become available to the builder once registered.</p></div></div>"""
+    return f"""<div class="grid"><div class="card s6"><h2>Registered entry families</h2><ul>{entry_cards}</ul></div><div class="card s6"><h2>Feature-expression vocabulary</h2><div class="chips">{chips}</div><p class="subtle">Expressions use only point-in-time registered features. New registered features automatically become available here.</p></div></div>"""
 
 
 def _render_report(report: StrategyBuilderReport) -> str:
@@ -129,7 +144,7 @@ def _render_report(report: StrategyBuilderReport) -> str:
 <div class="card s3"><div class="metric-label">Exit policies compared</div><div class="metric">{len(comparison.policy_summaries)}</div></div>
 <div class="card s12 scroll"><h2>Composed entry + exit comparison</h2><table><thead><tr><th>Exit policy</th><th>N</th><th>Stop-out</th><th>Expectancy</th><th>Delta vs hold</th><th>Win rate</th><th>PF</th><th>Payoff</th><th>P05</th><th>Avg hold</th><th>Median hold</th><th>Median MAE</th><th>Median MFE</th><th>Median drawdown</th><th>Gap-through</th></tr></thead><tbody>{rows}</tbody></table></div>
 <div class="card s6"><h2>Frozen entry definition</h2>{entry_detail}<table><tr><th>Definition version</th><td><code>{escape(report.entry_definition_version)}</code></td></tr><tr><th>Window</th><td>{report.analysis_start.isoformat()} to {report.analysis_end.isoformat()}</td></tr><tr><th>Dataset</th><td><code>{escape(report.dataset_version)}</code></td></tr><tr><th>Provider calls</th><td>{str(report.provider_calls_made).lower()}</td></tr></table></div>
-<div class="card s6"><h2>Interpretation boundary</h2><ul>{warnings}</ul><div class="subtle">Research state: {escape(report.research_state)}. This is a strategy-construction laboratory, not an automatic strategy-selection or production-promotion system.</div></div>
+<div class="card s6"><h2>Interpretation boundary</h2><ul>{warnings}</ul><div class="subtle">Research state: {escape(report.research_state)}. Presets and custom expressions remain exploratory hypotheses, not production recommendations.</div></div>
 <div class="card s12"><div class="metric-label">Hold-to-horizon reference expectancy</div><div class="metric {_value_class(hold.expectancy)}">{_pct(hold.expectancy)}</div></div>
 </div>"""
 
@@ -137,12 +152,21 @@ def _render_report(report: StrategyBuilderReport) -> str:
 def _entry_detail(report: StrategyBuilderReport) -> str:
     if report.feature_strategy_report is not None:
         strategy = report.feature_strategy_report.strategy
-        return f"""<table><tr><th>Expression</th><td><code>{escape(strategy.expression)}</code></td></tr><tr><th>Rank feature</th><td>{escape(strategy.rank_feature)}</td></tr><tr><th>Direction</th><td>{'highest first' if strategy.descending else 'lowest first'}</td></tr><tr><th>Per-session limit</th><td>{strategy.per_session_limit}</td></tr><tr><th>Feature set</th><td><code>{escape(report.feature_strategy_report.feature_set_version)}</code></td></tr></table>"""
+        preset_label = _matching_preset_label(strategy.expression, strategy.rank_feature, strategy.descending)
+        preset_row = "" if preset_label is None else f"<tr><th>Matching preset</th><td>{escape(preset_label)}</td></tr>"
+        return f"""<table>{preset_row}<tr><th>Expression</th><td><code>{escape(strategy.expression)}</code></td></tr><tr><th>Rank feature</th><td>{escape(strategy.rank_feature)}</td></tr><tr><th>Direction</th><td>{'highest first' if strategy.descending else 'lowest first'}</td></tr><tr><th>Per-session limit</th><td>{strategy.per_session_limit}</td></tr><tr><th>Feature set</th><td><code>{escape(report.feature_strategy_report.feature_set_version)}</code></td></tr></table>"""
     config = report.consolidation_config
     if config is None:
         return "<div class='subtle'>Entry definition unavailable.</div>"
     volume = "none" if config.min_breakout_volume_ratio is None else f"{config.min_breakout_volume_ratio:g}x"
     return f"""<table><tr><th>Duration</th><td>{config.duration} sessions</td></tr><tr><th>Max range</th><td>{config.max_range_pct * 100:.1f}%</td></tr><tr><th>Trend</th><td>{escape(config.trend_filter.value)}</td></tr><tr><th>Volume gate</th><td>{escape(volume)}</td></tr></table>"""
+
+
+def _matching_preset_label(expression: str, rank_feature: str, descending: bool) -> str | None:
+    for preset in available_strategy_presets():
+        if preset.expression == expression and preset.rank_feature == rank_feature and preset.descending is descending:
+            return preset.label
+    return None
 
 
 def _row(item: ExitPolicySummary) -> str:
