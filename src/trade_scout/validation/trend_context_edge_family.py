@@ -254,16 +254,13 @@ def build_trend_context_edge_family_report(
         alpha=alpha,
     )
     adjusted = {
-        item.hypothesis_id: item.adjusted_p_value
-        for item in adjust_p_values(family, raw_p_values)
+        item.hypothesis_id: item.adjusted_p_value for item in adjust_p_values(family, raw_p_values)
     }
 
     results: list[TrendContextReadout] = []
     for context in _CONTEXTS:
         values = provisional[context]
-        adjusted_p = (
-            adjusted.get(_hypothesis_id(context)) if values.parent is not None else None
-        )
+        adjusted_p = adjusted.get(_hypothesis_id(context)) if values.parent is not None else None
         failures = (
             _gate_failures(
                 mean_interval=values.mean_interval,
