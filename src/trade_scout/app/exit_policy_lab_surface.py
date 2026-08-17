@@ -28,7 +28,9 @@ def render_exit_policy_lab_html(
         for item in universes
     )
     lookback_options = _integer_options((1, 2, 3, 5, 10, 20), selected.lookback_years, " years")
-    horizon_options = _integer_options((2, 3, 5, 10, 20, 40, 60, 120, 252), selected.horizon, " sessions")
+    horizon_options = _integer_options(
+        (2, 3, 5, 10, 20, 40, 60, 120, 252), selected.horizon, " sessions"
+    )
     trend_options = "".join(
         f'<option value="{value}"'
         + (" selected" if value == selected.trend_filter.value else "")
@@ -150,7 +152,9 @@ def _num_grid(values: tuple[float, ...]) -> str:
 
 def _integer_options(values: tuple[int, ...], selected: int, suffix: str) -> str:
     return "".join(
-        f'<option value="{value}"' + (" selected" if value == selected else "") + f">{value}{suffix}</option>"
+        f'<option value="{value}"'
+        + (" selected" if value == selected else "")
+        + f">{value}{suffix}</option>"
         for value in values
     )
 
