@@ -141,8 +141,10 @@ def _recover_comparison(node: ast.AST) -> VisualCondition | None:
 
 
 def _numeric_constant(node: ast.AST) -> float | None:
-    if isinstance(node, ast.Constant) and not isinstance(node.value, bool) and isinstance(
-        node.value, (int, float)
+    if (
+        isinstance(node, ast.Constant)
+        and not isinstance(node.value, bool)
+        and isinstance(node.value, (int, float))
     ):
         value = float(node.value)
         return value if math.isfinite(value) else None
