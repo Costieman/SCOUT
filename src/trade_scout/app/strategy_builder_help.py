@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Presentation-only glossary and contextual help for Strategy Builder."""
 
 STRATEGY_BUILDER_HELP_JS = r"""
