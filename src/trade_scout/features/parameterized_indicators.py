@@ -206,6 +206,8 @@ class ParameterizedIndicatorSpec:
             IndicatorFamily.PRIOR_HIGH,
         }:
             return self.period + 1
+        if self.metric in {IndicatorMetric.BB_UPPER_REACHED, IndicatorMetric.BB_LOWER_REACHED}:
+            return self.period
         if self.metric in _BINARY_METRICS:
             return self.period + 1
         if self.family in {IndicatorFamily.RSI, IndicatorFamily.ATR}:
