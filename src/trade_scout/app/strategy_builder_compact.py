@@ -40,7 +40,7 @@ STRATEGY_BUILDER_COMPACT_JS = r"""
     } else if (family === 'bollinger_bands') {
       const deviations = value(row, '.param-deviations');
       if (period) parts.push(`${period} days`);
-      if (deviations) parts.push(`${deviations}σ`);
+      if (deviations) parts.push(`${deviations} SD`);
     } else if (family === 'macd') {
       const fast = value(row, '.param-fast');
       const slow = value(row, '.param-slow');
