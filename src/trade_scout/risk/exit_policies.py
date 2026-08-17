@@ -111,6 +111,7 @@ DEFAULT_FIXED_PERCENT_GRID = (0.02, 0.03, 0.04, 0.05, 0.07, 0.10)
 DEFAULT_ATR_GRID = (1.0, 1.5, 2.0, 2.5, 3.0)
 DEFAULT_TRAILING_PERCENT_GRID = (0.02, 0.03, 0.05, 0.07, 0.10)
 DEFAULT_TRAILING_ATR_GRID = (1.0, 1.5, 2.0, 2.5, 3.0)
+_DEFAULT_COST_MODEL = CostModel()
 
 
 def exit_policy_grid(
@@ -176,7 +177,7 @@ def evaluate_exit_policy(
     *,
     horizon: int,
     policy: ExitPolicy,
-    cost_model: CostModel = CostModel(),
+    cost_model: CostModel = _DEFAULT_COST_MODEL,
 ) -> ExitPolicyResult | None:
     """Apply one exit policy to one already-defined event.
 
@@ -288,7 +289,7 @@ def evaluate_exit_policy_grid(
     *,
     horizon: int,
     policies: tuple[ExitPolicy, ...],
-    cost_model: CostModel = CostModel(),
+    cost_model: CostModel = _DEFAULT_COST_MODEL,
 ) -> tuple[ExitPolicyResult, ...]:
     """Evaluate a complete policy family on an exact common event population."""
 
