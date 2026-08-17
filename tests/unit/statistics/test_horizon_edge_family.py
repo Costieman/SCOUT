@@ -72,9 +72,7 @@ def test_horizon_family_applies_bh_to_complete_predeclared_family() -> None:
     for item in report.horizon_results:
         assert 0.0 <= item.randomized_timing.one_sided_p_value <= 1.0
         assert (
-            item.randomized_timing.one_sided_p_value
-            <= item.adjusted_random_timing_p_value
-            <= 1.0
+            item.randomized_timing.one_sided_p_value <= item.adjusted_random_timing_p_value <= 1.0
         )
         assert item.performance.sample_size > 0
         assert item.performance.mean_interval is not None
