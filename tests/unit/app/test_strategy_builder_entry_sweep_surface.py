@@ -16,16 +16,17 @@ def test_entry_sweep_controls_expose_configured_indicator_parameters() -> None:
     assert "Slow EMA period" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "Signal EMA period" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "UNDER TEST IN SECTION 5" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert "Each value creates its own point-in-time entry population" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert (
+        "Each value creates its own point-in-time entry population"
+        in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    )
 
 
 def test_entry_sweep_query_detection_is_explicit() -> None:
     assert is_entry_sweep_query(
         "entry_sweep_feature=pi__moving_average__ma_distance_pct__close__p200__sma"
     )
-    assert not is_entry_sweep_query(
-        "sweep_variable=fixed&sweep_from=1&sweep_to=10&sweep_step=1"
-    )
+    assert not is_entry_sweep_query("sweep_variable=fixed&sweep_from=1&sweep_to=10&sweep_step=1")
 
 
 def test_workbench_serves_entry_sweep_asset_without_analytical_sources() -> None:
