@@ -13,6 +13,7 @@ import math
 from dataclasses import dataclass
 from enum import StrEnum
 
+from trade_scout.features.parameterized_expression import parse_parameterized_feature_name
 from trade_scout.statistics.strategy_research import available_strategy_features
 
 
@@ -44,7 +45,7 @@ class VisualCondition:
     join: RuleJoin = RuleJoin.AND
 
     def __post_init__(self) -> None:
-        if self.feature_name not in available_strategy_features():
+        if not _is_supported_feature_name(self.feature_name):
             raise ValueError(f"unknown visual-rule feature {self.feature_name!r}")
         if not math.isfinite(self.value):
             raise ValueError("visual-rule comparison value must be finite")
@@ -61,7 +62,7 @@ class VisualRuleSet:
     """Ordered visual conditions with explicit left-to-right AND/OR composition."""
 
     conditions: tuple[VisualCondition, ...]
-    version: str = "visual-rule-set-v0.1"
+    version: str = "visual-rule-set-v0.2"
 
     def __post_init__(self) -> None:
         if not self.conditions:
@@ -170,6 +171,16 @@ def _operator_from_ast(node: ast.cmpop) -> RuleOperator | None:
         if isinstance(node, node_type):
             return resolved
     return None
+
+
+def _is_supported_feature_name(feature_name: str) -> bool:
+    if feature_name in available_strategy_features():
+        return True
+    try:
+        parse_parameterized_feature_name(feature_name)
+    except ValueError:
+        return False
+    return True
 
 
 def _format_number(value: float) -> str:
