@@ -133,7 +133,6 @@ def _empty_state(entries: tuple[EntryStrategyOption, ...]) -> str:
 
 def _render_report(report: StrategyBuilderReport) -> str:
     comparison = report.comparison
-    hold = next(item for item in comparison.policy_summaries if item.family is ExitFamily.HOLD_TO_HORIZON)
     rows = "".join(_row(item) for item in comparison.policy_summaries)
     warnings = "".join(f"<li>{escape(item)}</li>" for item in comparison.warnings)
     performance_rows = "".join(
