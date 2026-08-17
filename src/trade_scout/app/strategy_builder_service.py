@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from time import perf_counter
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from trade_scout.app.entry_strategy_registry import (
     EntryFamily,
@@ -21,7 +21,12 @@ from trade_scout.app.entry_strategy_registry import (
 from trade_scout.app.strategy_presets import StrategyPreset, strategy_preset
 from trade_scout.app.universe_research_service import UniverseOption
 from trade_scout.app.visual_rule_builder import VisualCondition, VisualRuleSet
-from trade_scout.data.contracts import DailyBar, ResearchBar
+from trade_scout.data.contracts import (
+    DailyBar,
+    PriceRepresentation,
+    ResearchBar,
+    to_research_bar,
+)
 from trade_scout.events.contracts import EventRecord
 from trade_scout.features.parameterized_expression import extract_parameterized_specs
 from trade_scout.features.parameterized_indicators import (
@@ -69,6 +74,24 @@ class StrategyBuilderSource(Protocol):
     def research_series(self, universe_id: str) -> dict[str, tuple[ResearchBar, ...]]: ...
 
     def canonical_daily_bars(self, universe_id: str) -> tuple[DailyBar, ...]: ...
+
+
+@runtime_checkable
+class WindowedStrategyBuilderSource(Protocol):
+    """Optional fast-path source that can fetch only the Strategy Builder working window."""
+
+    def strategy_builder_latest_trade_date(self, universe_id: str) -> date: ...
+
+    def strategy_builder_dataset_record_count(self, universe_id: str) -> int: ...
+
+    def strategy_builder_daily_bars(
+        self,
+        universe_id: str,
+        *,
+        signal_start: date,
+        signal_end: date,
+        warmup_observations: int,
+    ) -> tuple[DailyBar, ...]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,11 +182,12 @@ class StrategyBuilderRequest:
 class StrategyBuilderPerformance:
     """Small operator-facing performance record for one synchronous research run."""
 
+    dataset_daily_bar_count: int
     canonical_daily_bar_count: int
     working_daily_bar_count: int
     phase_seconds: tuple[tuple[str, float], ...]
     total_seconds: float
-    version: str = "strategy-builder-performance-v0.1"
+    version: str = "strategy-builder-performance-v0.2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,7 +212,7 @@ class StrategyBuilderReport:
     performance: StrategyBuilderPerformance
     provider_calls_made: bool = False
     research_state: str = "EXPLORATORY"
-    application_version: str = "strategy-builder-v0.5"
+    application_version: str = "strategy-builder-v0.6"
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,48 +241,45 @@ class StrategyBuilderService:
         option = options.get(request.universe_id)
         if option is None:
             raise StrategyBuilderError(f"unavailable research universe {request.universe_id!r}")
-        series = self.source.research_series(request.universe_id)
-        if not series:
-            raise StrategyBuilderError("strategy builder received an empty research universe")
-        latest = max(series_bars[-1].trade_date for series_bars in series.values())
-        start = _subtract_years(latest, request.lookback_years)
         entry_option = entry_strategy_option(request.entry_family)
-        started = phase("load research universe", started)
 
         parameterized_specs: tuple[ParameterizedIndicatorSpec, ...] = ()
         feature_preset: StrategyPreset | None = None
         feature_report: StrategyResearchReport | None = None
         consolidation_config: ConsolidationBreakoutConfig | None = None
         events_by_instrument: dict[str, list[EventRecord]] = {}
+        dataset_daily_bar_count = 0
         canonical_daily_bar_count = 0
         working_daily_bar_count = 0
-        exit_series = series
+        exit_series: dict[str, tuple[ResearchBar, ...]] = {}
 
-        if request.entry_family is EntryFamily.FEATURE_EXPRESSION:
+        if request.entry_family is EntryFamily.FEATURE_EXPRESSION and isinstance(
+            self.source, WindowedStrategyBuilderSource
+        ):
+            latest = self.source.strategy_builder_latest_trade_date(request.universe_id)
+            start = _subtract_years(latest, request.lookback_years)
+            dataset_daily_bar_count = self.source.strategy_builder_dataset_record_count(
+                request.universe_id
+            )
+            started = phase("load research universe", started)
+
             feature_preset, strategy_definition = _feature_strategy_definition(request)
-            daily_bars = self.source.canonical_daily_bars(request.universe_id)
-            canonical_daily_bar_count = len(daily_bars)
-            started = phase("load canonical daily bars", started)
-
             parameterized_specs = extract_parameterized_specs(strategy_definition.expression)
             fixed_warmup = required_strategy_warmup_observations(strategy_definition)
             parameterized_warmup = max(
                 (item.minimum_observations for item in parameterized_specs),
                 default=1,
             )
-            working_daily_bars, first_dates = _trim_daily_bars_for_signal_window(
-                daily_bars,
+            working_daily_bars = self.source.strategy_builder_daily_bars(
+                request.universe_id,
                 signal_start=start,
                 signal_end=latest,
                 warmup_observations=max(fixed_warmup, parameterized_warmup),
             )
+            canonical_daily_bar_count = len(working_daily_bars)
             working_daily_bar_count = len(working_daily_bars)
-            exit_series = _trim_research_series_to_daily_window(
-                series,
-                working_daily_bars,
-                first_dates,
-                latest,
-            )
+            exit_series = _research_series_from_daily_bars(working_daily_bars)
+            started = phase("load canonical daily bars", started)
             started = phase("bound working history", started)
 
             extra_features = compute_parameterized_indicator_frame(
@@ -282,28 +303,87 @@ class StrategyBuilderService:
             entry_definition_version = entry_option.definition_version
             started = phase("select frozen entry population", started)
         else:
-            entry_count = 0
-            consolidation_config = ConsolidationBreakoutConfig(
-                duration=request.duration,
-                max_range_pct=request.max_range_pct,
-                trend_filter=request.trend_filter,
-                cooldown_sessions=5,
-                min_breakout_volume_ratio=request.min_breakout_volume_ratio,
-                volume_lookback_sessions=20,
-            )
-            for series_bars in series.values():
-                detected_events = tuple(
-                    event
-                    for event in detect_consolidation_breakouts(series_bars, consolidation_config)
-                    if start <= event.signal_date <= latest
+            series = self.source.research_series(request.universe_id)
+            if not series:
+                raise StrategyBuilderError("strategy builder received an empty research universe")
+            latest = max(series_bars[-1].trade_date for series_bars in series.values())
+            start = _subtract_years(latest, request.lookback_years)
+            dataset_daily_bar_count = sum(len(series_bars) for series_bars in series.values())
+            exit_series = series
+            started = phase("load research universe", started)
+
+            if request.entry_family is EntryFamily.FEATURE_EXPRESSION:
+                feature_preset, strategy_definition = _feature_strategy_definition(request)
+                daily_bars = self.source.canonical_daily_bars(request.universe_id)
+                canonical_daily_bar_count = len(daily_bars)
+                started = phase("load canonical daily bars", started)
+
+                parameterized_specs = extract_parameterized_specs(strategy_definition.expression)
+                fixed_warmup = required_strategy_warmup_observations(strategy_definition)
+                parameterized_warmup = max(
+                    (item.minimum_observations for item in parameterized_specs),
+                    default=1,
                 )
-                entry_count += len(detected_events)
-                if detected_events:
-                    events_by_instrument.setdefault(str(series_bars[0].instrument_id), []).extend(
-                        detected_events
+                working_daily_bars, first_dates = _trim_daily_bars_for_signal_window(
+                    daily_bars,
+                    signal_start=start,
+                    signal_end=latest,
+                    warmup_observations=max(fixed_warmup, parameterized_warmup),
+                )
+                working_daily_bar_count = len(working_daily_bars)
+                exit_series = _trim_research_series_to_daily_window(
+                    series,
+                    working_daily_bars,
+                    first_dates,
+                    latest,
+                )
+                started = phase("bound working history", started)
+
+                extra_features = compute_parameterized_indicator_frame(
+                    working_daily_bars,
+                    parameterized_specs,
+                )
+                started = phase("materialize requested indicators", started)
+
+                feature_report = run_feature_strategy_research(
+                    working_daily_bars,
+                    strategy=strategy_definition,
+                    horizons=(request.horizon,),
+                    signal_start=start,
+                    signal_end=latest,
+                    extra_features=extra_features,
+                    measure_outcomes=False,
+                )
+                for signal in feature_report.signals:
+                    events_by_instrument.setdefault(str(signal.instrument_id), []).append(signal)
+                entry_count = feature_report.signal_count
+                entry_definition_version = entry_option.definition_version
+                started = phase("select frozen entry population", started)
+            else:
+                entry_count = 0
+                consolidation_config = ConsolidationBreakoutConfig(
+                    duration=request.duration,
+                    max_range_pct=request.max_range_pct,
+                    trend_filter=request.trend_filter,
+                    cooldown_sessions=5,
+                    min_breakout_volume_ratio=request.min_breakout_volume_ratio,
+                    volume_lookback_sessions=20,
+                )
+                for series_bars in series.values():
+                    detected_events = tuple(
+                        event
+                        for event in detect_consolidation_breakouts(
+                            series_bars, consolidation_config
+                        )
+                        if start <= event.signal_date <= latest
                     )
-            entry_definition_version = entry_option.definition_version
-            started = phase("select frozen entry population", started)
+                    entry_count += len(detected_events)
+                    if detected_events:
+                        events_by_instrument.setdefault(
+                            str(series_bars[0].instrument_id), []
+                        ).extend(detected_events)
+                entry_definition_version = entry_option.definition_version
+                started = phase("select frozen entry population", started)
 
         policies = exit_policy_grid(
             fixed_percentages=request.fixed_percentages,
@@ -341,7 +421,9 @@ class StrategyBuilderService:
         started = phase("evaluate exit policies", started)
 
         versions = {
-            str(series_bars[0].dataset_version) for series_bars in series.values() if series_bars
+            str(series_bars[0].dataset_version)
+            for series_bars in exit_series.values()
+            if series_bars
         }
         if len(versions) != 1:
             raise StrategyBuilderError("strategy builder cannot mix canonical dataset versions")
@@ -360,6 +442,7 @@ class StrategyBuilderService:
                 f"{total_seconds:.2f}s total"
             )
         performance = StrategyBuilderPerformance(
+            dataset_daily_bar_count=dataset_daily_bar_count,
             canonical_daily_bar_count=canonical_daily_bar_count,
             working_daily_bar_count=working_daily_bar_count,
             phase_seconds=tuple(phases),
@@ -392,12 +475,16 @@ def _feature_strategy_definition(
         preset = strategy_preset(request.preset_id)
         return preset, preset.definition()
     return None, StrategyDefinition(
-        strategy_id="strategy-builder-visual-rules"
-        if request.visual_conditions
-        else "strategy-builder-custom-expression",
-        name="Strategy Builder visual rule set"
-        if request.visual_conditions
-        else "Strategy Builder custom expression",
+        strategy_id=(
+            "strategy-builder-visual-rules"
+            if request.visual_conditions
+            else "strategy-builder-custom-expression"
+        ),
+        name=(
+            "Strategy Builder visual rule set"
+            if request.visual_conditions
+            else "Strategy Builder custom expression"
+        ),
         expression=request.expression,
         rank_feature=request.rank_feature,
         descending=request.descending,
@@ -408,6 +495,28 @@ def _feature_strategy_definition(
             else "Operator-defined point-in-time Strategy Builder expression."
         ),
     )
+
+
+def _research_series_from_daily_bars(
+    bars: tuple[DailyBar, ...],
+) -> dict[str, tuple[ResearchBar, ...]]:
+    grouped: dict[str, list[DailyBar]] = {}
+    for bar in bars:
+        grouped.setdefault(str(bar.instrument_id), []).append(bar)
+    result: dict[str, tuple[ResearchBar, ...]] = {}
+    for instrument_id, rows in grouped.items():
+        ordered = tuple(sorted(rows, key=lambda item: item.trade_date))
+        result[instrument_id] = tuple(
+            to_research_bar(
+                item,
+                representation=PriceRepresentation.SPLIT_ADJUSTED,
+                eligibility=True,
+            )
+            for item in ordered
+        )
+    if not result:
+        raise StrategyBuilderError("working canonical window contains no research series")
+    return result
 
 
 def _trim_daily_bars_for_signal_window(
@@ -491,4 +600,5 @@ __all__ = [
     "StrategyBuilderRequest",
     "StrategyBuilderService",
     "StrategyBuilderSource",
+    "WindowedStrategyBuilderSource",
 ]

@@ -10,7 +10,7 @@ from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
 from trade_scout.app.research_workbench_console import serve_research_workbench_console
-from trade_scout.app.universe_research_service import CanonicalUniverseResearchSource
+from trade_scout.app.windowed_canonical_source import WindowedCanonicalUniverseResearchSource
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -49,7 +49,7 @@ def main() -> int:
         dataset_version=dataset_version,
         identity_candidate_path=identity_candidate,
     )
-    universe_source = CanonicalUniverseResearchSource(
+    universe_source = WindowedCanonicalUniverseResearchSource(
         canonical_root=workspace.canonical_root,
         dataset_version=dataset_version,
         identity_candidate_path=identity_candidate,
