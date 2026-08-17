@@ -1,16 +1,19 @@
 # ruff: noqa: E501
 # fmt: off
-"""Presentation-only HTML for composing reusable entry and exit families."""
+"""Presentation-only HTML for visually composing reusable entry and exit families."""
 
 from __future__ import annotations
 
+import json
 from html import escape
 from urllib.parse import urlencode
 
 from trade_scout.app.entry_strategy_registry import EntryStrategyOption
 from trade_scout.app.strategy_builder_service import StrategyBuilderReport, StrategyBuilderRequest
+from trade_scout.app.strategy_indicator_catalog import indicator_catalog_json_ready
 from trade_scout.app.strategy_presets import StrategyPreset, available_strategy_presets
 from trade_scout.app.universe_research_service import UniverseOption
+from trade_scout.app.visual_rule_builder import recover_visual_conditions
 from trade_scout.risk.exit_policies import ExitFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary
 
@@ -24,18 +27,14 @@ def render_strategy_builder_html(
     report: StrategyBuilderReport | None = None,
     error: str | None = None,
 ) -> str:
-    """Render the reusable strategy-builder application surface."""
+    """Render the interactive visual Strategy Builder application surface."""
 
     selected = request or StrategyBuilderRequest()
     universe_options = "".join(
         f'<option value="{escape(item.universe_id)}"' + (" selected" if item.universe_id == selected.universe_id else "") + f">{escape(item.label)}</option>"
         for item in universes
     )
-    entry_options = "".join(
-        f'<option value="{escape(item.family.value)}"' + (" selected" if item.family is selected.entry_family else "") + f">{escape(item.label)}</option>"
-        for item in entries
-    )
-    feature_options = "".join(
+    rank_options = "".join(
         f'<option value="{escape(value)}"' + (" selected" if value == selected.rank_feature else "") + f">{escape(value)}</option>"
         for value in features
     )
@@ -45,90 +44,91 @@ def render_strategy_builder_html(
         f'<option value="{value}"' + (" selected" if descending is selected.descending else "") + f">{label}</option>"
         for value, descending, label in (("desc", True, "Highest first"), ("asc", False, "Lowest first"))
     )
-    trend_options = "".join(
-        f'<option value="{value}"' + (" selected" if value == selected.trend_filter.value else "") + f">{label}</option>"
-        for value, label in (
-            ("none", "No moving-average filter"),
-            ("above_sma_200", "Close above SMA 200"),
-            ("above_rising_sma_200", "Close above rising SMA 200"),
-            ("above_sma_50_100_200", "Close above SMA 50, 100 and 200"),
-            ("bullish_sma_stack_50_100_200", "Bullish SMA stack"),
-        )
-    )
-    volume_options = "".join(
-        f'<option value="{value}"' + (" selected" if ratio == selected.min_breakout_volume_ratio else "") + f">{label}</option>"
-        for value, ratio, label in (
-            ("none", None, "No breakout-volume gate"),
-            ("1.0", 1.0, "At least 1.0x prior average"),
-            ("1.25", 1.25, "At least 1.25x prior average"),
-            ("1.5", 1.5, "At least 1.5x prior average"),
-            ("2.0", 2.0, "At least 2.0x prior average"),
-        )
-    )
     warning = f'<div class="error"><strong>Cannot run strategy:</strong> {escape(error)}</div>' if error else ""
-    presets = available_strategy_presets()
-    preset_cards = "".join(_preset_card(item, selected) for item in presets)
-    result = _render_report(report) if report is not None else _empty_state(entries, features)
+    result = _render_report(report) if report is not None else _empty_state(entries)
+    recovered_conditions = selected.visual_conditions or recover_visual_conditions(selected.expression)
+    initial_rules = [
+        {
+            "feature_name": item.feature_name,
+            "operator": item.operator.value,
+            "value": item.value,
+            "join": item.join.value,
+        }
+        for item in recovered_conditions
+    ]
+    initial_stops = _initial_stops(selected, use_defaults=request is not None)
+    catalog_json = escape(json.dumps(indicator_catalog_json_ready(), separators=(",", ":")))
+    rules_json = escape(json.dumps(initial_rules, separators=(",", ":")))
+    stops_json = escape(json.dumps(initial_stops, separators=(",", ":")))
+    examples = "".join(_example_link(item, selected) for item in available_strategy_presets())
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Trade Scout - Strategy Builder</title>
+<title>Trade Scout - Visual Strategy Builder</title>
+<script src="/assets/strategy-builder.js" defer></script>
 <style>
 :root {{ color-scheme:dark; --bg:#0b0e13; --panel:#121720; --panel2:#171d27; --border:#293241; --text:#edf1f7; --muted:#98a6b8; --accent:#f1c84b; --good:#63d39a; --bad:#ef7b7b; --blue:#7fc8ff; }}
-* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1780px,97vw); margin:auto; padding:28px 0 70px; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:4px 0 10px; font-size:15px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin-top:14px; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin-top:14px; }} form {{ display:grid; grid-template-columns:repeat(6,minmax(130px,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} select,input,textarea,button {{ min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:10px 11px; font:inherit; }} textarea {{ min-height:76px; resize:vertical; }} button,.run-link {{ cursor:pointer; background:#2a2411; border:1px solid #6d5b24; border-radius:8px; color:#f7d66e; font-weight:760; padding:9px 11px; display:inline-block; }} .wide {{ grid-column:span 2; }} .full {{ grid-column:1/-1; }} .section {{ grid-column:1/-1; border-top:1px solid var(--border); padding-top:12px; margin-top:3px; }} .preset-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }} .preset {{ border:1px solid var(--border); border-radius:9px; padding:12px; background:var(--panel2); }} .preset code {{ display:block; margin:8px 0; white-space:normal; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin-top:14px; }} .s3 {{ grid-column:span 3; }} .s6 {{ grid-column:span 6; }} .s12 {{ grid-column:1/-1; }} .metric-label {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} .metric {{ font-size:24px; font-weight:760; margin-top:5px; }} table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} th:first-child,td:first-child {{ text-align:left; }} .scroll {{ overflow:auto; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .blue {{ color:var(--blue); }} code {{ color:#d9e3ef; }} .chips {{ display:flex; gap:6px; flex-wrap:wrap; }} .chip {{ border:1px solid var(--border); border-radius:999px; padding:4px 8px; color:var(--blue); font-size:12px; }}
-@media(max-width:1100px) {{ form {{ grid-template-columns:1fr 1fr; }} .wide {{ grid-column:span 1; }} .s3,.s6 {{ grid-column:1/-1; }} .preset-grid {{ grid-template-columns:1fr; }} }}
-@media print {{ :root {{ color-scheme:light; }} body {{ background:white; color:#111; }} .card,.preset {{ background:white; border-color:#aaa; }} .subtle,th,label {{ color:#555; }} .scroll {{ overflow:visible; }} table {{ font-size:10px; }} }}
+* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1800px,97vw); margin:auto; padding:26px 0 70px; }} h1 {{ margin:2px 0 0; font-size:31px; }} h2 {{ margin:0 0 8px; font-size:19px; }} h3 {{ margin:0 0 7px; font-size:15px; }} .subtle {{ color:var(--muted); }} .eyebrow {{ color:var(--accent); font-size:11px; text-transform:uppercase; letter-spacing:.12em; font-weight:750; }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:12px; padding:16px; margin-top:14px; }} .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin-top:14px; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin-top:14px; }} .top-grid {{ display:grid; grid-template-columns:repeat(6,minmax(130px,1fr)); gap:10px; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} select,input,textarea,button {{ min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} input[type=range] {{ padding:0; border:0; }} textarea {{ min-height:92px; resize:vertical; }} button,.run-link {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }} .primary {{ padding:12px 18px; font-size:15px; }} .toolbar {{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }} .composer-row {{ display:grid; grid-template-columns:105px 1.05fr 1.35fr 115px 130px 1.4fr 90px; gap:8px; align-items:end; padding:11px; border:1px solid var(--border); border-radius:10px; background:var(--panel2); margin-top:8px; }} .composer-row .rule-meta {{ grid-column:2/-1; color:var(--muted); font-size:12px; }} .stop-row {{ grid-template-columns:1.2fr 150px 1.5fr 1fr 90px; }} .stop-unit {{ align-self:center; color:var(--muted); font-size:12px; padding-bottom:9px; }} .remove-row {{ background:#211416; color:#efb0b0; border-color:#553033; }} .mode-row {{ display:flex; gap:16px; align-items:center; margin:8px 0 10px; }} .mode-row label {{ display:flex; flex-direction:row; align-items:center; gap:7px; text-transform:none; letter-spacing:0; font-size:13px; }} .mode-row input {{ width:auto; }} .section-note {{ padding:9px 11px; background:#10151d; border-left:3px solid #426481; color:var(--muted); margin:9px 0; }} details {{ margin-top:14px; }} summary {{ cursor:pointer; color:var(--accent); font-weight:700; }} .examples {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px; }} .example {{ border:1px solid var(--border); border-radius:9px; padding:10px; background:var(--panel2); }} .example code {{ display:block; white-space:normal; color:#cfd8e5; margin:6px 0; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; margin-top:14px; }} .s3 {{ grid-column:span 3; }} .s6 {{ grid-column:span 6; }} .s12 {{ grid-column:1/-1; }} .metric-label {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} .metric {{ font-size:24px; font-weight:760; margin-top:5px; }} table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; }} th:first-child,td:first-child {{ text-align:left; }} .scroll {{ overflow:auto; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .blue {{ color:var(--blue); }} code {{ color:#d9e3ef; }}
+@media(max-width:1200px) {{ .top-grid {{ grid-template-columns:1fr 1fr; }} .composer-row,.stop-row {{ grid-template-columns:1fr 1fr; }} .composer-row .rule-meta {{ grid-column:1/-1; }} .examples {{ grid-template-columns:1fr; }} .s3,.s6 {{ grid-column:1/-1; }} }}
+@media print {{ :root {{ color-scheme:light; }} body {{ background:white; color:#111; }} .card,.composer-row,.example {{ background:white; border-color:#aaa; }} .subtle,th,label,.rule-meta,.stop-unit {{ color:#555; }} .scroll {{ overflow:visible; }} table {{ font-size:10px; }} }}
 </style></head><body><div class="wrap">
-<a href="/research/exits">Exit Policy Lab</a><h1>Strategy Builder</h1><div class="subtle">Choose a setup family, configure its point-in-time rules, then apply the same reusable exit-policy engine.</div>
-<div class="banner"><strong>Composition rule:</strong> entry/setup selection and exit management are independent. Changing a stop cannot change which entry events existed. Presets below are exploratory shortcuts into the same feature-expression engine, not separate backtests or recommendations.</div>
-<div class="card"><h2>Exploratory strategy presets</h2><div class="subtle">Clicking a preset runs its frozen expression/ranking configuration with the current default research horizon and exit family. You can then copy or modify its expression in the builder.</div><div class="preset-grid">{preset_cards}</div></div>
-<div class="card"><form action="/research/strategy" method="get">
+<div class="eyebrow">Trade Scout research laboratory</div><h1>Visual Strategy Builder</h1><div class="subtle">Build the hypothesis from indicators and relationships; then compare as many exit candidates as you want on the same frozen entry population.</div>
+<div class="banner"><strong>Design rule:</strong> indicators are building blocks, not strategies. The visual composer compiles your selections into the existing safe point-in-time feature engine. Hold-to-horizon is always retained as the exit control.</div>
+<form id="strategy-form" action="/research/strategy" method="get">
+<input type="hidden" name="entry_family" value="feature_expression">
+<div class="card"><h2>1. Research scope</h2><div class="top-grid">
 <label>Universe<select name="universe">{universe_options}</select></label>
-<label>Entry family<select name="entry_family">{entry_options}</select></label>
 <label>Lookback<select name="lookback_years">{lookback_options}</select></label>
 <label>Research horizon<select name="horizon">{horizon_options}</select></label>
-<label>Entry slip bps<input name="entry_slip" type="number" min="0" max="500" step="1" value="{selected.entry_slippage_bps:g}"></label>
-<label>Exit slip bps<input name="exit_slip" type="number" min="0" max="500" step="1" value="{selected.exit_slippage_bps:g}"></label>
-<div class="section"><h3>Feature-expression entry</h3></div>
-<label class="full">Entry expression<textarea name="expression">{escape(selected.expression)}</textarea></label>
-<label>Rank feature<select name="rank_feature">{feature_options}</select></label>
+<label>Rank metric<select name="rank_feature">{rank_options}</select></label>
 <label>Rank direction<select name="rank_direction">{direction_options}</select></label>
 <label>Max signals / session<input name="per_session_limit" type="number" min="1" max="500" value="{selected.per_session_limit}"></label>
-<div class="section"><h3>Consolidation-breakout entry</h3></div>
-<label>Base sessions<input name="duration" type="number" min="5" max="252" value="{selected.duration}"></label>
-<label>Max base range %<input name="max_range_pct" type="number" min="0.5" max="100" step="0.5" value="{selected.max_range_pct * 100:.1f}"></label>
-<label>Trend<select name="trend_filter">{trend_options}</select></label>
-<label>Breakout volume<select name="volume_ratio">{volume_options}</select></label>
-<div class="section"><h3>Exit-policy family</h3></div>
-<label class="wide">Fixed stop % grid<input name="fixed_stops" value="{_pct_grid(selected.fixed_percentages)}"></label>
-<label class="wide">Trailing stop % grid<input name="trailing_stops" value="{_pct_grid(selected.trailing_percentages)}"></label>
-<label class="wide">ATR stop grid<input name="atr_stops" value="{_num_grid(selected.atr_multiples)}"></label>
-<label class="wide">Trailing ATR grid<input name="trailing_atr" value="{_num_grid(selected.trailing_atr_multiples)}"></label>
-<label>Stop slip bps<input name="stop_slip" type="number" min="0" max="500" step="1" value="{selected.stop_slippage_bps:g}"></label>
-<label>Commission bps/side<input name="commission" type="number" min="0" max="500" step="1" value="{selected.commission_bps_per_side:g}"></label>
-<button type="submit">Run composed strategy</button>
-</form></div>{warning}{result}</div></body></html>"""
+</div></div>
+<div class="card"><h2>2. Entry conditions</h2><div class="mode-row"><label><input id="entry-mode-visual" type="radio" name="ui_entry_mode" value="visual" checked> Visual builder</label><label><input id="entry-mode-advanced" type="radio" name="ui_entry_mode" value="advanced"> Advanced expression</label></div>
+<div id="visual-builder-panel"><div class="section-note">Choose an indicator, then a metric/trigger, relationship and threshold. Add more rows with AND or OR. Current catalog parameters are shown beneath each row so the executed definition is explicit.</div><div id="rule-rows"></div><div class="toolbar"><button id="add-rule" type="button">+ Add condition</button></div></div>
+<div id="advanced-builder-panel" hidden><label>Advanced safe expression<textarea id="advanced-expression">{escape(selected.expression)}</textarea></label><div class="section-note">Advanced mode is retained for exact reproducibility and power users; normal strategy design should happen through the visual controls.</div></div>
+</div>
+<div class="card"><h2>3. Exit candidates to compare</h2><div class="section-note">Add one, five, or twenty candidates. Percentage stops accept exact values from 0.01% to 99.99%; each row has both a precise number box and slider. Different exit families can be mixed in one run.</div><div id="stop-rows"></div><div class="toolbar"><button id="add-stop" type="button">+ Add exit candidate</button><button id="clear-stops" type="button">Clear all stops</button><span class="subtle">Hold-to-horizon remains the control even when no stop rows are present.</span></div></div>
+<div class="card"><h2>4. Execution assumptions</h2><div class="top-grid"><label>Entry slippage bps<input name="entry_slip" type="number" min="0" max="500" step="0.1" value="{selected.entry_slippage_bps:g}"></label><label>Normal exit slippage bps<input name="exit_slip" type="number" min="0" max="500" step="0.1" value="{selected.exit_slippage_bps:g}"></label><label>Stop slippage bps<input name="stop_slip" type="number" min="0" max="500" step="0.1" value="{selected.stop_slippage_bps:g}"></label><label>Commission bps / side<input name="commission" type="number" min="0" max="500" step="0.1" value="{selected.commission_bps_per_side:g}"></label></div><div class="toolbar"><button class="primary" type="submit">Run research</button></div></div>
+</form>
+<div id="composer-error" class="error" hidden></div>{warning}
+<textarea id="strategy-catalog-json" hidden>{catalog_json}</textarea><textarea id="initial-rules-json" hidden>{rules_json}</textarea><textarea id="initial-stops-json" hidden>{stops_json}</textarea>
+<details class="card"><summary>Load an example hypothesis</summary><div class="subtle">Examples only pre-fill existing mechanics; they are not a privileged list of strategies.</div><div class="examples">{examples}</div></details>
+{result}</div></body></html>"""
 
 
-def _preset_card(preset: StrategyPreset, selected: StrategyBuilderRequest) -> str:
-    query = urlencode(
-        {
-            "universe": selected.universe_id,
-            "entry_family": "feature_expression",
-            "lookback_years": selected.lookback_years,
-            "horizon": selected.horizon,
-            "expression": preset.expression,
-            "rank_feature": preset.rank_feature,
-            "rank_direction": "desc" if preset.descending else "asc",
-            "per_session_limit": preset.per_session_limit,
-        }
-    )
-    return f"""<div class="preset"><strong>{escape(preset.label)}</strong><div class="subtle">{escape(preset.description)}</div><code>{escape(preset.expression)}</code><a class="run-link" href="/research/strategy?{escape(query)}">Run preset</a></div>"""
+def _initial_stops(selected: StrategyBuilderRequest, *, use_defaults: bool) -> list[dict[str, object]]:
+    if not use_defaults:
+        return [
+            {"family": "fixed", "value": 2.0},
+            {"family": "fixed", "value": 5.0},
+            {"family": "trailing", "value": 5.0},
+            {"family": "atr", "value": 2.0},
+        ]
+    rows: list[dict[str, object]] = []
+    rows.extend({"family": "fixed", "value": value * 100.0} for value in selected.fixed_percentages)
+    rows.extend({"family": "trailing", "value": value * 100.0} for value in selected.trailing_percentages)
+    rows.extend({"family": "atr", "value": value} for value in selected.atr_multiples)
+    rows.extend({"family": "trailing_atr", "value": value} for value in selected.trailing_atr_multiples)
+    return rows
 
 
-def _empty_state(entries: tuple[EntryStrategyOption, ...], features: tuple[str, ...]) -> str:
-    entry_cards = "".join(f"<li><strong>{escape(item.label)}</strong> - {escape(item.description)}</li>" for item in entries)
-    chips = "".join(f'<span class="chip">{escape(value)}</span>' for value in features)
-    return f"""<div class="grid"><div class="card s6"><h2>Registered entry families</h2><ul>{entry_cards}</ul></div><div class="card s6"><h2>Feature-expression vocabulary</h2><div class="chips">{chips}</div><p class="subtle">Expressions use only point-in-time registered features. New registered features automatically become available here.</p></div></div>"""
+def _example_link(preset: StrategyPreset, selected: StrategyBuilderRequest) -> str:
+    query = urlencode({
+        "universe": selected.universe_id,
+        "entry_family": "feature_expression",
+        "lookback_years": selected.lookback_years,
+        "horizon": selected.horizon,
+        "expression": preset.expression,
+        "rank_feature": preset.rank_feature,
+        "rank_direction": "desc" if preset.descending else "asc",
+        "per_session_limit": preset.per_session_limit,
+    })
+    return f"""<div class="example"><strong>{escape(preset.label)}</strong><div class="subtle">{escape(preset.description)}</div><code>{escape(preset.expression)}</code><a class="run-link" href="/research/strategy?{escape(query)}">Load / run example</a></div>"""
+
+
+def _empty_state(entries: tuple[EntryStrategyOption, ...]) -> str:
+    entry_text = ", ".join(item.label for item in entries)
+    return f"""<div class="card"><h2>What this layer controls</h2><p>The composer is an application layer over the existing registered entry and exit engines ({escape(entry_text)}). It does not create a separate backtester. Current visual metrics use registered point-in-time features; parameterized indicator instances will extend the same catalog rather than become new preset strategies.</p></div>"""
 
 
 def _render_report(report: StrategyBuilderReport) -> str:
@@ -136,25 +136,21 @@ def _render_report(report: StrategyBuilderReport) -> str:
     hold = next(item for item in comparison.policy_summaries if item.family is ExitFamily.HOLD_TO_HORIZON)
     rows = "".join(_row(item) for item in comparison.policy_summaries)
     warnings = "".join(f"<li>{escape(item)}</li>" for item in comparison.warnings)
-    entry_detail = _entry_detail(report)
     return f"""<div class="grid">
-<div class="card s3"><div class="metric-label">Entry family</div><div class="metric blue">{escape(report.entry_option.label)}</div></div>
-<div class="card s3"><div class="metric-label">Detected entry events</div><div class="metric">{report.entry_event_count}</div></div>
+<div class="card s3"><div class="metric-label">Entry events</div><div class="metric">{report.entry_event_count}</div></div>
 <div class="card s3"><div class="metric-label">Common complete events</div><div class="metric">{comparison.complete_event_count}</div></div>
-<div class="card s3"><div class="metric-label">Exit policies compared</div><div class="metric">{len(comparison.policy_summaries)}</div></div>
-<div class="card s12 scroll"><h2>Composed entry + exit comparison</h2><table><thead><tr><th>Exit policy</th><th>N</th><th>Stop-out</th><th>Expectancy</th><th>Delta vs hold</th><th>Win rate</th><th>PF</th><th>Payoff</th><th>P05</th><th>Avg hold</th><th>Median hold</th><th>Median MAE</th><th>Median MFE</th><th>Median drawdown</th><th>Gap-through</th></tr></thead><tbody>{rows}</tbody></table></div>
-<div class="card s6"><h2>Frozen entry definition</h2>{entry_detail}<table><tr><th>Definition version</th><td><code>{escape(report.entry_definition_version)}</code></td></tr><tr><th>Window</th><td>{report.analysis_start.isoformat()} to {report.analysis_end.isoformat()}</td></tr><tr><th>Dataset</th><td><code>{escape(report.dataset_version)}</code></td></tr><tr><th>Provider calls</th><td>{str(report.provider_calls_made).lower()}</td></tr></table></div>
-<div class="card s6"><h2>Interpretation boundary</h2><ul>{warnings}</ul><div class="subtle">Research state: {escape(report.research_state)}. Presets and custom expressions remain exploratory hypotheses, not production recommendations.</div></div>
-<div class="card s12"><div class="metric-label">Hold-to-horizon reference expectancy</div><div class="metric {_value_class(hold.expectancy)}">{_pct(hold.expectancy)}</div></div>
+<div class="card s3"><div class="metric-label">Exit candidates + hold</div><div class="metric">{len(comparison.policy_summaries)}</div></div>
+<div class="card s3"><div class="metric-label">Hold expectancy</div><div class="metric {_value_class(hold.expectancy)}">{_pct(hold.expectancy)}</div></div>
+<div class="card s12 scroll"><h2>Exit comparison on frozen entry population</h2><table><thead><tr><th>Exit policy</th><th>N</th><th>Stop-out</th><th>Expectancy</th><th>Delta vs hold</th><th>Win rate</th><th>PF</th><th>Payoff</th><th>P05</th><th>Avg hold</th><th>Median hold</th><th>Median MAE</th><th>Median MFE</th><th>Median drawdown</th><th>Gap-through</th></tr></thead><tbody>{rows}</tbody></table></div>
+<div class="card s6"><h2>Frozen entry definition</h2>{_entry_detail(report)}<table><tr><th>Definition version</th><td><code>{escape(report.entry_definition_version)}</code></td></tr><tr><th>Window</th><td>{report.analysis_start.isoformat()} to {report.analysis_end.isoformat()}</td></tr><tr><th>Dataset</th><td><code>{escape(report.dataset_version)}</code></td></tr><tr><th>Provider calls</th><td>{str(report.provider_calls_made).lower()}</td></tr></table></div>
+<div class="card s6"><h2>Interpretation boundary</h2><ul>{warnings}</ul><div class="subtle">Research state: {escape(report.research_state)}. The composer makes strategy design flexible; it does not turn exploratory output into validated edge.</div></div>
 </div>"""
 
 
 def _entry_detail(report: StrategyBuilderReport) -> str:
     if report.feature_strategy_report is not None:
         strategy = report.feature_strategy_report.strategy
-        preset_label = _matching_preset_label(strategy.expression, strategy.rank_feature, strategy.descending)
-        preset_row = "" if preset_label is None else f"<tr><th>Matching preset</th><td>{escape(preset_label)}</td></tr>"
-        return f"""<table>{preset_row}<tr><th>Expression</th><td><code>{escape(strategy.expression)}</code></td></tr><tr><th>Rank feature</th><td>{escape(strategy.rank_feature)}</td></tr><tr><th>Direction</th><td>{'highest first' if strategy.descending else 'lowest first'}</td></tr><tr><th>Per-session limit</th><td>{strategy.per_session_limit}</td></tr><tr><th>Feature set</th><td><code>{escape(report.feature_strategy_report.feature_set_version)}</code></td></tr></table>"""
+        return f"""<table><tr><th>Compiled expression</th><td><code>{escape(strategy.expression)}</code></td></tr><tr><th>Rank feature</th><td>{escape(strategy.rank_feature)}</td></tr><tr><th>Direction</th><td>{'highest first' if strategy.descending else 'lowest first'}</td></tr><tr><th>Per-session limit</th><td>{strategy.per_session_limit}</td></tr><tr><th>Feature set</th><td><code>{escape(report.feature_strategy_report.feature_set_version)}</code></td></tr></table>"""
     config = report.consolidation_config
     if config is None:
         return "<div class='subtle'>Entry definition unavailable.</div>"
@@ -162,27 +158,8 @@ def _entry_detail(report: StrategyBuilderReport) -> str:
     return f"""<table><tr><th>Duration</th><td>{config.duration} sessions</td></tr><tr><th>Max range</th><td>{config.max_range_pct * 100:.1f}%</td></tr><tr><th>Trend</th><td>{escape(config.trend_filter.value)}</td></tr><tr><th>Volume gate</th><td>{escape(volume)}</td></tr></table>"""
 
 
-def _matching_preset_label(expression: str, rank_feature: str, descending: bool) -> str | None:
-    for preset in available_strategy_presets():
-        if preset.expression == expression and preset.rank_feature == rank_feature and preset.descending is descending:
-            return preset.label
-    return None
-
-
 def _row(item: ExitPolicySummary) -> str:
-    return (
-        "<tr>"
-        f"<td><strong>{escape(_label(item))}</strong><br><span class='blue'>{escape(item.family.value)}</span></td>"
-        f"<td>{item.sample_size}</td><td>{_prob(item.stop_out_rate)}</td>"
-        f"<td class='{_value_class(item.expectancy)}'>{_pct(item.expectancy)}</td>"
-        f"<td class='{_value_class(item.expectancy_delta_vs_hold)}'>{_pct(item.expectancy_delta_vs_hold)}</td>"
-        f"<td>{_prob(item.win_probability)}</td><td>{_num(item.profit_factor)}</td>"
-        f"<td>{_num(item.payoff_ratio)}</td><td>{_pct(item.tail_loss_p05)}</td>"
-        f"<td>{_num(item.average_holding_period_sessions)}</td><td>{_num(item.median_holding_period_sessions)}</td>"
-        f"<td>{_pct(item.median_mae_before_exit)}</td><td>{_pct(item.median_mfe_full_horizon)}</td>"
-        f"<td>{_pct(item.median_max_drawdown_before_exit)}</td><td>{_prob(item.gap_through_frequency)}</td>"
-        "</tr>"
-    )
+    return "<tr>" + f"<td><strong>{escape(_label(item))}</strong><br><span class='blue'>{escape(item.family.value)}</span></td>" + f"<td>{item.sample_size}</td><td>{_prob(item.stop_out_rate)}</td>" + f"<td class='{_value_class(item.expectancy)}'>{_pct(item.expectancy)}</td>" + f"<td class='{_value_class(item.expectancy_delta_vs_hold)}'>{_pct(item.expectancy_delta_vs_hold)}</td>" + f"<td>{_prob(item.win_probability)}</td><td>{_num(item.profit_factor)}</td>" + f"<td>{_num(item.payoff_ratio)}</td><td>{_pct(item.tail_loss_p05)}</td>" + f"<td>{_num(item.average_holding_period_sessions)}</td><td>{_num(item.median_holding_period_sessions)}</td>" + f"<td>{_pct(item.median_mae_before_exit)}</td><td>{_pct(item.median_mfe_full_horizon)}</td>" + f"<td>{_pct(item.median_max_drawdown_before_exit)}</td><td>{_prob(item.gap_through_frequency)}</td></tr>"
 
 
 def _label(item: ExitPolicySummary) -> str:
@@ -199,14 +176,6 @@ def _label(item: ExitPolicySummary) -> str:
 
 def _integer_options(values: tuple[int, ...], selected: int, suffix: str) -> str:
     return "".join(f'<option value="{value}"' + (" selected" if value == selected else "") + f">{value}{suffix}</option>" for value in values)
-
-
-def _pct_grid(values: tuple[float, ...]) -> str:
-    return ",".join(f"{value * 100:g}" for value in values)
-
-
-def _num_grid(values: tuple[float, ...]) -> str:
-    return ",".join(f"{value:g}" for value in values)
 
 
 def _pct(value: float | None) -> str:
