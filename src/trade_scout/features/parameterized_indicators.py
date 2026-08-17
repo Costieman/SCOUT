@@ -10,11 +10,12 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import date
 from enum import StrEnum
 from statistics import pstdev
 from types import MappingProxyType
 
-from trade_scout.data.contracts import DailyBar, PriceRepresentation, QualityStatus
+from trade_scout.data.contracts import DailyBar, QualityStatus
 from trade_scout.features.contracts import FeatureAvailabilityStatus, FeatureValue
 
 PARAMETERIZED_INDICATOR_FEATURE_SET_VERSION = "parameterized-indicators-v0.1"
@@ -78,7 +79,10 @@ class ParameterizedIndicatorSpec:
     def __post_init__(self) -> None:
         if not 2 <= self.period <= 1000:
             raise ValueError("indicator period must be between 2 and 1000 sessions")
-        if not math.isfinite(self.standard_deviations) or not 0.01 <= self.standard_deviations <= 20:
+        if (
+            not math.isfinite(self.standard_deviations)
+            or not 0.01 <= self.standard_deviations <= 20
+        ):
             raise ValueError("Bollinger standard deviations must be between 0.01 and 20")
         if self.family is IndicatorFamily.MOVING_AVERAGE and self.metric not in _MA_METRICS:
             raise ValueError("moving-average family requires a moving-average metric")
@@ -168,11 +172,13 @@ def compute_parameterized_indicator_frame(
         raise ValueError("parameterized indicators require PASS canonical input")
 
     by_instrument: dict[str, list[DailyBar]] = {}
-    seen: set[tuple[str, object]] = set()
+    seen: set[tuple[str, date]] = set()
     for bar in materialized:
         key = (str(bar.instrument_id), bar.trade_date)
         if key in seen:
-            raise ValueError(f"duplicate canonical instrument/date for parameterized feature: {key}")
+            raise ValueError(
+                f"duplicate canonical instrument/date for parameterized feature: {key}"
+            )
         seen.add(key)
         by_instrument.setdefault(str(bar.instrument_id), []).append(bar)
 
@@ -343,10 +349,7 @@ def _ema_series(values: Sequence[float | None], period: int) -> tuple[float | No
     alpha = 2.0 / (period + 1.0)
     for index in range(period, len(values)):
         current = values[index]
-        if current is None:
-            previous = math.nan
-            continue
-        if not math.isfinite(previous):
+        if current is None or not math.isfinite(previous):
             return tuple(result)
         previous = alpha * current + (1.0 - alpha) * previous
         result[index] = previous
