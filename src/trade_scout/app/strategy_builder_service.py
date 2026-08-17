@@ -69,10 +69,7 @@ class StrategyBuilderRequest:
     lookback_years: int = 2
     horizon: int = 20
     entry_family: EntryFamily = EntryFamily.FEATURE_EXPRESSION
-    expression: str = (
-        "return_20 >= 0.05 and relative_volume_20 >= 1.5 "
-        "and distance_sma_200_pct > 0"
-    )
+    expression: str = "return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"
     rank_feature: str = "return_20"
     descending: bool = True
     per_session_limit: int = 25
