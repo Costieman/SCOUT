@@ -8,6 +8,7 @@ from html import escape
 from trade_scout.validation.trend_context_edge_family import (
     Interval,
     TrendContextEdgeFamilyReport,
+    TrendContextReadout,
 )
 
 
@@ -38,7 +39,7 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 </div></body></html>"""
 
 
-def _row(item) -> str:
+def _row(item: TrendContextReadout) -> str:
     parent = item.parent_context.value if item.parent_context is not None else "—"
     raw_p = _num(item.raw_parent_randomization_p_value, 4)
     adj_p = _num(item.adjusted_parent_randomization_p_value, 4)
