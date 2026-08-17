@@ -204,16 +204,14 @@ class StrategyBuilderService:
             for series_bars in series.values():
                 detected_events = tuple(
                     event
-                    for event in detect_consolidation_breakouts(
-                        series_bars, consolidation_config
-                    )
+                    for event in detect_consolidation_breakouts(series_bars, consolidation_config)
                     if start <= event.signal_date <= latest
                 )
                 entry_count += len(detected_events)
                 if detected_events:
-                    events_by_instrument.setdefault(
-                        str(series_bars[0].instrument_id), []
-                    ).extend(detected_events)
+                    events_by_instrument.setdefault(str(series_bars[0].instrument_id), []).extend(
+                        detected_events
+                    )
             entry_definition_version = entry_option.definition_version
 
         policies = exit_policy_grid(
@@ -251,9 +249,7 @@ class StrategyBuilderService:
             )
 
         versions = {
-            str(series_bars[0].dataset_version)
-            for series_bars in series.values()
-            if series_bars
+            str(series_bars[0].dataset_version) for series_bars in series.values() if series_bars
         }
         if len(versions) != 1:
             raise StrategyBuilderError("strategy builder cannot mix canonical dataset versions")
