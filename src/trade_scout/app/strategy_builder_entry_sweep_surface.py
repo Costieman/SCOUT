@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Presentation-only surface for one-variable entry-indicator sweeps."""
 
 from __future__ import annotations
