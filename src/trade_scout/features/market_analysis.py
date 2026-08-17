@@ -40,7 +40,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="return_5",
             feature_version="v0.1",
-            description="Split-adjusted close return over five trading-session intervals ending at t.",
+            description="Five-interval split-adjusted close return ending at t.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(intervals=5),
             units="decimal_return",
@@ -49,7 +49,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="return_20",
             feature_version="v0.1",
-            description="Split-adjusted close return over 20 trading-session intervals ending at t.",
+            description="20-interval split-adjusted close return ending at t.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(intervals=20),
             units="decimal_return",
@@ -58,7 +58,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="return_252",
             feature_version="v0.1",
-            description="Split-adjusted close return over 252 trading-session intervals ending at t.",
+            description="252-interval split-adjusted close return ending at t.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(intervals=252),
             units="decimal_return",
@@ -85,8 +85,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="relative_volume_20",
             feature_version="v0.1",
             description=(
-                "Current raw reported volume divided by the arithmetic mean of the prior 20 "
-                "sessions, excluding t from the denominator."
+                "Current raw volume divided by the arithmetic mean of the prior 20 sessions, "
+                "excluding t from the denominator."
             ),
             required_price_representation=PriceRepresentation.RAW,
             resolved_parameters=_params(period=20, denominator_excludes_current=True),
@@ -97,8 +97,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="average_dollar_volume_20",
             feature_version="v0.1",
             description=(
-                "Arithmetic mean of raw close times raw reported volume over the prior 20 sessions, "
-                "excluding t, for liquidity filtering."
+                "Mean raw close times raw volume over the prior 20 sessions, excluding t, "
+                "for liquidity filtering."
             ),
             required_price_representation=PriceRepresentation.RAW,
             resolved_parameters=_params(period=20, current_session_excluded=True),
@@ -120,7 +120,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="distance_sma_20_pct",
             feature_version="v0.1",
-            description="Current split-adjusted close relative to trailing SMA20, expressed as percent.",
+            description="Current close relative to trailing SMA20, expressed as percent.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=20),
             units="percent",
@@ -129,7 +129,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="distance_sma_50_pct",
             feature_version="v0.1",
-            description="Current split-adjusted close relative to trailing SMA50, expressed as percent.",
+            description="Current close relative to trailing SMA50, expressed as percent.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=50),
             units="percent",
@@ -138,7 +138,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="distance_sma_200_pct",
             feature_version="v0.1",
-            description="Current split-adjusted close relative to trailing SMA200, expressed as percent.",
+            description="Current close relative to trailing SMA200, expressed as percent.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=200),
             units="percent",
@@ -147,9 +147,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="sma_50_slope_20_pct",
             feature_version="v0.1",
-            description=(
-                "Percent change in trailing SMA50 from t-20 to t, using only closes available by t."
-            ),
+            description="Percent change in trailing SMA50 from t-20 to t.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=50, slope_intervals=20),
             units="percent",
@@ -158,9 +156,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="sma_200_slope_20_pct",
             feature_version="v0.1",
-            description=(
-                "Percent change in trailing SMA200 from t-20 to t, using only closes available by t."
-            ),
+            description="Percent change in trailing SMA200 from t-20 to t.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=200, slope_intervals=20),
             units="percent",
@@ -191,8 +187,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="rsi_wilder_14",
             feature_version="v0.1",
             description=(
-                "14-session Relative Strength Index using Wilder smoothing of split-adjusted close "
-                "changes, bounded from 0 to 100."
+                "14-session RSI using Wilder smoothing of split-adjusted close changes, bounded "
+                "from 0 to 100."
             ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=14, smoothing="wilder"),
@@ -203,8 +199,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="macd_line_pct",
             feature_version="v0.1",
             description=(
-                "EMA12 minus EMA26 of split-adjusted close, divided by current close and expressed "
-                "as percent. EMA seeds use the arithmetic mean of the first complete period."
+                "EMA12 minus EMA26 divided by current close, expressed as percent. EMA seeds use "
+                "the arithmetic mean of the first complete period."
             ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(fast_period=12, slow_period=26, ema_seed="sma"),
@@ -215,8 +211,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="macd_signal_pct",
             feature_version="v0.1",
             description=(
-                "Nine-period EMA signal of MACD, divided by current split-adjusted close and "
-                "expressed as percent."
+                "Nine-period EMA signal of MACD divided by current split-adjusted close, expressed "
+                "as percent."
             ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(fast_period=12, slow_period=26, signal_period=9),
@@ -226,10 +222,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="macd_histogram_pct",
             feature_version="v0.1",
-            description=(
-                "MACD line minus MACD signal, divided by current split-adjusted close and expressed "
-                "as percent."
-            ),
+            description="MACD line minus signal divided by current close, expressed as percent.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(fast_period=12, slow_period=26, signal_period=9),
             units="percent",
@@ -238,10 +231,7 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
         FeatureDefinition(
             feature_name="macd_bullish_cross",
             feature_version="v0.1",
-            description=(
-                "Numeric 1 when MACD moves above its signal at t after being at or below it at t-1; "
-                "otherwise 0."
-            ),
+            description="Numeric 1 when MACD crosses above its signal at t; otherwise 0.",
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(fast_period=12, slow_period=26, signal_period=9),
             units="binary",
@@ -251,9 +241,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="distance_prior_high_20_pct",
             feature_version="v0.1",
             description=(
-                "Current split-adjusted close relative to the maximum split-adjusted high of the "
-                "prior 20 sessions, explicitly excluding t. Positive values indicate a close "
-                "above that prior high."
+                "Current close relative to the maximum split-adjusted high of the prior 20 "
+                "sessions, excluding t. Positive values indicate a close above that prior high."
             ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=20, current_session_excluded=True),
@@ -264,8 +253,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="distance_prior_high_55_pct",
             feature_version="v0.1",
             description=(
-                "Current split-adjusted close relative to the maximum split-adjusted high of the "
-                "prior 55 sessions, explicitly excluding t."
+                "Current close relative to the maximum split-adjusted high of the prior 55 "
+                "sessions, excluding t."
             ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=55, current_session_excluded=True),
@@ -276,8 +265,8 @@ MARKET_ANALYSIS_FEATURE_SET = FeatureSetDefinition(
             feature_name="range_position_prior_20",
             feature_version="v0.1",
             description=(
-                "Current split-adjusted close positioned within the prior 20-session high-low range, "
-                "excluding t. Values may be below 0 or above 1 when price leaves the prior range."
+                "Current close positioned within the prior 20-session high-low range, excluding t. "
+                "Values may leave the 0-to-1 interval when price exits that prior range."
             ),
             required_price_representation=PriceRepresentation.SPLIT_ADJUSTED,
             resolved_parameters=_params(period=20, current_session_excluded=True),
