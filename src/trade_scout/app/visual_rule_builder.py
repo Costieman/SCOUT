@@ -74,7 +74,8 @@ class VisualRuleSet:
         """Compile to an explicitly parenthesized feature expression.
 
         Composition is intentionally left-to-right. Explicit parentheses remove ambiguity between
-        AND and OR and make the frozen research definition reproduce exactly what the operator built.
+        AND and OR and make the frozen research definition reproduce exactly what the operator
+        built.
         """
 
         resolved = self.conditions[0].expression_fragment
