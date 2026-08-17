@@ -253,9 +253,8 @@ class StrategyBuilderService:
         working_daily_bar_count = 0
         exit_series: dict[str, tuple[ResearchBar, ...]] = {}
 
-        if (
-            request.entry_family is EntryFamily.FEATURE_EXPRESSION
-            and isinstance(self.source, WindowedStrategyBuilderSource)
+        if request.entry_family is EntryFamily.FEATURE_EXPRESSION and isinstance(
+            self.source, WindowedStrategyBuilderSource
         ):
             latest = self.source.strategy_builder_latest_trade_date(request.universe_id)
             start = _subtract_years(latest, request.lookback_years)
