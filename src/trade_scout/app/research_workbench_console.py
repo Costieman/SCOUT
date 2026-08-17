@@ -21,6 +21,11 @@ from trade_scout.app.strategy_builder_assets import STRATEGY_BUILDER_JS
 from trade_scout.app.strategy_builder_clarity import STRATEGY_BUILDER_CLARITY_JS
 from trade_scout.app.strategy_builder_clean_defaults import STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
 from trade_scout.app.strategy_builder_compact import STRATEGY_BUILDER_COMPACT_JS
+from trade_scout.app.strategy_builder_entry_sweep_controls import STRATEGY_BUILDER_ENTRY_SWEEP_JS
+from trade_scout.app.strategy_builder_entry_sweep_http import (
+    build_entry_sweep_page,
+    is_entry_sweep_query,
+)
 from trade_scout.app.strategy_builder_help import STRATEGY_BUILDER_HELP_JS
 from trade_scout.app.strategy_builder_readout import STRATEGY_BUILDER_READOUT_JS
 from trade_scout.app.strategy_builder_sweep import STRATEGY_BUILDER_SWEEP_JS
@@ -30,6 +35,7 @@ _ASSET_PATH = "/assets/strategy-builder.js"
 _CLEAN_DEFAULTS_ASSET_PATH = "/assets/strategy-builder-clean-defaults.js"
 _CLARITY_ASSET_PATH = "/assets/strategy-builder-clarity.js"
 _COMPACT_ASSET_PATH = "/assets/strategy-builder-compact.js"
+_ENTRY_SWEEP_ASSET_PATH = "/assets/strategy-builder-entry-sweep.js"
 _HELP_ASSET_PATH = "/assets/strategy-builder-help.js"
 _READOUT_ASSET_PATH = "/assets/strategy-builder-readout.js"
 _SWEEP_ASSET_PATH = "/assets/strategy-builder-sweep.js"
@@ -39,6 +45,7 @@ _SCRIPT_MARKER = '<script src="/assets/strategy-builder.js" defer></script>'
 _CLEAN_DEFAULTS_SCRIPT = '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
 _CLARITY_SCRIPT = '<script src="/assets/strategy-builder-clarity.js" defer></script>'
 _COMPACT_SCRIPT = '<script src="/assets/strategy-builder-compact.js" defer></script>'
+_ENTRY_SWEEP_SCRIPT = '<script src="/assets/strategy-builder-entry-sweep.js" defer></script>'
 _HELP_SCRIPT = '<script src="/assets/strategy-builder-help.js" defer></script>'
 _READOUT_SCRIPT = '<script src="/assets/strategy-builder-readout.js" defer></script>'
 _SWEEP_SCRIPT = '<script src="/assets/strategy-builder-sweep.js" defer></script>'
@@ -51,7 +58,8 @@ def build_research_workbench_response(
 ) -> ConsoleResponse:
     """Serve one workbench response while keeping analytical routing in the existing console."""
 
-    path = urlsplit(request_target).path
+    parsed_target = urlsplit(request_target)
+    path = parsed_target.path
     if path == _ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_JS)
     if path == _CLEAN_DEFAULTS_ASSET_PATH:
@@ -60,6 +68,8 @@ def build_research_workbench_response(
         return _javascript_response(STRATEGY_BUILDER_CLARITY_JS)
     if path == _COMPACT_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_COMPACT_JS)
+    if path == _ENTRY_SWEEP_ASSET_PATH:
+        return _javascript_response(STRATEGY_BUILDER_ENTRY_SWEEP_JS)
     if path == _HELP_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_HELP_JS)
     if path == _READOUT_ASSET_PATH:
@@ -69,7 +79,16 @@ def build_research_workbench_response(
     if path == _SWEEP_CONTROLS_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_SWEEP_CONTROLS_JS)
 
-    response = build_console_response(request_target, config)
+    if path == _STRATEGY_PATH and is_entry_sweep_query(parsed_target.query):
+        status, html = build_entry_sweep_page(parsed_target.query, config)
+        response = ConsoleResponse(
+            status_code=status,
+            content_type="text/html; charset=utf-8",
+            body=html.encode("utf-8"),
+            headers=_interactive_security_headers(),
+        )
+    else:
+        response = build_console_response(request_target, config)
     body = response.body
     if path == _STRATEGY_PATH and response.content_type.startswith("text/html"):
         html = body.decode("utf-8")
@@ -78,7 +97,7 @@ def build_research_workbench_response(
         scripts = (
             f"{_SCRIPT_MARKER}\n{_CLEAN_DEFAULTS_SCRIPT}\n{_CLARITY_SCRIPT}\n"
             f"{_COMPACT_SCRIPT}\n{_HELP_SCRIPT}\n{_READOUT_SCRIPT}\n"
-            f"{_SWEEP_SCRIPT}\n{_SWEEP_CONTROLS_SCRIPT}"
+            f"{_SWEEP_SCRIPT}\n{_SWEEP_CONTROLS_SCRIPT}\n{_ENTRY_SWEEP_SCRIPT}"
         )
         body = html.replace(_SCRIPT_MARKER, scripts, 1).encode("utf-8")
 
