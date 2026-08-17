@@ -102,7 +102,9 @@ class StrategyBuilderRequest:
             if self.visual_conditions and self.preset_id is not None:
                 raise ValueError("visual rules and strategy presets cannot be selected together")
             if self.visual_conditions:
-                object.__setattr__(self, "expression", VisualRuleSet(self.visual_conditions).expression)
+                object.__setattr__(
+                    self, "expression", VisualRuleSet(self.visual_conditions).expression
+                )
             elif self.preset_id is not None:
                 strategy_preset(self.preset_id)
             elif not self.expression.strip():
@@ -114,7 +116,9 @@ class StrategyBuilderRequest:
             if not 1 <= self.per_session_limit <= 500:
                 raise ValueError("per_session_limit must be between 1 and 500")
         elif self.preset_id is not None or self.visual_conditions:
-            raise ValueError("visual rules and feature presets apply only to feature-expression entries")
+            raise ValueError(
+                "visual rules and feature presets apply only to feature-expression entries"
+            )
         if not 5 <= self.duration <= 252:
             raise ValueError("duration must be between 5 and 252 sessions")
         if not 0 < self.max_range_pct <= 1:
