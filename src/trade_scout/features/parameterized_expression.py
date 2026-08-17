@@ -57,7 +57,11 @@ def extract_parameterized_specs(expression: str) -> tuple[ParameterizedIndicator
     except SyntaxError as exc:
         raise ValueError("cannot inspect malformed strategy expression") from exc
     names = sorted(
-        {node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and node.id.startswith(_PREFIX)}
+        {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and node.id.startswith(_PREFIX)
+        }
     )
     return tuple(parse_parameterized_feature_name(name) for name in names)
 
