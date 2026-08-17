@@ -172,7 +172,7 @@ STRATEGY_BUILDER_JS = r"""
   function thresholdSpec(family, metric) {
     if (BINARY.has(metric) || ['ma_above', 'ma_below'].includes(metric)) return {min: 0, max: 1, step: 1, value: 1, op: '==', fixed: true};
     if (family === 'rsi') return {min: 0, max: 100, step: 0.1, value: 50, op: '<=', unit: 'RSI points'};
-    if (family === 'relative_volume') return {min: 0, max: 20, step: 0.05, value: 1.5, op: '>=', unit: '× average volume'};
+    if (family === 'relative_volume') return {min: 0, max: 20, step: 0.05, value: 1.5, op: '>=', unit: 'x average volume'};
     if (family === 'average_dollar_volume') return {min: 0, max: 100000000000, step: 1000000, value: 10000000, op: '>=', unit: '$ / day'};
     if (family === 'historical_volatility') return {min: 0, max: 500, step: 0.5, value: 50, op: '<=', unit: '% annualized'};
     if (family === 'atr') return {min: 0, max: 100, step: 0.1, value: 5, op: '<=', unit: '% of price'};
@@ -258,7 +258,7 @@ STRATEGY_BUILDER_JS = r"""
   }
 
   const stopBounds = (family) => (family === 'fixed' || family === 'trailing')
-    ? {min: 0.01, max: 99.99, step: 0.01, unit: '%'} : {min: 0.01, max: 20, step: 0.01, unit: '× ATR'};
+    ? {min: 0.01, max: 99.99, step: 0.01, unit: '%'} : {min: 0.01, max: 20, step: 0.01, unit: 'x ATR'};
   function stopRow(stop = null) {
     const row = document.createElement('div'); row.className = 'composer-row stop-row';
     row.innerHTML = '<label>Exit type<select class="stop-family"><option value="fixed">Fixed % stop</option><option value="trailing">Trailing % stop</option><option value="atr">ATR stop</option><option value="trailing_atr">Trailing ATR stop</option></select></label><label>Exact value<input class="stop-value" type="number"></label><label class="slider-wrap">Slider<input class="stop-slider" type="range"></label><div class="stop-unit"></div><button class="remove-row" type="button">Remove</button>';
