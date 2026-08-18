@@ -14,8 +14,7 @@ def test_clarity_asset_documents_execution_and_horizon_backstop_semantics() -> N
     assert "final research backstop" in STRATEGY_BUILDER_CLARITY_JS
     assert "scientific control" in STRATEGY_BUILDER_CLARITY_JS
     assert (
-        "not presented as a recommendation to trade without a stop"
-        in STRATEGY_BUILDER_CLARITY_JS
+        "not presented as a recommendation to trade without a stop" in STRATEGY_BUILDER_CLARITY_JS
     )
     assert "ma_above" in STRATEGY_BUILDER_CLARITY_JS
     assert "No 0/1 value needs to be entered" in STRATEGY_BUILDER_CLARITY_JS
