@@ -65,6 +65,7 @@ def main() -> int:
         strategy_builder_source=universe_source,
     )
     experiment_root = workspace.root / "research" / "experiments"
+    brain_root = workspace.root / "research" / "brains"
     experiment_recorder = StrategyBuilderExperimentRecorder(
         experiment_root=experiment_root,
         dataset_version=dataset_version,
@@ -77,15 +78,18 @@ def main() -> int:
     exit_url = f"{base_url}research/exits"
     strategy_url = f"{base_url}research/strategy"
     experiment_library_url = f"{base_url}research/experiments"
+    brain_url = f"{base_url}research/brains"
     print(f"Trade Scout research console: {base_url}")
     print(f"Visual Strategy Builder: {strategy_url}")
     print(f"Experiment Library: {experiment_library_url}")
+    print(f"Research Brains: {brain_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
     print(f"Risk & Stop Research: {risk_url}")
     print(f"Configurable Exit Policy Lab: {exit_url}")
     print(f"Experiment records: {experiment_root}")
     print(f"Experiment registry: {experiment_recorder.registry_path}")
+    print(f"Research brain records: {brain_root}")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     if args.open_browser:
