@@ -11,6 +11,11 @@ from trade_scout.app.experiment_library_service import (
     ExperimentLibraryDetail,
     ExperimentLibraryService,
 )
+from trade_scout.app.research_brain_evidence import (
+    BrainExperimentEvidenceCoverage,
+    ResearchBrainEvidenceService,
+    ResearchBrainEvidenceSummary,
+)
 from trade_scout.experiments.contracts import ExperimentStatus, JSONScalar
 from trade_scout.experiments.research_brains import (
     BrainExperimentMembership,
@@ -24,19 +29,21 @@ from trade_scout.experiments.store import FileManifestStore
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainExperimentView:
-    """One preserved membership paired with its current checksum-verified experiment evidence."""
+    """One preserved membership paired with experiment and governed evidence metadata."""
 
     membership: BrainExperimentMembership
     experiment: ExperimentLibraryDetail | None
+    evidence: BrainExperimentEvidenceCoverage
     integrity_error: str | None
 
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainView:
-    """Presentation-ready brain definition, inventory, and referenced experiments."""
+    """Presentation-ready brain definition, inventory, evidence coverage, and experiments."""
 
     snapshot: ResearchBrainSnapshot
     experiments: tuple[ResearchBrainExperimentView, ...]
+    evidence_summary: ResearchBrainEvidenceSummary
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,17 +62,31 @@ class ResearchBrainListItem:
 class ResearchBrainWorkbenchService:
     """Expose explicit brain mutations while retaining experiment evidence as authority."""
 
-    def __init__(self, *, experiment_root: Path, brain_root: Path) -> None:
+    def __init__(
+        self,
+        *,
+        experiment_root: Path,
+        brain_root: Path,
+        validation_review_root: Path | None = None,
+    ) -> None:
         self._brain_root = brain_root
+        self._validation_review_root = validation_review_root or brain_root.parent / "validation-reviews"
         self._brain_store = FileResearchBrainStore(brain_root)
         self._experiment_store = FileManifestStore(experiment_root)
         self._experiment_library = ExperimentLibraryService(experiment_root)
+        self._evidence = ResearchBrainEvidenceService(self._validation_review_root)
 
     @property
     def brain_root(self) -> Path:
         """Return the private brain-store root without reaching into another module's internals."""
 
         return self._brain_root
+
+    @property
+    def validation_review_root(self) -> Path:
+        """Return the configured governed validation-review root."""
+
+        return self._validation_review_root
 
     def list_brains(self) -> tuple[ResearchBrainListItem, ...]:
         """Return all brain definitions with non-scientific inventory counts."""
@@ -89,11 +110,17 @@ class ResearchBrainWorkbenchService:
         )
 
     def detail(self, brain_id: str) -> ResearchBrainView:
-        """Return one brain and verify all referenced experiment bindings."""
+        """Return one brain and verify experiment bindings plus governed evidence coverage."""
 
         snapshot = self._brain_store.snapshot(brain_id)
+        experiment_ids = tuple(item.experiment_id for item in snapshot.memberships)
+        evidence_summary = self._evidence.brain_summary(experiment_ids)
+        coverage_by_id = {
+            item.experiment_id: item for item in evidence_summary.experiments
+        }
         experiments: list[ResearchBrainExperimentView] = []
         for membership in snapshot.memberships:
+            coverage = coverage_by_id[membership.experiment_id]
             try:
                 manifest = self._experiment_store.read_manifest(membership.experiment_id)
                 self._brain_store.verify_membership_experiment(brain_id, manifest)
@@ -103,6 +130,7 @@ class ResearchBrainWorkbenchService:
                     ResearchBrainExperimentView(
                         membership=membership,
                         experiment=None,
+                        evidence=coverage,
                         integrity_error=f"{type(exc).__name__}: {exc}",
                     )
                 )
@@ -111,10 +139,15 @@ class ResearchBrainWorkbenchService:
                 ResearchBrainExperimentView(
                     membership=membership,
                     experiment=experiment,
+                    evidence=coverage,
                     integrity_error=None,
                 )
             )
-        return ResearchBrainView(snapshot=snapshot, experiments=tuple(experiments))
+        return ResearchBrainView(
+            snapshot=snapshot,
+            experiments=tuple(experiments),
+            evidence_summary=evidence_summary,
+        )
 
     def create_brain(
         self,
