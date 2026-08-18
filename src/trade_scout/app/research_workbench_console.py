@@ -36,6 +36,7 @@ from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperime
 from trade_scout.app.strategy_builder_help import STRATEGY_BUILDER_HELP_JS
 from trade_scout.app.strategy_builder_readout import STRATEGY_BUILDER_READOUT_JS
 from trade_scout.app.strategy_builder_recorded_http import build_recorded_strategy_page
+from trade_scout.app.strategy_builder_research_memory import STRATEGY_BUILDER_RESEARCH_MEMORY_JS
 from trade_scout.app.strategy_builder_sweep import STRATEGY_BUILDER_SWEEP_JS
 from trade_scout.app.strategy_builder_sweep_controls import STRATEGY_BUILDER_SWEEP_CONTROLS_JS
 from trade_scout.experiments.research_brains import ResearchBrainError
@@ -47,6 +48,7 @@ _COMPACT_ASSET_PATH = "/assets/strategy-builder-compact.js"
 _ENTRY_SWEEP_ASSET_PATH = "/assets/strategy-builder-entry-sweep.js"
 _HELP_ASSET_PATH = "/assets/strategy-builder-help.js"
 _READOUT_ASSET_PATH = "/assets/strategy-builder-readout.js"
+_RESEARCH_MEMORY_ASSET_PATH = "/assets/strategy-builder-research-memory.js"
 _SWEEP_ASSET_PATH = "/assets/strategy-builder-sweep.js"
 _SWEEP_CONTROLS_ASSET_PATH = "/assets/strategy-builder-sweep-controls.js"
 _STRATEGY_PATH = "/research/strategy"
@@ -60,6 +62,7 @@ _COMPACT_SCRIPT = '<script src="/assets/strategy-builder-compact.js" defer></scr
 _ENTRY_SWEEP_SCRIPT = '<script src="/assets/strategy-builder-entry-sweep.js" defer></script>'
 _HELP_SCRIPT = '<script src="/assets/strategy-builder-help.js" defer></script>'
 _READOUT_SCRIPT = '<script src="/assets/strategy-builder-readout.js" defer></script>'
+_RESEARCH_MEMORY_SCRIPT = '<script src="/assets/strategy-builder-research-memory.js" defer></script>'
 _SWEEP_SCRIPT = '<script src="/assets/strategy-builder-sweep.js" defer></script>'
 _SWEEP_CONTROLS_SCRIPT = '<script src="/assets/strategy-builder-sweep-controls.js" defer></script>'
 
@@ -88,6 +91,8 @@ def build_research_workbench_response(
         return _javascript_response(STRATEGY_BUILDER_HELP_JS)
     if path == _READOUT_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_READOUT_JS)
+    if path == _RESEARCH_MEMORY_ASSET_PATH:
+        return _javascript_response(STRATEGY_BUILDER_RESEARCH_MEMORY_JS)
     if path == _SWEEP_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_SWEEP_JS)
     if path == _SWEEP_CONTROLS_ASSET_PATH:
@@ -136,7 +141,8 @@ def build_research_workbench_response(
         scripts = (
             f"{_SCRIPT_MARKER}\n{_CLEAN_DEFAULTS_SCRIPT}\n{_CLARITY_SCRIPT}\n"
             f"{_COMPACT_SCRIPT}\n{_HELP_SCRIPT}\n{_READOUT_SCRIPT}\n"
-            f"{_SWEEP_SCRIPT}\n{_SWEEP_CONTROLS_SCRIPT}\n{_ENTRY_SWEEP_SCRIPT}"
+            f"{_SWEEP_SCRIPT}\n{_SWEEP_CONTROLS_SCRIPT}\n{_ENTRY_SWEEP_SCRIPT}\n"
+            f"{_RESEARCH_MEMORY_SCRIPT}"
         )
         body = html.replace(_SCRIPT_MARKER, scripts, 1).encode("utf-8")
     elif (
@@ -169,7 +175,7 @@ def build_research_workbench_post_response(
             status_code=HTTPStatus.METHOD_NOT_ALLOWED,
             content_type="text/plain; charset=utf-8",
             body=b"",
-            headers=((*_interactive_security_headers(), ("Allow", "GET, HEAD"))),
+            headers=(*_interactive_security_headers(), ("Allow", "GET, HEAD")),
         )
     if experiment_recorder is None:
         return _unconfigured_response("Research Brains")
@@ -198,7 +204,7 @@ def build_research_workbench_post_response(
         status_code=status,
         content_type="text/plain; charset=utf-8",
         body=b"",
-        headers=((*_interactive_security_headers(), ("Location", location))),
+        headers=(*_interactive_security_headers(), ("Location", location)),
     )
 
 
