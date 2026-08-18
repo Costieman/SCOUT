@@ -6,6 +6,12 @@ from __future__ import annotations
 from html import escape
 
 from trade_scout.app.research_brain_checkpoints import ResearchBrainReviewCheckpoint
+from trade_scout.app.research_brain_conditioning import (
+    ConditioningDimension,
+    ConditioningState,
+    ResearchBrainConditioning,
+    build_research_brain_conditioning,
+)
 from trade_scout.app.research_brain_review import (
     ResearchBrainReview,
     build_research_brain_review,
@@ -52,9 +58,10 @@ def render_research_brains_html(
 :root {{ color-scheme:dark; --bg:#0b0e13; --panel:#121720; --panel2:#171d27; --border:#293241; --text:#edf1f7; --muted:#98a6b8; --accent:#f1c84b; --good:#63d39a; --bad:#ef7b7b; --warn:#f2bd60; --blue:#7fc8ff; }}
 * {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1500px,96vw); margin:0 auto; padding:28px 0 70px; }} header {{ display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:14px 0 8px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s4 {{ grid-column:span 4; }} .s6 {{ grid-column:span 6; }} .s8 {{ grid-column:span 8; }}
 .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .success {{ border:1px solid #245a42; background:#0e2119; color:#9de2bd; padding:10px 12px; border-radius:8px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:10px 12px; border-radius:8px; margin:14px 0; }} .review {{ border:1px solid #665a2d; background:#17140b; padding:14px; border-radius:10px; margin-top:18px; }} .review-columns {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }} .review-box {{ border:1px solid var(--border); border-radius:8px; padding:12px; background:#0f141c; }} .checkpoint {{ border-top:1px solid var(--border); margin-top:14px; padding-top:14px; }} .checkpoint-form {{ display:grid; grid-template-columns:1fr 2fr auto; gap:10px; align-items:end; margin-top:10px; }}
+.conditioning {{ border:1px solid #31526a; background:#0d1720; padding:14px; border-radius:10px; margin-top:18px; }} .condition-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }} .condition-card {{ border:1px solid var(--border); border-radius:8px; padding:12px; background:#0d131b; min-width:0; }} .condition-card h4 {{ margin:0 0 6px; font-size:14px; }} .condition-state {{ display:inline-block; margin-bottom:8px; font-size:11px; font-weight:800; letter-spacing:.04em; }} .state-available {{ color:var(--good); }} .state-partial {{ color:var(--warn); }} .state-missing {{ color:#f0a2a2; }} .state-check-needed {{ color:var(--bad); }} .state-not-applicable {{ color:var(--muted); }} .priority {{ border:1px solid #665a2d; background:#1b170c; padding:12px; border-radius:8px; margin-top:12px; }}
 label {{ display:grid; gap:5px; margin-bottom:10px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} input,select,textarea,button {{ width:100%; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} textarea {{ min-height:92px; resize:vertical; }} button,.button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }}
 table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }} .scroll {{ overflow:auto; }} code {{ color:#d9e3ef; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px 7px; font-size:11px; font-weight:750; }} .in-scope {{ color:var(--good); }} .drift {{ color:var(--warn); }} .unassessed {{ color:var(--muted); }} .failed {{ color:var(--bad); }} ul {{ padding-left:20px; }} details {{ margin:12px 0; }} summary {{ cursor:pointer; color:var(--accent); font-weight:700; }} .plain-state {{ display:block; margin-top:4px; color:var(--muted); font-size:12px; }}
-@media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} .review-columns,.checkpoint-form {{ grid-template-columns:1fr; }} }}
+@media(max-width:1100px) {{ .condition-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }} @media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} .review-columns,.checkpoint-form,.condition-grid {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body><div class="wrap">
@@ -104,6 +111,7 @@ def _brain_detail(view: ResearchBrainView) -> str:
     snapshot = view.snapshot
     definition = snapshot.definition
     review = build_research_brain_review(snapshot, view.experiments)
+    conditioning = build_research_brain_conditioning(view)
     focus = (
         "".join(
             f"<li><code>{escape(rule.configuration_path)}</code> must be one of {escape(repr(rule.allowed_values))}</li>"
@@ -123,6 +131,7 @@ def _brain_detail(view: ResearchBrainView) -> str:
 <tr><th>Technical brain ID</th><td><code>{escape(definition.brain_id)}</code></td></tr>
 </table></div><div class="s4"><h3>What is in this brain?</h3><ul><li>{len(snapshot.memberships)} saved experiments</li><li>{snapshot.succeeded_count} successful runs</li><li>{snapshot.failed_count} failed runs retained</li><li>{snapshot.in_scope_count} match the declared focus</li><li>{snapshot.drift_warning_count} scope warnings</li><li>{snapshot.unassessed_count} not scope-classified</li></ul><strong>Brain summary: {_conditioning_label(snapshot.conditioning_readiness)}</strong><div class="subtle">{escape(snapshot.conditioning_note)}</div></div></div>
 {_review_section(review, definition.brain_id, view.review_checkpoints)}
+{_conditioning_section(conditioning)}
 <details><summary>Advanced: focus boundaries</summary><ul>{focus}</ul></details>
 <h3>Experiments remembered by this brain</h3><div class="scroll"><table><thead><tr><th>Added</th><th>Experiment</th><th>Run status</th><th>Fits this brain?</th><th>Result glimpse</th><th>Your note</th><th>Evidence check</th></tr></thead><tbody>{experiment_rows}</tbody></table></div>
 </div>"""
@@ -144,6 +153,47 @@ def _review_section(
 <form class="checkpoint-form" method="post" action="/research/brains"><input type="hidden" name="action" value="checkpoint"><input type="hidden" name="brain_id" value="{escape(brain_id)}"><label>Researcher<input name="actor" required value="local-user"></label><label>Optional note<input name="note" placeholder="For example: first volatility review before follow-up comparator tests"></label><button type="submit">Save review checkpoint</button></form>
 {history}</div>
 </div>"""
+
+
+def _conditioning_section(conditioning: ResearchBrainConditioning) -> str:
+    cards = "".join(_conditioning_card(item) for item in conditioning.dimensions)
+    return f"""<div class="conditioning"><h3>Brain conditioning — evidence quality map</h3>
+<div class="banner"><strong>No overall score.</strong> SCOUT checks each evidence dimension separately so a large raw return cannot hide a missing comparator, tiny sample, absent uncertainty, or lack of unseen-data testing.<br><span class="subtle">{escape(conditioning.boundary)}</span></div>
+<div class="condition-grid">{cards}</div>
+<div class="priority"><strong>{escape(conditioning.priority_title)}</strong><br>{escape(conditioning.priority_action)}</div>
+</div>"""
+
+
+def _conditioning_card(item: ConditioningDimension) -> str:
+    evidence = ""
+    if item.evidence:
+        evidence = (
+            "<ul>" + "".join(f"<li>{escape(value)}</li>" for value in item.evidence) + "</ul>"
+        )
+    next_step = (
+        f'<div class="subtle"><strong>What would improve this:</strong> {escape(item.next_step)}</div>'
+        if item.next_step
+        else ""
+    )
+    state_class = f"state-{item.state.value.casefold().replace('_', '-')}"
+    return (
+        '<div class="condition-card">'
+        f"<h4>{escape(item.label)}</h4>"
+        f'<span class="condition-state {state_class}">{escape(_conditioning_state_label(item.state))}</span>'
+        f"<div>{escape(item.summary)}</div>{evidence}{next_step}"
+        "</div>"
+    )
+
+
+def _conditioning_state_label(state: ConditioningState) -> str:
+    labels = {
+        ConditioningState.AVAILABLE: "Evidence found",
+        ConditioningState.PARTIAL: "Needs caution",
+        ConditioningState.MISSING: "Not found / not tested",
+        ConditioningState.CHECK_NEEDED: "Evidence check needed",
+        ConditioningState.NOT_APPLICABLE: "Not applicable yet",
+    }
+    return labels[state]
 
 
 def _checkpoint_history(checkpoints: tuple[ResearchBrainReviewCheckpoint, ...]) -> str:
