@@ -175,7 +175,9 @@ class StrategyBuilderRequest:
                 raise ValueError(f"{field} values must be below 100%")
         if len(set(self.managed_exit_plans)) != len(self.managed_exit_plans):
             raise ValueError("managed_exit_plans must not contain duplicates")
-        if any(plan.same_bar_policy is not self.same_bar_policy for plan in self.managed_exit_plans):
+        if any(
+            plan.same_bar_policy is not self.same_bar_policy for plan in self.managed_exit_plans
+        ):
             raise ValueError("all managed exit plans must use the request same-bar policy")
         costs = (
             self.entry_slippage_bps,
