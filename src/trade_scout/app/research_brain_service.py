@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from trade_scout.app.experiment_library_service import (
     ExperimentLibraryDetail,
@@ -55,14 +56,16 @@ class ResearchBrainWorkbenchService:
     """Expose explicit brain mutations while retaining experiment evidence as authority."""
 
     def __init__(self, *, experiment_root: Path, brain_root: Path) -> None:
-        self._experiment_root = experiment_root
+        self._brain_root = brain_root
         self._brain_store = FileResearchBrainStore(brain_root)
         self._experiment_store = FileManifestStore(experiment_root)
         self._experiment_library = ExperimentLibraryService(experiment_root)
 
     @property
     def brain_root(self) -> Path:
-        return self._brain_store._root  # type: ignore[attr-defined]
+        """Return the private brain-store root without reaching into another module's internals."""
+
+        return self._brain_root
 
     def list_brains(self) -> tuple[ResearchBrainListItem, ...]:
         """Return all brain definitions with non-scientific inventory counts."""
@@ -114,10 +117,10 @@ class ResearchBrainWorkbenchService:
     def create_brain(
         self,
         *,
-        brain_id: str,
         name: str,
         research_question: str,
         created_by: str,
+        brain_id: str | None = None,
         focus_rules: tuple[BrainFocusRule, ...] = (),
         notes: str = "",
         created_at: datetime | None = None,
@@ -127,14 +130,20 @@ class ResearchBrainWorkbenchService:
         timestamp = created_at or datetime.now(UTC)
         if timestamp.tzinfo is None or timestamp.utcoffset() is None:
             raise ValueError("created_at must be timezone-aware")
+        resolved_name = name.strip()
+        if not resolved_name:
+            raise ValueError("research brain name must be non-empty")
+        resolved_id = brain_id.strip() if brain_id is not None else ""
+        if not resolved_id:
+            resolved_id = _generated_brain_id(resolved_name)
         definition = ResearchBrainDefinition(
-            brain_id=brain_id,
-            name=name,
-            research_question=research_question,
-            created_by=created_by,
+            brain_id=resolved_id,
+            name=resolved_name,
+            research_question=research_question.strip(),
+            created_by=created_by.strip(),
             created_at=timestamp.astimezone(UTC).isoformat(),
             focus_rules=focus_rules,
-            notes=notes,
+            notes=notes.strip(),
         )
         self._brain_store.create(definition)
         return definition
@@ -156,8 +165,8 @@ class ResearchBrainWorkbenchService:
         return self._brain_store.add_experiment(
             brain_id,
             manifest,
-            added_by=added_by,
-            note=note,
+            added_by=added_by.strip(),
+            note=note.strip(),
             added_at=added_at,
         )
 
@@ -171,9 +180,11 @@ def parse_focus_rules(source: str) -> tuple[BrainFocusRule, ...]:
         if not line:
             continue
         if "=" not in line:
-            raise ValueError("focus rules must use one PATH=VALUE expression per line")
+            raise ValueError("focus boundaries must use one PATH=VALUE expression per line")
         path, raw_value = line.split("=", 1)
         resolved_path = path.strip()
+        if not resolved_path:
+            raise ValueError("focus-boundary path must be non-empty")
         resolved_value = _scalar(raw_value.strip())
         rules.append(
             BrainFocusRule(
@@ -185,9 +196,15 @@ def parse_focus_rules(source: str) -> tuple[BrainFocusRule, ...]:
     return tuple(rules)
 
 
+def _generated_brain_id(name: str) -> str:
+    slug = "".join(character.lower() if character.isalnum() else "_" for character in name)
+    slug = "_".join(part for part in slug.split("_") if part)[:36] or "research"
+    return f"brain_{slug}_{uuid4().hex[:10]}"
+
+
 def _scalar(value: str) -> JSONScalar:
     if not value:
-        raise ValueError("focus-rule value must be non-empty")
+        raise ValueError("focus-boundary value must be non-empty")
     normalized = value.casefold()
     if normalized == "true":
         return True
