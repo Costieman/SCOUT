@@ -9,11 +9,14 @@ assistant-driven follow-up layer is introduced.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from trade_scout.app.experiment_library_service import ExperimentLibraryDetail
-from trade_scout.app.research_brain_service import ResearchBrainExperimentView
-from trade_scout.experiments.contracts import ExperimentStatus, JSONValue
-from trade_scout.experiments.research_brains import BrainAlignmentState, ResearchBrainSnapshot
+from trade_scout.experiments.contracts import JSONValue
+from trade_scout.experiments.research_brains import ResearchBrainSnapshot
+
+if TYPE_CHECKING:
+    from trade_scout.app.research_brain_service import ResearchBrainExperimentView
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,23 +73,24 @@ def build_research_brain_review(
         else:
             sweep_observations.append(observation)
 
-    findings = _findings(snapshot, tuple(sweep_observations), ordinary_runs)
-    cautions = _cautions(snapshot, tuple(sweep_observations), unreadable)
-    next_questions = _next_questions(snapshot, tuple(sweep_observations), unreadable)
+    resolved_sweeps = tuple(sweep_observations)
+    findings = _findings(snapshot, resolved_sweeps, ordinary_runs)
+    cautions = _cautions(snapshot, resolved_sweeps, unreadable)
+    next_questions = _next_questions(snapshot, resolved_sweeps, unreadable)
     readiness_label, readiness_explanation = _readiness(
         snapshot,
-        tuple(sweep_observations),
+        resolved_sweeps,
         unreadable,
     )
     return ResearchBrainReview(
         experiment_count=len(snapshot.memberships),
         succeeded_count=snapshot.succeeded_count,
         failed_count=snapshot.failed_count,
-        sweep_count=len(sweep_observations),
+        sweep_count=len(resolved_sweeps),
         ordinary_run_count=ordinary_runs,
         drift_warning_count=snapshot.drift_warning_count,
         unreadable_evidence_count=unreadable,
-        sweep_observations=tuple(sweep_observations),
+        sweep_observations=resolved_sweeps,
         findings=findings,
         cautions=cautions,
         next_questions=next_questions,
@@ -246,24 +250,27 @@ def _next_questions(
 ) -> tuple[str, ...]:
     questions: list[str] = []
     if unreadable:
-        questions.append("Repair or inspect the unreadable experiment evidence before conditioning further.")
+        questions.append(
+            "Repair or inspect the unreadable experiment evidence before conditioning further."
+        )
     if sweeps:
         questions.append(
-            "Inspect whether the apparently stronger cells form a broad neighboring region rather than an "
-            "isolated maximum."
+            "Inspect whether the apparently stronger cells form a broad neighboring region rather "
+            "than an isolated maximum."
         )
         questions.append(
-            "Repeat the most interesting region with stronger sample support and an appropriate comparator "
-            "before treating it as a candidate relationship."
+            "Repeat the most interesting region with stronger sample support and an appropriate "
+            "comparator before treating it as a candidate relationship."
         )
     if snapshot.drift_warning_count:
         questions.append(
-            "Decide whether the scope-warning experiments are deliberate boundary tests or belong in a "
-            "separate research brain."
+            "Decide whether the scope-warning experiments are deliberate boundary tests or belong "
+            "in a separate research brain."
         )
     if not sweeps and snapshot.succeeded_count:
         questions.append(
-            "Add a controlled one-variable comparison if the research question depends on a tunable parameter."
+            "Add a controlled one-variable comparison if the research question depends on a "
+            "tunable parameter."
         )
     if not snapshot.memberships:
         questions.append("Attach the first relevant experiment to establish the brain's evidence history.")
@@ -278,28 +285,31 @@ def _readiness(
     if not snapshot.memberships:
         return (
             "EMPTY",
-            "There is no evidence to review yet. Readiness is based on evidence coverage, not a fixed run count.",
+            "There is no evidence to review yet. Readiness is based on evidence coverage, not a "
+            "fixed run count.",
         )
     if unreadable:
         return (
             "EVIDENCE_CHECK_NEEDED",
-            "At least one attached experiment cannot currently be verified, so deeper conditioning should wait.",
+            "At least one attached experiment cannot currently be verified, so deeper conditioning "
+            "should wait.",
         )
     if snapshot.succeeded_count == 0:
         return (
             "FAILURE_HISTORY_ONLY",
-            "The brain contains useful failure history but no successful completed experiment to compare yet.",
+            "The brain contains useful failure history but no successful completed experiment to "
+            "compare yet.",
         )
     if sweeps:
         return (
             "DESCRIPTIVE_REVIEW_AVAILABLE",
-            "There is enough structured history for a descriptive brain review. This does not mean there is "
-            "enough evidence to validate or optimize a strategy.",
+            "There is enough structured history for a descriptive brain review. This does not mean "
+            "there is enough evidence to validate or optimize a strategy.",
         )
     return (
         "BASIC_REVIEW_AVAILABLE",
-        "The brain can summarize its saved runs, but it has not yet accumulated a parameter surface or other "
-        "structured comparison. Readiness is not inferred from an arbitrary experiment count.",
+        "The brain can summarize its saved runs, but it has not yet accumulated a parameter surface "
+        "or other structured comparison. Readiness is not inferred from an arbitrary experiment count.",
     )
 
 
