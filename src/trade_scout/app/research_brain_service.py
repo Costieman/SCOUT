@@ -15,6 +15,12 @@ from trade_scout.app.research_brain_checkpoints import (
     FileResearchBrainCheckpointStore,
     ResearchBrainReviewCheckpoint,
 )
+from trade_scout.app.research_brain_followups import (
+    FileResearchBrainFollowUpStore,
+    ResearchBrainFollowUpApproval,
+    ResearchBrainFollowUpProposal,
+    ResearchBrainFollowUpView,
+)
 from trade_scout.app.research_brain_review import build_research_brain_review
 from trade_scout.experiments.contracts import ExperimentStatus, JSONScalar
 from trade_scout.experiments.research_brains import (
@@ -38,11 +44,12 @@ class ResearchBrainExperimentView:
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainView:
-    """Presentation-ready brain definition, inventory, evidence, and review checkpoints."""
+    """Presentation-ready brain definition, evidence, checkpoints, and follow-up plans."""
 
     snapshot: ResearchBrainSnapshot
     experiments: tuple[ResearchBrainExperimentView, ...]
     review_checkpoints: tuple[ResearchBrainReviewCheckpoint, ...] = ()
+    follow_up_proposals: tuple[ResearchBrainFollowUpView, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +72,7 @@ class ResearchBrainWorkbenchService:
         self._brain_root = brain_root
         self._brain_store = FileResearchBrainStore(brain_root)
         self._checkpoint_store = FileResearchBrainCheckpointStore(brain_root)
+        self._follow_up_store = FileResearchBrainFollowUpStore(brain_root)
         self._experiment_store = FileManifestStore(experiment_root)
         self._experiment_library = ExperimentLibraryService(experiment_root)
 
@@ -121,10 +129,16 @@ class ResearchBrainWorkbenchService:
                     integrity_error=None,
                 )
             )
-        return ResearchBrainView(
+        base = ResearchBrainView(
             snapshot=snapshot,
             experiments=tuple(experiments),
             review_checkpoints=self._checkpoint_store.list(brain_id),
+        )
+        return ResearchBrainView(
+            snapshot=base.snapshot,
+            experiments=base.experiments,
+            review_checkpoints=base.review_checkpoints,
+            follow_up_proposals=self._follow_up_store.list(base),
         )
 
     def create_brain(
@@ -201,6 +215,42 @@ class ResearchBrainWorkbenchService:
             created_by=created_by.strip(),
             note=note.strip(),
             created_at=created_at,
+        )
+
+    def draft_follow_up_proposal(
+        self,
+        *,
+        brain_id: str,
+        created_by: str,
+        created_at: datetime | None = None,
+    ) -> ResearchBrainFollowUpProposal:
+        """Freeze the current conditioning priority as an immutable non-executing research plan."""
+
+        view = self.detail(brain_id)
+        return self._follow_up_store.create_proposal(
+            view,
+            created_by=created_by.strip(),
+            created_at=created_at,
+        )
+
+    def approve_follow_up_proposal(
+        self,
+        *,
+        brain_id: str,
+        proposal_id: str,
+        approved_by: str,
+        note: str = "",
+        approved_at: datetime | None = None,
+    ) -> ResearchBrainFollowUpApproval:
+        """Record approval of one exact non-stale proposal without launching research."""
+
+        view = self.detail(brain_id)
+        return self._follow_up_store.approve(
+            view,
+            proposal_id,
+            approved_by=approved_by.strip(),
+            note=note.strip(),
+            approved_at=approved_at,
         )
 
 
