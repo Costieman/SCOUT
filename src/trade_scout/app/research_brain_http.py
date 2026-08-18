@@ -89,11 +89,14 @@ def handle_research_brain_post(
         )
 
     if action == "checkpoint":
-        checkpoint = service.save_review_checkpoint(
-            brain_id=_required(parameters, "brain_id"),
-            created_by=_required(parameters, "actor"),
-            note=_one(parameters, "note", default="").strip(),
-        )
+        try:
+            checkpoint = service.save_review_checkpoint(
+                brain_id=_required(parameters, "brain_id"),
+                created_by=_required(parameters, "actor"),
+                note=_one(parameters, "note", default="").strip(),
+            )
+        except ResearchBrainCheckpointError as exc:
+            raise ValueError(str(exc)) from exc
         return HTTPStatus.SEE_OTHER, _redirect_target(
             brain_id=checkpoint.brain_id,
             message=f"Saved brain review checkpoint {checkpoint.checkpoint_id}.",
