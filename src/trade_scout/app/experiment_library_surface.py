@@ -9,11 +9,15 @@ from urllib.parse import urlencode
 
 from trade_scout.app.experiment_library_service import (
     ExperimentLibraryDetail,
-    ExperimentLibraryFilters,
+    ExperimentLibraryItem,
     ExperimentLibrarySnapshot,
     ExperimentResultSummary,
 )
-from trade_scout.experiments.contracts import ExperimentStatus, JSONValue, ResearchMode
+from trade_scout.experiments.contracts import (
+    ExperimentStatus,
+    JSONValue,
+    ResearchMode,
+)
 
 
 def render_experiment_library_html(
@@ -27,6 +31,7 @@ def render_experiment_library_html(
 ) -> str:
     """Render searchable experiment history without making the dashboard authoritative."""
 
+    selected = snapshot.filters
     warning = (
         f'<div class="error"><strong>Experiment Library error:</strong> {escape(error)}</div>'
         if error
@@ -36,14 +41,17 @@ def render_experiment_library_html(
         f"<li>{escape(item)}</li>" for item in snapshot.synchronization_warnings
     )
     sync_warning_block = (
-        f'<div class="error"><strong>Some manifests could not be indexed:</strong><ul>{sync_warnings}</ul></div>'
+        '<div class="error"><strong>Some manifests could not be indexed:</strong>'
+        f"<ul>{sync_warnings}</ul></div>"
         if sync_warnings
         else ""
     )
     rows = "".join(_row(item) for item in snapshot.items)
     if not rows:
-        rows = '<tr><td colspan="9" class="subtle">No experiments match the current display filters.</td></tr>'
-    selected = snapshot.filters
+        rows = (
+            '<tr><td colspan="9" class="subtle">'
+            "No experiments match the current display filters.</td></tr>"
+        )
     family_options = '<option value="">All strategy families</option>' + "".join(
         _option(item, item, selected.strategy_family) for item in strategy_families
     )
@@ -64,11 +72,11 @@ def render_experiment_library_html(
 * {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }}
 a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1680px,96vw); margin:0 auto; padding:28px 0 70px; }} header {{ display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:18px; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:16px 0 8px; font-size:15px; }} .subtle {{ color:var(--muted); }}
 .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:12px 14px; border-radius:9px; margin:14px 0; }}
-.card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; min-width:0; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s3 {{ grid-column:span 3; }} .s4 {{ grid-column:span 4; }} .s6 {{ grid-column:span 6; }} .s12 {{ grid-column:1/-1; }}
-form.filters {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} .u1 {{ grid-column:span 1; }} .u2 {{ grid-column:span 2; }} .u3 {{ grid-column:span 3; }} select,input,button {{ min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} button,.button {{ cursor:pointer; display:inline-flex; align-items:center; justify-content:center; background:#2a2411; border:1px solid #6d5b24; color:#f7d66e; font-weight:760; border-radius:8px; padding:9px 11px; }}
-.metric-label {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }} .metric {{ font-size:22px; font-weight:760; margin-top:5px; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:11px; font-weight:750; }} .good {{ color:var(--good); }} .bad {{ color:var(--bad); }} .warn {{ color:var(--warn); }} .blue {{ color:var(--blue); }}
+.card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; min-width:0; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s3 {{ grid-column:span 3; }} .s6 {{ grid-column:span 6; }}
+form.filters {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:10px; align-items:end; }} label {{ display:grid; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} .u2 {{ grid-column:span 2; }} .u3 {{ grid-column:span 3; }} select,input,button {{ min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} button,.button {{ cursor:pointer; display:inline-flex; align-items:center; justify-content:center; background:#2a2411; border:1px solid #6d5b24; color:#f7d66e; font-weight:760; border-radius:8px; padding:9px 11px; }}
+.metric-label {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }} .metric {{ font-size:22px; font-weight:760; margin-top:5px; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:11px; font-weight:750; }} .bad {{ color:var(--bad); }} .blue {{ color:var(--blue); }}
 table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }} tr:last-child td {{ border-bottom:0; }} .scroll {{ overflow:auto; }} code {{ color:#d9e3ef; }} pre {{ margin:0; padding:12px; border:1px solid var(--border); border-radius:8px; background:#0c1118; overflow:auto; white-space:pre-wrap; word-break:break-word; }} details {{ margin-top:10px; }} ul {{ padding-left:19px; }} .compare-actions {{ display:flex; gap:10px; align-items:center; justify-content:flex-end; margin-top:10px; }} .status-failed {{ color:var(--bad); }} .status-succeeded {{ color:var(--good); }}
-@media(max-width:1200px) {{ form.filters {{ grid-template-columns:1fr 1fr; }} form.filters > * {{ grid-column:auto !important; }} .s3,.s4,.s6 {{ grid-column:1/-1; }} }}
+@media(max-width:1200px) {{ form.filters {{ grid-template-columns:1fr 1fr; }} form.filters > * {{ grid-column:auto !important; }} .s3,.s6 {{ grid-column:1/-1; }} }}
 </style>
 </head>
 <body><div class="wrap">
@@ -84,8 +92,8 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 <h2>Search and display filters</h2>
 <form class="filters" action="/research/experiments" method="get">
 <label class="u3">ID / name / hypothesis<input name="q" value="{escape(selected.text)}" placeholder="exp_... or strategy name"></label>
-<label class="u2">Execution status<select name="status">{_enum_options(ExperimentStatus, selected.status)}</select></label>
-<label class="u2">Research mode<select name="mode">{_enum_options(ResearchMode, selected.mode)}</select></label>
+<label class="u2">Execution status<select name="status">{_status_options(selected.status)}</select></label>
+<label class="u2">Research mode<select name="mode">{_mode_options(selected.mode)}</select></label>
 <label class="u2">Strategy family<select name="strategy_family">{family_options}</select></label>
 <label class="u3">Dataset version<input name="dataset_version" value="{escape(selected.dataset_version or '')}" placeholder="exact version"></label>
 <label class="u3">Code version<input name="code_version" value="{escape(selected.code_version or '')}" placeholder="exact commit"></label>
@@ -107,13 +115,13 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 </div></body></html>"""
 
 
-def _row(item: object) -> str:
-    from trade_scout.app.experiment_library_service import ExperimentLibraryItem
-
-    if not isinstance(item, ExperimentLibraryItem):
-        raise TypeError("unexpected experiment-library item")
+def _row(item: ExperimentLibraryItem) -> str:
     record = item.record
-    status_class = "status-succeeded" if record.status is ExperimentStatus.SUCCEEDED else "status-failed"
+    status_class = (
+        "status-succeeded"
+        if record.status is ExperimentStatus.SUCCEEDED
+        else "status-failed"
+    )
     lineage = record.parent_experiment_id or record.reproduction_of or "—"
     integrity = (
         f'<div class="bad">Unreadable evidence: {escape(item.integrity_error)}</div>'
@@ -160,7 +168,9 @@ def _render_detail(
     ) or "<li>None indexed.</li>"
     rerun = _rerun_link(detail, current_dataset_version=current_dataset_version)
     failure = (
-        f'<div class="error"><strong>Recorded failure:</strong> {escape(manifest.failure_type or "UnknownError")}: {escape(manifest.failure_message or "")}</div>'
+        '<div class="error"><strong>Recorded failure:</strong> '
+        f"{escape(manifest.failure_type or 'UnknownError')}: "
+        f"{escape(manifest.failure_message or '')}</div>"
         if manifest.status is ExperimentStatus.FAILED
         else ""
     )
@@ -196,23 +206,22 @@ def _render_comparison(details: tuple[ExperimentLibraryDetail, ...]) -> str:
         f"<th>{escape(item.manifest.experiment_id)}</th>" for item in details
     )
     result_rows = "".join(
-        (
-            f"<tr><th>{escape(label)}</th>"
-            + "".join(f"<td>{escape(value)}</td>" for value in values)
-            + "</tr>"
-        )
+        f"<tr><th>{escape(label)}</th>"
+        + "".join(f"<td>{escape(value)}</td>" for value in values)
+        + "</tr>"
         for label, values in _comparison_result_rows(details)
     )
     config_rows = "".join(
-        (
-            f"<tr><th><code>{escape(path)}</code></th>"
-            + "".join(f"<td><code>{escape(value)}</code></td>" for value in values)
-            + "</tr>"
-        )
+        f"<tr><th><code>{escape(path)}</code></th>"
+        + "".join(f"<td><code>{escape(value)}</code></td>" for value in values)
+        + "</tr>"
         for path, values in _configuration_diff(details)
     )
     if not config_rows:
-        config_rows = f'<tr><td colspan="{len(details) + 1}" class="subtle">Resolved configurations are identical.</td></tr>'
+        config_rows = (
+            f'<tr><td colspan="{len(details) + 1}" class="subtle">'
+            "Resolved configurations are identical.</td></tr>"
+        )
     return f"""<div class="card" id="experiment-comparison">
 <h2>Experiment comparison</h2>
 <div class="banner"><strong>Descriptive comparison only.</strong> The library does not rank these experiments or turn multiple metrics into one score. Differences in dataset, code, sample and configuration remain visible.</div>
@@ -240,7 +249,8 @@ def _configuration_diff(
     details: tuple[ExperimentLibraryDetail, ...],
 ) -> tuple[tuple[str, tuple[str, ...]], ...]:
     flattened = tuple(
-        _flatten_configuration(item.manifest.definition.resolved_configuration) for item in details
+        _flatten_configuration(item.manifest.definition.resolved_configuration)
+        for item in details
     )
     paths = sorted(set().union(*(set(item) for item in flattened)))
     rows: list[tuple[str, tuple[str, ...]]] = []
@@ -272,12 +282,20 @@ def _rerun_link(
 ) -> str:
     manifest = detail.manifest
     if manifest.definition.dataset_version != current_dataset_version:
-        return '<div class="subtle">Re-run action unavailable because the workbench is not currently using this experiment\'s immutable dataset version.</div>'
+        return (
+            '<div class="subtle">Re-run action unavailable because the workbench is not '
+            "currently using this experiment's immutable dataset version.</div>"
+        )
     query = _strategy_builder_query(manifest.definition.resolved_configuration)
     if query is None:
-        return '<div class="subtle">This experiment type cannot currently be restored into the Visual Strategy Builder.</div>'
+        return (
+            '<div class="subtle">This experiment type cannot currently be restored into the '
+            "Visual Strategy Builder.</div>"
+        )
     return (
-        '<div class="banner"><strong>Re-run with current code:</strong> this restores the saved Strategy Builder settings and starts a new EXPLORATORY experiment. It is not presented as an exact historical-code reproduction.</div>'
+        '<div class="banner"><strong>Re-run with current code:</strong> this restores the saved '
+        "Strategy Builder settings and starts a new EXPLORATORY experiment. It is not presented "
+        "as an exact historical-code reproduction.</div>"
         f'<a class="button" href="/research/strategy?{escape(query)}">Re-run saved settings</a>'
     )
 
@@ -285,58 +303,60 @@ def _rerun_link(
 def _strategy_builder_query(configuration: dict[str, JSONValue]) -> str | None:
     if configuration.get("surface") != "visual_strategy_builder":
         return None
-    universe = configuration.get("universe")
-    outcome = configuration.get("outcome")
-    entry = configuration.get("entry")
-    selection = configuration.get("selection")
-    exits = configuration.get("exit_candidates")
-    costs = configuration.get("execution_costs_bps")
-    if not all(isinstance(item, dict) for item in (universe, outcome, entry, selection, exits, costs)):
+    universe = _mapping(configuration.get("universe"))
+    outcome = _mapping(configuration.get("outcome"))
+    entry = _mapping(configuration.get("entry"))
+    selection = _mapping(configuration.get("selection"))
+    exits = _mapping(configuration.get("exit_candidates"))
+    costs = _mapping(configuration.get("execution_costs_bps"))
+    if None in (universe, outcome, entry, selection, exits, costs):
         return None
-    universe_map = dict(universe)
-    outcome_map = dict(outcome)
-    entry_map = dict(entry)
-    selection_map = dict(selection)
-    exits_map = dict(exits)
-    costs_map = dict(costs)
+    assert universe is not None
+    assert outcome is not None
+    assert entry is not None
+    assert selection is not None
+    assert exits is not None
+    assert costs is not None
     params: list[tuple[str, str]] = [
-        ("universe", str(universe_map.get("universe_id", "reviewed_canonical"))),
-        ("entry_family", str(entry_map.get("family", "feature_expression"))),
+        ("universe", str(universe.get("universe_id", "reviewed_canonical"))),
+        ("entry_family", str(entry.get("family", "feature_expression"))),
         ("lookback_years", str(configuration.get("historical_lookback_years", 2))),
-        ("horizon", str(outcome_map.get("maximum_holding_period_sessions", 20))),
-        ("expression", str(entry_map.get("expression", ""))),
-        ("rank_feature", str(selection_map.get("rank_feature", "return_20"))),
+        ("horizon", str(outcome.get("maximum_holding_period_sessions", 20))),
+        ("expression", str(entry.get("expression", ""))),
+        ("rank_feature", str(selection.get("rank_feature", "return_20"))),
         (
             "rank_direction",
-            "desc" if selection_map.get("rank_direction") == "descending" else "asc",
+            "desc" if selection.get("rank_direction") == "descending" else "asc",
         ),
-        ("per_session_limit", str(selection_map.get("per_session_limit", 500))),
-        ("duration", str(entry_map.get("consolidation_duration_sessions", 20))),
-        ("max_range_pct", str(entry_map.get("consolidation_max_range_percent", 12))),
-        ("trend_filter", str(entry_map.get("trend_filter", "above_sma_50_100_200"))),
+        ("per_session_limit", str(selection.get("per_session_limit", 500))),
+        ("duration", str(entry.get("consolidation_duration_sessions", 20))),
+        ("max_range_pct", str(entry.get("consolidation_max_range_percent", 12))),
+        ("trend_filter", str(entry.get("trend_filter", "above_sma_50_100_200"))),
         (
             "volume_ratio",
             "none"
-            if entry_map.get("minimum_breakout_volume_ratio") is None
-            else str(entry_map.get("minimum_breakout_volume_ratio")),
+            if entry.get("minimum_breakout_volume_ratio") is None
+            else str(entry.get("minimum_breakout_volume_ratio")),
         ),
-        ("fixed_stops", _csv(exits_map.get("fixed_stop_percentages"))),
-        ("trailing_stops", _csv(exits_map.get("trailing_stop_percentages"))),
-        ("atr_stops", _csv(exits_map.get("atr_stop_multiples"))),
-        ("trailing_atr", _csv(exits_map.get("trailing_atr_multiples"))),
-        ("entry_slip", str(costs_map.get("entry_slippage", 0))),
-        ("exit_slip", str(costs_map.get("normal_exit_slippage", 0))),
-        ("stop_slip", str(costs_map.get("additional_stop_slippage", 0))),
-        ("commission", str(costs_map.get("commission_per_side", 0))),
+        ("fixed_stops", _csv(exits.get("fixed_stop_percentages"))),
+        ("trailing_stops", _csv(exits.get("trailing_stop_percentages"))),
+        ("atr_stops", _csv(exits.get("atr_stop_multiples"))),
+        ("trailing_atr", _csv(exits.get("trailing_atr_multiples"))),
+        ("entry_slip", str(costs.get("entry_slippage", 0))),
+        ("exit_slip", str(costs.get("normal_exit_slippage", 0))),
+        ("stop_slip", str(costs.get("additional_stop_slippage", 0))),
+        ("commission", str(costs.get("commission_per_side", 0))),
     ]
-    variable = configuration.get("research_variable")
-    if isinstance(variable, dict) and variable.get("kind") == "entry_parameter_sweep":
+    variable = _mapping(configuration.get("research_variable"))
+    if variable is not None and variable.get("kind") == "entry_parameter_sweep":
         values = variable.get("declared_values")
         if not isinstance(values, list) or not values:
             return None
-        numeric = [float(value) for value in values if isinstance(value, int | float)]
-        if len(numeric) != len(values):
-            return None
+        numeric: list[float] = []
+        for value in values:
+            if not isinstance(value, int | float) or isinstance(value, bool):
+                return None
+            numeric.append(float(value))
         step = numeric[1] - numeric[0] if len(numeric) > 1 else 1.0
         if step <= 0:
             return None
@@ -352,7 +372,11 @@ def _strategy_builder_query(configuration: dict[str, JSONValue]) -> str | None:
     return urlencode(params)
 
 
-def _csv(value: object) -> str:
+def _mapping(value: JSONValue | None) -> dict[str, JSONValue] | None:
+    return value if isinstance(value, dict) else None
+
+
+def _csv(value: JSONValue | None) -> str:
     if not isinstance(value, list):
         return ""
     return ",".join(str(item) for item in value)
@@ -362,8 +386,7 @@ def _result_glimpse(result: ExperimentResultSummary | None) -> str:
     if result is None:
         return "—"
     if result.kind == "strategy_builder":
-        expectancy = _pct(result.hold_expectancy)
-        return f"N={result.complete_event_count or 0} · hold {expectancy}"
+        return f"N={result.complete_event_count or 0} · hold {_pct(result.hold_expectancy)}"
     if result.kind == "strategy_builder_entry_sweep":
         return (
             f"{result.sweep_point_count or 0} cells · "
@@ -376,10 +399,14 @@ def _result_detail(result: ExperimentResultSummary | None) -> str:
     if result is None:
         return '<div class="subtle">No completed stage result is available.</div>'
     if result.kind == "strategy_builder":
+        entry_count = result.entry_event_count if result.entry_event_count is not None else "—"
+        complete_count = (
+            result.complete_event_count if result.complete_event_count is not None else "—"
+        )
         return (
             "<table>"
-            f"<tr><th>Entry events</th><td>{result.entry_event_count if result.entry_event_count is not None else '—'}</td></tr>"
-            f"<tr><th>Complete events</th><td>{result.complete_event_count if result.complete_event_count is not None else '—'}</td></tr>"
+            f"<tr><th>Entry events</th><td>{entry_count}</td></tr>"
+            f"<tr><th>Complete events</th><td>{complete_count}</td></tr>"
             f"<tr><th>Hold expectancy</th><td>{_pct(result.hold_expectancy)}</td></tr>"
             "</table>"
         )
@@ -388,14 +415,22 @@ def _result_detail(result: ExperimentResultSummary | None) -> str:
             "<table>"
             f"<tr><th>Declared cells</th><td>{result.sweep_point_count or 0}</td></tr>"
             f"<tr><th>Observed expectancy range</th><td>{_pct(result.sweep_expectancy_low)} → {_pct(result.sweep_expectancy_high)}</td></tr>"
-            "</table><div class="subtle">The range is descriptive. The library does not treat the highest historical cell as a validated optimum.</div>"
+            '</table><div class="subtle">The range is descriptive. The library does not treat '
+            "the highest historical cell as a validated optimum.</div>"
         )
     return f"<div>{escape(result.kind)}</div>"
 
 
-def _enum_options(enum_type: object, selected: object) -> str:
+def _status_options(selected: ExperimentStatus | None) -> str:
     values = '<option value="">All</option>'
-    for item in enum_type:
+    for item in ExperimentStatus:
+        values += _option(item.value, item.value, selected.value if selected is not None else None)
+    return values
+
+
+def _mode_options(selected: ResearchMode | None) -> str:
+    values = '<option value="">All</option>'
+    for item in ResearchMode:
         values += _option(item.value, item.value, selected.value if selected is not None else None)
     return values
 
