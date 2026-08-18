@@ -121,8 +121,7 @@ def run_same_instrument_random_timing_control(
         indices = tuple(
             index
             for index, bar in enumerate(bars)
-            if signal_start <= bar.trade_date <= signal_end
-            and index + horizon < len(bars)
+            if signal_start <= bar.trade_date <= signal_end and index + horizon < len(bars)
         )
         if len(indices) < count:
             raise ValueError(
