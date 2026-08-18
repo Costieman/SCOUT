@@ -82,15 +82,15 @@ def _plain_english_summary(report: StrategyBuilderEntrySweepReport) -> str:
     elif max(expectancy_values) < 0:
         sign_note = "Every tested cell had negative historical hold expectancy in this sample."
     else:
-        sign_note = "The tested range contains both positive and negative historical hold expectancy."
+        sign_note = (
+            "The tested range contains both positive and negative historical hold expectancy."
+        )
     complete_counts = tuple(item.complete_event_count for item in available)
-    count_note = (
-        f"Complete-event N ranged from {min(complete_counts):,} to {max(complete_counts):,}, which is expected because changing an entry parameter can change the event population."
-    )
+    count_note = f"Complete-event N ranged from {min(complete_counts):,} to {max(complete_counts):,}, which is expected because changing an entry parameter can change the event population."
     return (
         '<div class="section-note" style="border-left-color:#f1c84b">'
         '<span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;color:#f1c84b;border:1px solid #6d5b24;border-radius:999px;padding:3px 7px;margin-bottom:6px">EXPLORATORY PARAMETER MAP</span><br>'
-        '<strong>What this run says:</strong> '
+        "<strong>What this run says:</strong> "
         f"Across {len(available)} tested values, hold expectancy ranged from {_pct(lowest.expectancy)} to {_pct(best.expectancy)}, an observed peak-to-trough spread of {spread_pp:.2f} percentage points. "
         f"{sign_note} {edge_note} {count_note} "
         "No uncertainty adjustment, matched comparator, or out-of-sample validation is applied by this entry-sweep view yet; the historical maximum is descriptive only."
