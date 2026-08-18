@@ -91,7 +91,9 @@ def _parse_exit_plan_token(value: str, *, same_bar_policy: SameBarExitPolicy) ->
             raise ValueError(f"unsupported profit target family {target_family_key!r}")
         if target_value is None:
             raise ValueError("profit target value is required")
-        resolved_target = target_value / 100.0 if target_family is TargetFamily.FIXED_PERCENT else target_value
+        resolved_target = (
+            target_value / 100.0 if target_family is TargetFamily.FIXED_PERCENT else target_value
+        )
     return ManagedExitPlan(
         stop_family=stop_family,
         stop_value=resolved_stop,
