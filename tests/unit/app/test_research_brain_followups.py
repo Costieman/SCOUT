@@ -226,7 +226,7 @@ def test_parameter_stability_proposal_uses_existing_neighbor_values_not_new_sear
     assert "do not add a new wider search" in proposal.proposed_change.lower()
 
 
-def test_surface_makes_draft_approval_and_no_run_boundary_obvious(tmp_path: Path) -> None:
+def test_surface_makes_draft_approval_and_execution_boundaries_obvious(tmp_path: Path) -> None:
     service = _service(tmp_path)
     proposal = service.draft_follow_up_proposal(
         brain_id="brain_followup",
@@ -240,8 +240,9 @@ def test_surface_makes_draft_approval_and_no_run_boundary_obvious(tmp_path: Path
         detail=detail,
     )
 
-    assert "Proposed next experiment — approval gate" in html
-    assert "Suggestion is not execution" in html
+    assert "Proposed next experiment — approval and execution gates" in html
+    assert "Three separate steps" in html
+    assert "Execution is another explicit click" in html
     assert proposal.proposal_id in html
     assert "Approve plan — do not run" in html
     assert "Draft — awaiting your approval" in html
