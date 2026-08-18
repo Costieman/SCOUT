@@ -117,7 +117,9 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 
 def _row(item: ExperimentLibraryItem) -> str:
     record = item.record
-    status_class = "status-succeeded" if record.status is ExperimentStatus.SUCCEEDED else "status-failed"
+    status_class = (
+        "status-succeeded" if record.status is ExperimentStatus.SUCCEEDED else "status-failed"
+    )
     lineage = record.parent_experiment_id or record.reproduction_of or "—"
     integrity = (
         f'<div class="bad">Unreadable evidence: {escape(item.integrity_error)}</div>'
