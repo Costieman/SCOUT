@@ -172,7 +172,9 @@ def propose_single_axis_iteration(
     normalized_axis = axis.strip()
     if normalized_axis not in suite.parameter_axes:
         choices = suite.parameter_axes
-        raise ValueError(f"axis {axis!r} is not declared by {suite.suite_id}; choose one of {choices}")
+        raise ValueError(
+            f"axis {axis!r} is not declared by {suite.suite_id}; choose one of {choices}"
+        )
     parameter_name = _AXIS_PARAMETER_NAMES.get((suite.suite_id, normalized_axis), normalized_axis)
     if parameter_name not in current.parameters:
         raise ValueError(
