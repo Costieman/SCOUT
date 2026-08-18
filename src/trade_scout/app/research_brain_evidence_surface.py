@@ -17,7 +17,7 @@ _INSERT_MARKER = "<details><summary>Advanced: focus boundaries</summary>"
 def attach_research_brain_evidence_html(html: str, view: ResearchBrainView | None) -> str:
     """Attach governed validation coverage without replacing the descriptive Brain Review."""
 
-    if view is None:
+    if view is None or view.evidence_summary is None:
         return html
     if _INSERT_MARKER not in html:
         raise RuntimeError("Research Brain HTML omitted the evidence insertion marker")
@@ -26,6 +26,8 @@ def attach_research_brain_evidence_html(html: str, view: ResearchBrainView | Non
 
 def _render_evidence(view: ResearchBrainView) -> str:
     summary = view.evidence_summary
+    if summary is None:
+        return ""
     rows = "".join(_row(item) for item in summary.experiments)
     if not rows:
         rows = '<tr><td colspan="6" class="subtle">No attached experiments are available for governed evidence review.</td></tr>'
