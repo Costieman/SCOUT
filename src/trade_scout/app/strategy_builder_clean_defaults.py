@@ -42,7 +42,8 @@ STRATEGY_BUILDER_CLEAN_DEFAULTS_JS = r"""
   addEmptyState(
     exits,
     '.exit-plan-row',
-    'No managed exit plans selected. Add a protective stop plan before running normal exit research.'
+    'No managed exit plans selected. ' +
+      'Add a protective stop plan before running normal exit research.'
   );
 
   if (signalLimit) {
