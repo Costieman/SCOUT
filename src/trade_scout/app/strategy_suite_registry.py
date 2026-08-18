@@ -1,8 +1,8 @@
 """Editable research-suite catalog for the SCOUT Strategy Builder.
 
-A suite is a research starting point, not a validated or production-eligible strategy.  Built-in
+A suite is a research starting point, not a validated or production-eligible strategy. Built-in
 suites package documented hypotheses into editable recipes over existing entry families and feature
-primitives.  Structural methodologies that still require a dedicated pattern detector are exposed
+primitives. Structural methodologies that still require a dedicated pattern detector are exposed
 honestly as partial research templates rather than being approximated silently.
 """
 
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from typing import Any
 
 
 class SuiteEvidenceClass(StrEnum):
@@ -206,7 +207,10 @@ _BUILT_IN_SUITES = (
         SuiteImplementationKind.FEATURE_EXPRESSION,
         SuiteImplementationStatus.PARTIAL,
         "daily",
-        "Tests releases from periods where Bollinger width is compressed relative to an ATR channel.",
+        (
+            "Tests releases from periods where Bollinger width is compressed relative to an ATR "
+            "channel."
+        ),
         (
             "Bollinger 20, 2 sigma and Keltner 20, 1.5 ATR",
             "derive squeeze state from envelope relationship",
@@ -240,7 +244,10 @@ _BUILT_IN_SUITES = (
         SuiteImplementationKind.STRUCTURAL_PATTERN,
         SuiteImplementationStatus.REQUIRES_PATTERN,
         "daily",
-        "Requires confirmed upper/lower box boundaries and persistent in-box state before breakout.",
+        (
+            "Requires confirmed upper/lower box boundaries and persistent in-box state before "
+            "breakout."
+        ),
         ("positive momentum", "confirmed persistent box", "close above box top"),
         ("confirmed_pivot", "persistent_box", "box_breakout"),
         ("boundary_confirmation", "box_duration", "box_width", "breakout_margin"),
@@ -492,7 +499,7 @@ def duplicate_suite(
     )
 
 
-def edit_suite(source: StrategySuite, **changes: object) -> StrategySuite:
+def edit_suite(source: StrategySuite, **changes: Any) -> StrategySuite:
     """Return a new suite value with explicit edits; built-ins are never mutated in place."""
 
     prohibited = {"built_in", "evidence_class"}
