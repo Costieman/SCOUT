@@ -23,6 +23,7 @@ from trade_scout.app.research_brain_http import (
     handle_research_brain_post,
     render_research_brain_post_error,
 )
+from trade_scout.app.research_brain_navigation import RESEARCH_BRAIN_NAVIGATION_JS
 from trade_scout.app.strategy_builder_assets import STRATEGY_BUILDER_JS
 from trade_scout.app.strategy_builder_clarity import STRATEGY_BUILDER_CLARITY_JS
 from trade_scout.app.strategy_builder_clean_defaults import STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
@@ -49,6 +50,7 @@ _ENTRY_SWEEP_ASSET_PATH = "/assets/strategy-builder-entry-sweep.js"
 _HELP_ASSET_PATH = "/assets/strategy-builder-help.js"
 _READOUT_ASSET_PATH = "/assets/strategy-builder-readout.js"
 _RESEARCH_MEMORY_ASSET_PATH = "/assets/strategy-builder-research-memory.js"
+_RESEARCH_BRAIN_NAVIGATION_ASSET_PATH = "/assets/research-brain-navigation.js"
 _SWEEP_ASSET_PATH = "/assets/strategy-builder-sweep.js"
 _SWEEP_CONTROLS_ASSET_PATH = "/assets/strategy-builder-sweep-controls.js"
 _STRATEGY_PATH = "/research/strategy"
@@ -64,6 +66,9 @@ _HELP_SCRIPT = '<script src="/assets/strategy-builder-help.js" defer></script>'
 _READOUT_SCRIPT = '<script src="/assets/strategy-builder-readout.js" defer></script>'
 _RESEARCH_MEMORY_SCRIPT = (
     '<script src="/assets/strategy-builder-research-memory.js" defer></script>'
+)
+_RESEARCH_BRAIN_NAVIGATION_SCRIPT = (
+    '<script src="/assets/research-brain-navigation.js" defer></script>'
 )
 _SWEEP_SCRIPT = '<script src="/assets/strategy-builder-sweep.js" defer></script>'
 _SWEEP_CONTROLS_SCRIPT = '<script src="/assets/strategy-builder-sweep-controls.js" defer></script>'
@@ -95,6 +100,8 @@ def build_research_workbench_response(
         return _javascript_response(STRATEGY_BUILDER_READOUT_JS)
     if path == _RESEARCH_MEMORY_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_RESEARCH_MEMORY_JS)
+    if path == _RESEARCH_BRAIN_NAVIGATION_ASSET_PATH:
+        return _javascript_response(RESEARCH_BRAIN_NAVIGATION_JS)
     if path == _SWEEP_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_SWEEP_JS)
     if path == _SWEEP_CONTROLS_ASSET_PATH:
@@ -110,7 +117,16 @@ def build_research_workbench_response(
         if experiment_recorder is None:
             return _unconfigured_response("Research Brains")
         status, html = build_research_brains_page(parsed_target.query, experiment_recorder)
-        return _html_response(status, html)
+        response = _html_response(status, html)
+        html_with_navigation = response.body.decode("utf-8").replace(
+            "</body>", f"{_RESEARCH_BRAIN_NAVIGATION_SCRIPT}</body>", 1
+        )
+        return ConsoleResponse(
+            status_code=response.status_code,
+            content_type=response.content_type,
+            body=html_with_navigation.encode("utf-8"),
+            headers=_replace_csp(response.headers),
+        )
 
     strategy_parameters = (
         parse_qs(parsed_target.query, keep_blank_values=True) if path == _STRATEGY_PATH else {}
