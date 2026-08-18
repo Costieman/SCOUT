@@ -175,8 +175,7 @@ def test_checkpoint_post_is_explicit_and_surface_lists_history(tmp_path: Path) -
         code_version="code-v1",
     )
     body = (
-        f"action=checkpoint&brain_id={brain_id}&actor=local-user&"
-        "note=First+descriptive+review"
+        f"action=checkpoint&brain_id={brain_id}&actor=local-user&note=First+descriptive+review"
     ).encode()
 
     status, location = handle_research_brain_post(body, recorder)
