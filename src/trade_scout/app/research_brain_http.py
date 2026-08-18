@@ -6,6 +6,7 @@ from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode
 
 from trade_scout.app.research_brain_checkpoints import ResearchBrainCheckpointError
+from trade_scout.app.research_brain_followups import ResearchBrainFollowUpError
 from trade_scout.app.research_brain_service import (
     ResearchBrainWorkbenchService,
     parse_focus_rules,
@@ -37,7 +38,14 @@ def build_research_brains_page(
             message=message,
         )
         return HTTPStatus.OK, html
-    except (KeyError, OSError, ValueError, ResearchBrainError, ResearchBrainCheckpointError) as exc:
+    except (
+        KeyError,
+        OSError,
+        ValueError,
+        ResearchBrainError,
+        ResearchBrainCheckpointError,
+        ResearchBrainFollowUpError,
+    ) as exc:
         html = render_research_brains_html(
             brains=service.list_brains(),
             prefill_experiment_id=prefill,
@@ -100,6 +108,40 @@ def handle_research_brain_post(
         return HTTPStatus.SEE_OTHER, _redirect_target(
             brain_id=checkpoint.brain_id,
             message=f"Saved brain review checkpoint {checkpoint.checkpoint_id}.",
+        )
+
+    if action == "draft_follow_up":
+        try:
+            proposal = service.draft_follow_up_proposal(
+                brain_id=_required(parameters, "brain_id"),
+                created_by=_required(parameters, "actor"),
+            )
+        except ResearchBrainFollowUpError as exc:
+            raise ValueError(str(exc)) from exc
+        return HTTPStatus.SEE_OTHER, _redirect_target(
+            brain_id=proposal.brain_id,
+            message=(
+                f"Drafted follow-up proposal {proposal.proposal_id}. Nothing has been run; review "
+                "the plan before approving it."
+            ),
+        )
+
+    if action == "approve_follow_up":
+        try:
+            approval = service.approve_follow_up_proposal(
+                brain_id=_required(parameters, "brain_id"),
+                proposal_id=_required(parameters, "proposal_id"),
+                approved_by=_required(parameters, "actor"),
+                note=_one(parameters, "note", default="").strip(),
+            )
+        except ResearchBrainFollowUpError as exc:
+            raise ValueError(str(exc)) from exc
+        return HTTPStatus.SEE_OTHER, _redirect_target(
+            brain_id=approval.brain_id,
+            message=(
+                f"Approved proposal {approval.proposal_id}. Approval is recorded, but SCOUT has not "
+                "executed the proposed research."
+            ),
         )
 
     raise ValueError("unknown research-brain form action")
