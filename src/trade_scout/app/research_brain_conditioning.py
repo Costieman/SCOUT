@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Evidence-quality conditioning for one research brain.
 
 Conditioning v1 does not score, rank, validate, or optimize experiments. It inspects the exact
