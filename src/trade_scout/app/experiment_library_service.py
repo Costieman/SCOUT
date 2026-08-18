@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 from trade_scout.experiments.contracts import (
     ExperimentManifest,
@@ -268,7 +267,7 @@ def _result_summary(
     sweep = by_stage.get("strategy_builder_entry_sweep")
     if sweep is not None:
         points = sweep.get("points")
-        resolved_points = cast(list[JSONValue], points) if isinstance(points, list) else []
+        resolved_points = points if isinstance(points, list) else []
         expectancies: list[float] = []
         for point in resolved_points:
             if not isinstance(point, dict):
