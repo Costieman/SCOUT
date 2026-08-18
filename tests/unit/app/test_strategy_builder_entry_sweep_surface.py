@@ -41,8 +41,14 @@ def test_entry_sweep_has_temporary_interactive_resource_guard() -> None:
 def test_entry_sweep_makes_exit_policy_state_explicit() -> None:
     assert "entry-sweep-exits-inactive" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "exits are not applied in this run" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert "Exit candidates shown below are preserved for later experiments" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert "Entry-indicator sweeps create a separate point-in-time child population" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert (
+        "Exit candidates shown below are preserved for later experiments"
+        in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    )
+    assert (
+        "Entry-indicator sweeps create a separate point-in-time child population"
+        in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    )
 
 
 def test_entry_sweep_query_detection_is_explicit() -> None:
