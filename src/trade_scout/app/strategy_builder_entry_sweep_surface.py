@@ -36,7 +36,7 @@ def _render_entry_sweep(report: StrategyBuilderEntrySweepReport) -> str:
     best_text = (
         "No complete expectancy estimate is available."
         if best is None
-        else f"Highest observed hold expectancy: {best.value:g} {escape(report.unit_label)} -> {_pct(best.expectancy)}. Inspect the surrounding region; this is not a validated optimum."
+        else f"Highest observed hold expectancy: {best.value:g} {escape(report.unit_label)} -> {_pct(best.expectancy)} from {best.complete_event_count:,} complete events. Inspect the surrounding region; this is not a validated optimum."
     )
     return f"""<div class="card" id="entry-sweep-results">
 <style>
@@ -53,6 +53,7 @@ def _render_entry_sweep(report: StrategyBuilderEntrySweepReport) -> str:
 <div class="section-note"><strong>Exit policies applied in this sweep:</strong> none. Any configured stop rows shown above are preserved for later experiments but are not evaluated here. Every child uses the Research Scope maximum holding period as its forced exit so entry sensitivity is not mixed with simultaneous stop selection.</div>
 {render_entry_sweep_chart(report)}
 <p><strong>{best_text}</strong></p>
+{_sample_size_caution(available, best)}
 <div class="scroll"><table><thead><tr><th>{escape(report.parameter_label)}</th><th>Entry events</th><th>Complete events</th><th>Hold expectancy</th><th>Win rate</th><th>PF</th><th>P05</th><th>Avg hold</th></tr></thead><tbody>{rows}</tbody></table></div>
 <table style="margin-top:12px"><tr><th>Declared values</th><td>{len(report.values)}</td></tr><tr><th>Window</th><td>{report.analysis_start.isoformat()} to {report.analysis_end.isoformat()}</td></tr><tr><th>Dataset</th><td><code>{escape(report.dataset_version)}</code></td></tr><tr><th>Search-space fingerprint</th><td><code>{escape(report.search_space_fingerprint)}</code></td></tr><tr><th>Sweep runtime</th><td>{report.total_seconds:.2f}s</td></tr><tr><th>Research state</th><td>{escape(report.research_state)}</td></tr></table>
 </div>"""
@@ -94,6 +95,25 @@ def _plain_english_summary(report: StrategyBuilderEntrySweepReport) -> str:
         f"Across {len(available)} tested values, hold expectancy ranged from {_pct(lowest.expectancy)} to {_pct(best.expectancy)}, an observed peak-to-trough spread of {spread_pp:.2f} percentage points. "
         f"{sign_note} {edge_note} {count_note} "
         "No uncertainty adjustment, matched comparator, or out-of-sample validation is applied by this entry-sweep view yet; the historical maximum is descriptive only."
+        "</div>"
+    )
+
+
+def _sample_size_caution(available: tuple[object, ...], best: object | None) -> str:
+    if best is None or not available:
+        return ""
+    # Keep this a descriptive warning rather than inventing a scientific minimum-N threshold.
+    complete_counts = tuple(int(getattr(item, "complete_event_count")) for item in available)
+    best_count = int(getattr(best, "complete_event_count"))
+    largest_count = max(complete_counts)
+    if best_count >= largest_count:
+        return ""
+    return (
+        '<div class="section-note" style="border-left-color:#f2bd60">'
+        "<strong>Sample-size caution:</strong> the highest observed expectancy uses "
+        f"{best_count:,} complete events, while the largest tested cell uses {largest_count:,}. "
+        "Estimates from fewer completed events can move around much more from sample to sample. "
+        "SCOUT is not imposing a minimum-N rule here; this is a visible reason not to treat the peak as proven."
         "</div>"
     )
 
