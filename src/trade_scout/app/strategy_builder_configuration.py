@@ -64,20 +64,14 @@ def strategy_request_from_resolved_configuration(
         ),
         min_breakout_volume_ratio=_optional_number(entry.get("minimum_breakout_volume_ratio")),
         fixed_percentages=(
-            ()
-            if managed_plans
-            else _percentage_tuple(exits.get("fixed_stop_percentages"))
+            () if managed_plans else _percentage_tuple(exits.get("fixed_stop_percentages"))
         ),
         trailing_percentages=(
-            ()
-            if managed_plans
-            else _percentage_tuple(exits.get("trailing_stop_percentages"))
+            () if managed_plans else _percentage_tuple(exits.get("trailing_stop_percentages"))
         ),
         atr_multiples=() if managed_plans else _number_tuple(exits.get("atr_stop_multiples")),
         trailing_atr_multiples=(
-            ()
-            if managed_plans
-            else _number_tuple(exits.get("trailing_atr_multiples"))
+            () if managed_plans else _number_tuple(exits.get("trailing_atr_multiples"))
         ),
         managed_exit_plans=managed_plans,
         same_bar_policy=same_bar_policy,
