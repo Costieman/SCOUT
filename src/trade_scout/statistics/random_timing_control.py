@@ -94,7 +94,7 @@ def run_same_instrument_random_timing_control(
 
     complete_counts: dict[str, int] = {}
     source_returns: list[float] = []
-    for instrument_id, events in sorted(source_by_instrument.items()):
+    for instrument_id, source_instrument_events in sorted(source_by_instrument.items()):
         bars = research_by_instrument.get(instrument_id)
         if bars is None:
             raise ValueError(
@@ -102,7 +102,7 @@ def run_same_instrument_random_timing_control(
             )
         results = evaluate_exit_policy_grid(
             bars,
-            tuple(events),
+            tuple(source_instrument_events),
             horizon=horizon,
             policies=hold_policy,
             cost_model=cost_model,
@@ -138,7 +138,7 @@ def run_same_instrument_random_timing_control(
         for instrument_id, count in sorted(complete_counts.items()):
             bars = research_by_instrument[instrument_id]
             selected = rng.sample(eligible_by_instrument[instrument_id], count)
-            events = tuple(
+            random_events: tuple[EventRecord, ...] = tuple(
                 _RandomTimingEvent(
                     instrument_id=bars[index].instrument_id,
                     signal_date=bars[index].trade_date,
@@ -150,7 +150,7 @@ def run_same_instrument_random_timing_control(
             )
             results = evaluate_exit_policy_grid(
                 bars,
-                events,
+                random_events,
                 horizon=horizon,
                 policies=hold_policy,
                 cost_model=cost_model,
