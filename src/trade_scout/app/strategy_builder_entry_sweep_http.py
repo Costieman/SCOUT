@@ -14,6 +14,10 @@ from trade_scout.app.strategy_builder_entry_sweep import (
     materialize_entry_sweep_values,
 )
 from trade_scout.app.strategy_builder_entry_sweep_surface import attach_entry_sweep_html
+from trade_scout.app.strategy_builder_experiments import (
+    StrategyBuilderExperimentRecorder,
+    attach_experiment_record_html,
+)
 from trade_scout.app.strategy_builder_service import StrategyBuilderError, StrategyBuilderRequest
 from trade_scout.app.strategy_builder_surface import render_strategy_builder_html
 from trade_scout.patterns.consolidation_breakout import TrendFilter
@@ -32,6 +36,8 @@ def is_entry_sweep_query(query: str) -> bool:
 def build_entry_sweep_page(
     query: str,
     config: LocalConsoleConfig,
+    *,
+    experiment_recorder: StrategyBuilderExperimentRecorder | None = None,
 ) -> tuple[HTTPStatus, str]:
     """Run one declared entry-indicator sweep and return its Strategy Builder page."""
 
@@ -109,19 +115,34 @@ def build_entry_sweep_page(
                 f"{INTERACTIVE_ENTRY_SWEEP_LIMIT} values to protect local browser responsiveness; "
                 "increase Step or narrow the range"
             )
-        report = StrategyBuilderEntrySweepService(source).run(
-            request,
-            target_feature_name=target_feature_name,
-            parameter=sweep_parameter,
-            values=values,
-        )
+        if experiment_recorder is None:
+            report = StrategyBuilderEntrySweepService(source).run(
+                request,
+                target_feature_name=target_feature_name,
+                parameter=sweep_parameter,
+                values=values,
+            )
+            manifest = None
+        else:
+            recorded = experiment_recorder.run_entry_sweep(
+                source,
+                request,
+                target_feature_name=target_feature_name,
+                parameter=sweep_parameter,
+                values=values,
+            )
+            report = recorded.report
+            manifest = recorded.manifest
         html = render_strategy_builder_html(
             universes=universes,
             entries=entries,
             features=features,
             request=request,
         )
-        return HTTPStatus.OK, attach_entry_sweep_html(html, report)
+        html = attach_entry_sweep_html(html, report)
+        if manifest is not None:
+            html = attach_experiment_record_html(html, manifest)
+        return HTTPStatus.OK, html
     except (ValueError, StrategyBuilderError) as exc:
         html = render_strategy_builder_html(
             universes=universes,
