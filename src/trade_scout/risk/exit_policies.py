@@ -514,10 +514,18 @@ def _target_fill(
     target: float,
 ) -> tuple[ExitReason, float, bool, float] | None:
     if bar.open >= target:
-        return ExitReason.TARGET, bar.open, False, 0.0
+        # The third tuple item marks a threshold crossed at the known session open. It is normalized
+        # back to ``gap_through_stop=False`` before a target result is built.
+        return ExitReason.TARGET, bar.open, True, 0.0
     if bar.high >= target:
         return ExitReason.TARGET, target, False, 0.0
     return None
+
+
+def _normalize_target_hit(
+    hit: tuple[ExitReason, float, bool, float],
+) -> tuple[ExitReason, float, bool, float]:
+    return ExitReason.TARGET, hit[1], False, 0.0
 
 
 def _select_exit_hit(
@@ -530,15 +538,18 @@ def _select_exit_hit(
         raise ValueError("exit-hit selector requires a stop or target hit")
     if stop_hit is None:
         assert target_hit is not None
-        return target_hit, False
+        return _normalize_target_hit(target_hit), False
     if target_hit is None:
         return stop_hit, False
-    if stop_hit[2]:
+
+    stop_at_open = stop_hit[2]
+    target_at_open = target_hit[2]
+    if stop_at_open and not target_at_open:
         return stop_hit, False
-    if target_hit[1] != stop_hit[1] and target_hit[1] > stop_hit[1]:
-        selected = stop_hit if policy is SameBarExitPolicy.STOP_FIRST else target_hit
-        return selected, True
-    selected = stop_hit if policy is SameBarExitPolicy.STOP_FIRST else target_hit
+    if target_at_open and not stop_at_open:
+        return _normalize_target_hit(target_hit), False
+
+    selected = stop_hit if policy is SameBarExitPolicy.STOP_FIRST else _normalize_target_hit(target_hit)
     return selected, True
 
 
