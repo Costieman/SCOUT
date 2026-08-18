@@ -84,8 +84,8 @@ class ResearchBrainFollowUpProposal:
     readiness: FollowUpReadiness
     rationale: str
     execution_boundary: str = (
-        "This proposal does not execute research. Approval records consent to the research plan only; "
-        "execution must occur later through a governed experiment or validation workflow."
+        "This proposal does not execute research. Approval records consent to the research plan "
+        "only; execution must occur later through a governed experiment or validation workflow."
     )
     version: str = "research-brain-follow-up-proposal-v0.1"
 
@@ -175,7 +175,7 @@ class FileResearchBrainFollowUpStore:
         source = _source_experiment(view)
         if source is None:
             raise ResearchBrainFollowUpError(
-                "a follow-up experiment proposal requires at least one readable successful experiment"
+                "a follow-up proposal requires at least one readable successful experiment"
             )
         plan = _proposal_plan(conditioning, source)
         timestamp = created_at or datetime.now(UTC)
@@ -246,7 +246,7 @@ class FileResearchBrainFollowUpStore:
         proposal = self.read_proposal(view.snapshot.definition.brain_id, proposal_id)
         if not self.matches_current_state(proposal, view):
             raise ResearchBrainFollowUpError(
-                "the proposal is stale because the brain evidence changed; draft a new proposal first"
+                "the proposal is stale because the brain evidence changed; draft a fresh proposal"
             )
         path = self._approval_path(proposal.brain_id, proposal.proposal_id)
         if path.exists():
@@ -388,8 +388,8 @@ def _proposal_plan(
     frozen = (
         "Keep the source experiment's dataset version fixed.",
         "Keep the source experiment's entry definition and execution convention fixed.",
-        "Keep the source experiment's primary holding/outcome definition fixed unless the challenge "
-        "explicitly requires a validation-period change.",
+        "Keep the source experiment's primary holding/outcome definition fixed unless the "
+        "challenge explicitly requires a validation-period change.",
         "Do not add unrelated indicators or tune a second parameter family in the same follow-up.",
     )
     key = conditioning.priority_key
@@ -398,13 +398,13 @@ def _proposal_plan(
             kind=FollowUpKind.COMPARATOR,
             title="Add a predeclared comparator before tuning further",
             hypothesis=(
-                "The frozen source configuration adds information beyond an appropriate predeclared "
-                "comparison population under the same outcome convention."
+                "The frozen source configuration adds information beyond an appropriate "
+                "predeclared comparison population under the same outcome convention."
             ),
             frozen_elements=frozen,
             proposed_change=(
-                "Add one explicit comparator/control to the frozen source research question and measure "
-                "the paired or otherwise appropriate effect versus that comparator."
+                "Add one explicit comparator/control to the frozen source research question and "
+                "measure the paired or otherwise appropriate effect versus that comparator."
             ),
             required_operator_inputs=(
                 "Choose the comparator definition before execution; SCOUT must not select the most "
@@ -418,13 +418,13 @@ def _proposal_plan(
             kind=FollowUpKind.UNCERTAINTY,
             title="Add uncertainty to the frozen source result",
             hypothesis=(
-                "The apparent effect remains economically interpretable once uncertainty and dependence "
-                "are reported for the frozen source definition."
+                "The apparent effect remains economically interpretable once uncertainty and "
+                "dependence are reported for the frozen source definition."
             ),
             frozen_elements=frozen,
             proposed_change=(
-                "Estimate uncertainty for the frozen source result without changing the entry rule, "
-                "holding definition, or parameter search."
+                "Estimate uncertainty for the frozen source result without changing the entry "
+                "rule, holding definition, or parameter search."
             ),
             required_operator_inputs=(
                 "Choose the approved uncertainty/dependence method if the research family does not "
@@ -439,13 +439,13 @@ def _proposal_plan(
             kind=FollowUpKind.PARAMETER_STABILITY,
             title="Challenge the existing parameter neighborhood",
             hypothesis=(
-                "The apparent effect is supported by neighboring already-declared parameter values rather "
-                "than a single isolated historical maximum."
+                "The apparent effect is supported by neighboring already-declared parameter values "
+                "rather than a single isolated historical maximum."
             ),
             frozen_elements=frozen,
             proposed_change=(
-                "Use the existing declared sweep neighborhood as the stability challenge; do not add a "
-                "new wider search merely to find a better peak."
+                "Use the existing declared sweep neighborhood as the stability challenge; do not "
+                "add a new wider search merely to find a better peak."
                 + (f" Existing peak neighborhood: {neighborhood}." if neighborhood else "")
             ),
             required_operator_inputs=(),
@@ -457,8 +457,8 @@ def _proposal_plan(
             kind=FollowUpKind.MULTIPLICITY,
             title="Register the searched family before making a formal claim",
             hypothesis=(
-                "Any apparent effect remains interpretable after the complete tested hypothesis family is "
-                "accounted for rather than treating the historical peak as an isolated test."
+                "Any apparent effect remains interpretable after the complete tested hypothesis "
+                "family is accounted for rather than treating the historical peak as an isolated test."
             ),
             frozen_elements=frozen,
             proposed_change=(
@@ -476,13 +476,13 @@ def _proposal_plan(
             kind=FollowUpKind.OUT_OF_SAMPLE,
             title="Freeze the definition for unseen-data testing",
             hypothesis=(
-                "The frozen source relationship retains useful direction and magnitude on data that was "
-                "not used to choose the configuration."
+                "The frozen source relationship retains useful direction and magnitude on data "
+                "that was not used to choose the configuration."
             ),
             frozen_elements=frozen,
             proposed_change=(
-                "Freeze the source definition and evaluate it on a genuinely unseen time interval without "
-                "retuning from the holdout result."
+                "Freeze the source definition and evaluate it on a genuinely unseen time interval "
+                "without retuning from the holdout result."
             ),
             required_operator_inputs=(
                 "Define and freeze the unseen validation interval before execution.",
@@ -500,8 +500,8 @@ def _proposal_plan(
             ),
             frozen_elements=frozen,
             proposed_change=(
-                "Run a predeclared time-ordered/walk-forward stability challenge using the frozen source "
-                "definition."
+                "Run a predeclared time-ordered/walk-forward stability challenge using the frozen "
+                "source definition."
             ),
             required_operator_inputs=("Define the walk-forward/fold schedule before execution.",),
             readiness=FollowUpReadiness.OPERATOR_INPUT_REQUIRED,
@@ -511,16 +511,17 @@ def _proposal_plan(
         kind=FollowUpKind.FORMAL_VALIDATION_REVIEW,
         title="Review whether the compact hypothesis is ready for governed validation",
         hypothesis=(
-            "The accumulated evidence is sufficiently specified to justify freezing a compact candidate "
-            "for the formal validation workflow without further exploratory tuning."
+            "The accumulated evidence is sufficiently specified to justify freezing a compact "
+            "candidate for the formal validation workflow without further exploratory tuning."
         ),
         frozen_elements=frozen,
         proposed_change=(
-            "Do not add another exploratory variable by default. Review the current evidence package and "
-            "decide whether to freeze a candidate, retain for study, or reject."
+            "Do not add another exploratory variable by default. Review the current evidence "
+            "package and decide whether to freeze a candidate, retain for study, or reject."
         ),
         required_operator_inputs=(
-            "Make an explicit research-governance decision; conditioning does not infer candidate status.",
+            "Make an explicit research-governance decision; conditioning does not infer candidate "
+            "status.",
         ),
         readiness=FollowUpReadiness.GOVERNED_REVIEW_REQUIRED,
         rationale=conditioning.priority_action,
