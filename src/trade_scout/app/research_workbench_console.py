@@ -1,8 +1,8 @@
 """Thin local-console adapter for interactive research-workbench presentation assets.
 
-Research calculations still delegate to application services backed by the canonical data source. The
-workbench additionally routes Strategy Builder executions through the existing governed experiment
-stack when an experiment recorder is configured; the HTTP layer itself contains no analytical logic.
+Research calculations still delegate to application services backed by the canonical data source.
+The workbench additionally routes Strategy Builder executions through the existing governed
+experiment stack when an experiment recorder is configured; the HTTP layer contains no analytics.
 """
 
 from __future__ import annotations
