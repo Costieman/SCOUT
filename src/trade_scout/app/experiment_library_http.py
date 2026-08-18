@@ -26,8 +26,8 @@ def build_experiment_library_page(
     try:
         filters = ExperimentLibraryFilters(
             text=_one(parameters, "q", default=""),
-            status=_optional_enum(parameters, "status", ExperimentStatus),
-            mode=_optional_enum(parameters, "mode", ResearchMode),
+            status=_optional_status(parameters),
+            mode=_optional_mode(parameters),
             strategy_family=_optional_text(parameters, "strategy_family"),
             dataset_version=_optional_text(parameters, "dataset_version"),
             code_version=_optional_text(parameters, "code_version"),
@@ -59,13 +59,14 @@ def build_experiment_library_page(
         return HTTPStatus.BAD_REQUEST, html
 
 
-def _optional_enum(
-    parameters: dict[str, list[str]],
-    name: str,
-    enum_type: type[ExperimentStatus] | type[ResearchMode],
-) -> ExperimentStatus | ResearchMode | None:
-    value = _one(parameters, name, default="").strip()
-    return None if not value else enum_type(value)
+def _optional_status(parameters: dict[str, list[str]]) -> ExperimentStatus | None:
+    value = _one(parameters, "status", default="").strip()
+    return None if not value else ExperimentStatus(value)
+
+
+def _optional_mode(parameters: dict[str, list[str]]) -> ResearchMode | None:
+    value = _one(parameters, "mode", default="").strip()
+    return None if not value else ResearchMode(value)
 
 
 def _optional_text(parameters: dict[str, list[str]], name: str) -> str | None:
