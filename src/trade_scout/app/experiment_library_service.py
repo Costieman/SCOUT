@@ -154,7 +154,7 @@ class ExperimentLibraryService:
             (stage.stage_name, self._store.read_stage_output(experiment_id, stage.stage_name))
             for stage in manifest.stages
         )
-        record = self._registry.get(experiment_id)
+        self._registry.get(experiment_id)
         lineage = self._registry.lineage(experiment_id)
         children = tuple(
             item
@@ -167,7 +167,7 @@ class ExperimentLibraryService:
             lineage=lineage,
             children=children,
             strategy_family=_strategy_family(manifest),
-            result=_result_summary(manifest, stage_outputs),
+            result=_result_summary(stage_outputs),
         )
 
     def comparison(self, experiment_ids: tuple[str, ...]) -> tuple[ExperimentLibraryDetail, ...]:
@@ -203,9 +203,7 @@ class ExperimentLibraryService:
                 manifest = self._store.read_manifest(experiment_id)
                 self._registry.register(manifest)
             except (OSError, ValueError, KeyError) as exc:
-                warnings.append(
-                    f"Could not index {experiment_id}: {type(exc).__name__}: {exc}"
-                )
+                warnings.append(f"Could not index {experiment_id}: {type(exc).__name__}: {exc}")
                 continue
             count += 1
         return count, tuple(warnings)
@@ -214,7 +212,10 @@ class ExperimentLibraryService:
         try:
             manifest = self._store.read_manifest(record.experiment_id)
             outputs = tuple(
-                (stage.stage_name, self._store.read_stage_output(record.experiment_id, stage.stage_name))
+                (
+                    stage.stage_name,
+                    self._store.read_stage_output(record.experiment_id, stage.stage_name),
+                )
                 for stage in manifest.stages
             )
         except (OSError, ValueError, KeyError) as exc:
@@ -234,7 +235,7 @@ class ExperimentLibraryService:
             warning_count=len(manifest.warnings),
             failure_type=manifest.failure_type,
             integrity_error=None,
-            result=_result_summary(manifest, outputs),
+            result=_result_summary(outputs),
         )
 
 
@@ -248,7 +249,6 @@ def _strategy_family(manifest: ExperimentManifest) -> str | None:
 
 
 def _result_summary(
-    manifest: ExperimentManifest,
     outputs: tuple[tuple[str, dict[str, JSONValue]], ...],
 ) -> ExperimentResultSummary | None:
     if not outputs:
