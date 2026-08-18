@@ -458,7 +458,8 @@ def _proposal_plan(
             title="Register the searched family before making a formal claim",
             hypothesis=(
                 "Any apparent effect remains interpretable after the complete tested hypothesis "
-                "family is accounted for rather than treating the historical peak as an isolated test."
+                "family is accounted for rather than treating the historical peak as an isolated "
+                "test."
             ),
             frozen_elements=frozen,
             proposed_change=(
