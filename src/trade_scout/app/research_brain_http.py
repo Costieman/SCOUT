@@ -117,7 +117,9 @@ def _membership_message(alignment: str, experiment_id: str) -> str:
             "with a scope warning."
         )
     if alignment == "UNASSESSED":
-        return f"Added {experiment_id}. This brain has no strict focus boundary to check it against."
+        return (
+            f"Added {experiment_id}. This brain has no strict focus boundary to check it against."
+        )
     return f"Added {experiment_id} to the research brain."
 
 
