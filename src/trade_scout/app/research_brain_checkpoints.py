@@ -207,7 +207,7 @@ def _review_from_mapping(raw: dict[str, object]) -> ResearchBrainReview:
         BrainSweepObservation(
             experiment_id=str(item["experiment_id"]),
             variable_label=str(item["variable_label"]),
-            tested_values=int(item["tested_values"]),
+            tested_values=_required_int(item["tested_values"]),
             best_observed_value=_optional_float(item.get("best_observed_value")),
             best_observed_expectancy=_optional_float(item.get("best_observed_expectancy")),
             best_observed_complete_events=_optional_int(item.get("best_observed_complete_events")),
@@ -219,13 +219,13 @@ def _review_from_mapping(raw: dict[str, object]) -> ResearchBrainReview:
         for item in cast(list[dict[str, object]], raw.get("sweep_observations", []))
     )
     return ResearchBrainReview(
-        experiment_count=int(raw["experiment_count"]),
-        succeeded_count=int(raw["succeeded_count"]),
-        failed_count=int(raw["failed_count"]),
-        sweep_count=int(raw["sweep_count"]),
-        ordinary_run_count=int(raw["ordinary_run_count"]),
-        drift_warning_count=int(raw["drift_warning_count"]),
-        unreadable_evidence_count=int(raw["unreadable_evidence_count"]),
+        experiment_count=_required_int(raw["experiment_count"]),
+        succeeded_count=_required_int(raw["succeeded_count"]),
+        failed_count=_required_int(raw["failed_count"]),
+        sweep_count=_required_int(raw["sweep_count"]),
+        ordinary_run_count=_required_int(raw["ordinary_run_count"]),
+        drift_warning_count=_required_int(raw["drift_warning_count"]),
+        unreadable_evidence_count=_required_int(raw["unreadable_evidence_count"]),
         sweep_observations=sweeps,
         findings=tuple(str(item) for item in cast(list[object], raw.get("findings", []))),
         cautions=tuple(str(item) for item in cast(list[object], raw.get("cautions", []))),
@@ -235,6 +235,12 @@ def _review_from_mapping(raw: dict[str, object]) -> ResearchBrainReview:
         readiness_label=str(raw["readiness_label"]),
         readiness_explanation=str(raw["readiness_explanation"]),
     )
+
+
+def _required_int(value: object) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    raise ResearchBrainCheckpointError("checkpoint required integer field has invalid type")
 
 
 def _optional_float(value: object) -> float | None:
