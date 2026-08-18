@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from html import escape
 
-from trade_scout.app.strategy_builder_entry_sweep import StrategyBuilderEntrySweepReport
+from trade_scout.app.strategy_builder_entry_sweep import (
+    EntrySweepPoint,
+    StrategyBuilderEntrySweepReport,
+)
 from trade_scout.app.strategy_builder_entry_sweep_chart import render_entry_sweep_chart
 
 
@@ -99,21 +102,23 @@ def _plain_english_summary(report: StrategyBuilderEntrySweepReport) -> str:
     )
 
 
-def _sample_size_caution(available: tuple[object, ...], best: object | None) -> str:
+def _sample_size_caution(
+    available: tuple[EntrySweepPoint, ...],
+    best: EntrySweepPoint | None,
+) -> str:
     if best is None or not available:
         return ""
     # Keep this a descriptive warning rather than inventing a scientific minimum-N threshold.
-    complete_counts = tuple(int(getattr(item, "complete_event_count")) for item in available)
-    best_count = int(getattr(best, "complete_event_count"))
-    largest_count = max(complete_counts)
-    if best_count >= largest_count:
+    largest_count = max(item.complete_event_count for item in available)
+    if best.complete_event_count >= largest_count:
         return ""
     return (
         '<div class="section-note" style="border-left-color:#f2bd60">'
         "<strong>Sample-size caution:</strong> the highest observed expectancy uses "
-        f"{best_count:,} complete events, while the largest tested cell uses {largest_count:,}. "
-        "Estimates from fewer completed events can move around much more from sample to sample. "
-        "SCOUT is not imposing a minimum-N rule here; this is a visible reason not to treat the peak as proven."
+        f"{best.complete_event_count:,} complete events, while the largest tested cell uses "
+        f"{largest_count:,}. Estimates from fewer completed events can move around much more from "
+        "sample to sample. SCOUT is not imposing a minimum-N rule here; this is a visible reason "
+        "not to treat the peak as proven."
         "</div>"
     )
 
