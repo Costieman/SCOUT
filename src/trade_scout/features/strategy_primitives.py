@@ -56,9 +56,7 @@ _METRICS_BY_FAMILY: dict[StrategyPrimitiveFamily, frozenset[StrategyPrimitiveMet
     StrategyPrimitiveFamily.BB_BANDWIDTH_PERCENTILE: frozenset(
         {StrategyPrimitiveMetric.BB_BANDWIDTH_PERCENTILE}
     ),
-    StrategyPrimitiveFamily.NARROW_RANGE: frozenset(
-        {StrategyPrimitiveMetric.NARROW_RANGE_FLAG}
-    ),
+    StrategyPrimitiveFamily.NARROW_RANGE: frozenset({StrategyPrimitiveMetric.NARROW_RANGE_FLAG}),
 }
 
 _BINARY_METRICS = frozenset(
@@ -108,10 +106,7 @@ class StrategyPrimitiveSpec:
     @property
     def feature_name(self) -> str:
         if self.family is StrategyPrimitiveFamily.KELTNER_CHANNEL:
-            return (
-                f"sp__{self.metric.value}__p{self.period}__"
-                f"m{_number_token(self.multiplier)}"
-            )
+            return f"sp__{self.metric.value}__p{self.period}__m{_number_token(self.multiplier)}"
         if self.family is StrategyPrimitiveFamily.BB_BANDWIDTH_PERCENTILE:
             return (
                 f"sp__bb_bandwidth_percentile__p{self.period}__"
@@ -214,7 +209,9 @@ def compute_strategy_primitive_frame(
                     )
                 )
     return tuple(
-        sorted(values, key=lambda item: (str(item.instrument_id), item.trade_date, item.feature_name))
+        sorted(
+            values, key=lambda item: (str(item.instrument_id), item.trade_date, item.feature_name)
+        )
     )
 
 
@@ -308,7 +305,9 @@ def _narrow_range(bars: tuple[DailyBar, ...], period: int) -> tuple[float | None
         previous = ranges[index - period + 1 : index]
         if current is None or any(value is None for value in previous):
             continue
-        result[index] = float(all(current < float(value) for value in previous if value is not None))
+        result[index] = float(
+            all(current < float(value) for value in previous if value is not None)
+        )
     return tuple(result)
 
 
@@ -354,10 +353,6 @@ def _ema_series(values: Sequence[float | None], period: int) -> tuple[float | No
         ema = alpha * value + (1.0 - alpha) * ema
         result[index] = ema
     return tuple(result)
-
-
-def _split_open(bar: DailyBar) -> float | None:
-    return _finite_positive(bar.open_split_adjusted)
 
 
 def _split_high(bar: DailyBar) -> float | None:
