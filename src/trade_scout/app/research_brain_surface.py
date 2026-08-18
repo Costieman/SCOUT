@@ -167,7 +167,9 @@ def _conditioning_section(conditioning: ResearchBrainConditioning) -> str:
 def _conditioning_card(item: ConditioningDimension) -> str:
     evidence = ""
     if item.evidence:
-        evidence = "<ul>" + "".join(f"<li>{escape(value)}</li>" for value in item.evidence) + "</ul>"
+        evidence = (
+            "<ul>" + "".join(f"<li>{escape(value)}</li>" for value in item.evidence) + "</ul>"
+        )
     next_step = (
         f'<div class="subtle"><strong>What would improve this:</strong> {escape(item.next_step)}</div>'
         if item.next_step
