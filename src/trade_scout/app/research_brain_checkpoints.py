@@ -97,9 +97,7 @@ class FileResearchBrainCheckpointStore:
         resolved_id = checkpoint_id.strip() if checkpoint_id is not None else ""
         if not resolved_id:
             resolved_id = f"brainreview_{timestamp.strftime('%Y%m%dT%H%M%SZ')}_{uuid4().hex[:8]}"
-        memberships = tuple(
-            _membership_fingerprint(item.membership) for item in view.experiments
-        )
+        memberships = tuple(_membership_fingerprint(item.membership) for item in view.experiments)
         checkpoint = ResearchBrainReviewCheckpoint(
             checkpoint_id=resolved_id,
             brain_id=definition.brain_id,
