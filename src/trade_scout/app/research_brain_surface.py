@@ -274,9 +274,7 @@ def _follow_up_action(
     if item.approval is None:
         return f"""<form class="followup-actions" method="post" action="/research/brains"><input type="hidden" name="action" value="approve_follow_up"><input type="hidden" name="brain_id" value="{escape(proposal.brain_id)}"><input type="hidden" name="proposal_id" value="{escape(proposal.proposal_id)}"><label>Researcher<input name="actor" required value="local-user"></label><label>Approval note<input name="note" placeholder="Why this is the right next evidence challenge"></label><button type="submit">Approve plan — do not run</button></form>"""
 
-    approval_note = (
-        f" Note: {escape(item.approval.note)}" if item.approval.note else ""
-    )
+    approval_note = f" Note: {escape(item.approval.note)}" if item.approval.note else ""
     approved = f'<div class="success"><strong>Approved by {escape(item.approval.approved_by)}</strong> at {escape(_short_timestamp(item.approval.approved_at))}. Approval alone did not run research.{approval_note}</div>'
     if proposal.kind is not FollowUpKind.COMPARATOR:
         return approved + (
@@ -301,9 +299,7 @@ def _follow_up_action(
     )
     candidate = ""
     if declared:
-        options = "".join(
-            f'<option value="{value:g}">{value:g}</option>' for value in declared
-        )
+        options = "".join(f'<option value="{value:g}">{value:g}</option>' for value in declared)
         candidate = f"""<label>Freeze one source-sweep candidate<select name="candidate_value" required><option value="">Choose a value...</option>{options}</select><span class="subtle">SCOUT does not select the historical maximum for you. The chosen value must already be in the saved sweep.</span></label>"""
     else:
         candidate = '<input type="hidden" name="candidate_value" value="">'
