@@ -16,20 +16,26 @@ def test_entry_sweep_controls_expose_configured_indicator_parameters() -> None:
     assert "Slow EMA period" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "Signal EMA period" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "UNDER TEST IN SECTION 5" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert (
-        "Each value creates its own point-in-time entry population"
-        in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    )
+    assert "point-in-time child definition" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
 
 
-def test_entry_sweep_ignores_its_own_badge_mutations() -> None:
-    assert "mutationOnlyTouchesSweepBadges" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert "mutations.every(mutationOnlyTouchesSweepBadges)" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+def test_entry_sweep_observes_only_rule_row_structure() -> None:
     assert "scheduleRebuild" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert (
-        "MutationObserver(() => queueMicrotask(rebuildOptions))"
-        not in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    )
+    assert ").observe(rules, {childList: true});" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert "subtree: true" not in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert "mutationOnlyTouchesSweepBadges" not in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+
+
+def test_entry_sweep_reclaims_shared_section5_inputs_after_exit_sweep_handler() -> None:
+    assert "syncEntrySweep(false, true)" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert "for (const input of [from, to, step])" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert "preserveValues" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+
+
+def test_entry_sweep_has_temporary_interactive_resource_guard() -> None:
+    assert "MAX_INTERACTIVE_ENTRY_VALUES = 8" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert "temporarily capped" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert "current interactive safety limit" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
 
 
 def test_entry_sweep_query_detection_is_explicit() -> None:
