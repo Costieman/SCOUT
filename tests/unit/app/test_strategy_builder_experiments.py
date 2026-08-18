@@ -30,6 +30,12 @@ from trade_scout.data.contracts import (
 from trade_scout.experiments.contracts import ExperimentStatus, ResearchMode
 from trade_scout.experiments.registry import DuckDBExperimentRegistry
 from trade_scout.experiments.store import FileManifestStore
+from trade_scout.risk.exit_policies import (
+    ExitFamily,
+    ManagedExitPlan,
+    SameBarExitPolicy,
+    TargetFamily,
+)
 
 
 def _daily(index: int, *, dataset_version: str = "strategy-builder-test-v1") -> DailyBar:
@@ -158,14 +164,13 @@ def test_normal_strategy_run_persists_manifest_artifact_and_registry(tmp_path: P
     assert persisted.definition.resolved_configuration["outcome"] == {
         "maximum_holding_period_sessions": 5,
         "forced_exit_at_maximum_holding_period": True,
+        "maximum_holding_period_role": "research_backstop_and_control",
     }
-    assert persisted.definition.resolved_configuration["exit_candidates"] == {
-        "hold_to_horizon_control": True,
-        "fixed_stop_percentages": [5.0],
-        "trailing_stop_percentages": [],
-        "atr_stop_multiples": [],
-        "trailing_atr_multiples": [],
-    }
+    exits = cast(dict[str, object], persisted.definition.resolved_configuration["exit_candidates"])
+    assert exits["hold_to_horizon_control"] is True
+    assert exits["legacy_stop_grid_used"] is True
+    assert exits["fixed_stop_percentages"] == [5.0]
+    assert exits["managed_exit_plans"] == []
     artifact = FileManifestStore(tmp_path).read_stage_output(
         recorded.manifest.experiment_id, "strategy_builder"
     )
@@ -174,6 +179,56 @@ def test_normal_strategy_run_persists_manifest_artifact_and_registry(tmp_path: P
     indexed = DuckDBExperimentRegistry(recorder.registry_path).get(recorded.manifest.experiment_id)
     assert indexed.status is ExperimentStatus.SUCCEEDED
     assert indexed.dataset_version == "strategy-builder-test-v1"
+
+
+def test_managed_exit_plan_is_persisted_with_target_and_ambiguity_policy(tmp_path: Path) -> None:
+    source = cast(StrategyBuilderSource, _WindowSource(tuple(_daily(i) for i in range(330))))
+    recorder = _recorder(tmp_path, "strategy-builder-test-v1")
+    request = StrategyBuilderRequest(
+        expression="return_20 > 0",
+        horizon=5,
+        lookback_years=1,
+        fixed_percentages=(),
+        trailing_percentages=(),
+        atr_multiples=(),
+        trailing_atr_multiples=(),
+        managed_exit_plans=(
+            ManagedExitPlan(
+                stop_family=ExitFamily.TRAILING_PERCENT_STOP,
+                stop_value=0.08,
+                target_family=TargetFamily.FIXED_PERCENT,
+                target_value=0.15,
+                same_bar_policy=SameBarExitPolicy.STOP_FIRST,
+            ),
+        ),
+        same_bar_policy=SameBarExitPolicy.STOP_FIRST,
+    )
+
+    recorded = recorder.run_strategy(source, request)
+    persisted = FileManifestStore(tmp_path).read_manifest(recorded.manifest.experiment_id)
+    exits = cast(dict[str, object], persisted.definition.resolved_configuration["exit_candidates"])
+    plans = cast(list[dict[str, object]], exits["managed_exit_plans"])
+
+    assert exits["legacy_stop_grid_used"] is False
+    assert exits["same_bar_stop_target_policy"] == "stop_first"
+    assert plans == [
+        {
+            "stop_family": "trailing_percent_stop",
+            "stop_value": 0.08,
+            "target_family": "fixed_percent_target",
+            "target_value": 0.15,
+            "same_bar_policy": "stop_first",
+        }
+    ]
+    artifact = FileManifestStore(tmp_path).read_stage_output(
+        recorded.manifest.experiment_id, "strategy_builder"
+    )
+    policy_rows = cast(list[dict[str, object]], artifact["policies"])
+    managed = next(item for item in policy_rows if item["target_family"] is not None)
+    assert managed["target_family"] == "fixed_percent_target"
+    assert managed["target_parameters"] == {"gain_pct": 0.15}
+    assert "target_hit_rate" in managed
+    assert "same_bar_ambiguous_rate" in managed
 
 
 def test_entry_sweep_persists_declared_search_space_and_point_results(tmp_path: Path) -> None:

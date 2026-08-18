@@ -13,6 +13,7 @@ from urllib.parse import parse_qs
 from trade_scout.app.entry_strategy_registry import EntryFamily, available_entry_strategies
 from trade_scout.app.exit_policy_lab_service import parse_multiple_grid, parse_percentage_grid
 from trade_scout.app.local_console import LocalConsoleConfig
+from trade_scout.app.strategy_builder_exit_plans import parse_exit_plan_tokens
 from trade_scout.app.strategy_builder_experiments import (
     StrategyBuilderExperimentRecorder,
     attach_experiment_record_html,
@@ -20,6 +21,7 @@ from trade_scout.app.strategy_builder_experiments import (
 from trade_scout.app.strategy_builder_service import StrategyBuilderError, StrategyBuilderRequest
 from trade_scout.app.strategy_builder_surface import render_strategy_builder_html
 from trade_scout.patterns.consolidation_breakout import TrendFilter
+from trade_scout.risk.exit_policies import SameBarExitPolicy
 from trade_scout.statistics.strategy_research import available_strategy_features
 
 
@@ -59,6 +61,15 @@ def build_recorded_strategy_page(
     parameters = parse_qs(query, keep_blank_values=True)
     request: StrategyBuilderRequest | None = None
     try:
+        same_bar_policy = SameBarExitPolicy(
+            _one(parameters, "same_bar_policy", default=SameBarExitPolicy.STOP_FIRST.value)
+        )
+        plan_tokens = parameters.get("exit_plan", [])
+        managed_plans = parse_exit_plan_tokens(
+            plan_tokens,
+            same_bar_policy=same_bar_policy,
+        )
+        using_managed = bool(plan_tokens)
         request = StrategyBuilderRequest(
             universe_id=_one(parameters, "universe", default="reviewed_canonical"),
             entry_family=EntryFamily(
@@ -84,14 +95,28 @@ def build_recorded_strategy_page(
             min_breakout_volume_ratio=_optional_volume_ratio(
                 _one(parameters, "volume_ratio", default="none")
             ),
-            fixed_percentages=parse_percentage_grid(_one(parameters, "fixed_stops", default="")),
-            trailing_percentages=parse_percentage_grid(
-                _one(parameters, "trailing_stops", default="")
+            fixed_percentages=(
+                ()
+                if using_managed
+                else parse_percentage_grid(_one(parameters, "fixed_stops", default=""))
             ),
-            atr_multiples=parse_multiple_grid(_one(parameters, "atr_stops", default="")),
-            trailing_atr_multiples=parse_multiple_grid(
-                _one(parameters, "trailing_atr", default="")
+            trailing_percentages=(
+                ()
+                if using_managed
+                else parse_percentage_grid(_one(parameters, "trailing_stops", default=""))
             ),
+            atr_multiples=(
+                ()
+                if using_managed
+                else parse_multiple_grid(_one(parameters, "atr_stops", default=""))
+            ),
+            trailing_atr_multiples=(
+                ()
+                if using_managed
+                else parse_multiple_grid(_one(parameters, "trailing_atr", default=""))
+            ),
+            managed_exit_plans=managed_plans,
+            same_bar_policy=same_bar_policy,
             entry_slippage_bps=float(_one(parameters, "entry_slip", default="0")),
             exit_slippage_bps=float(_one(parameters, "exit_slip", default="0")),
             stop_slippage_bps=float(_one(parameters, "stop_slip", default="0")),

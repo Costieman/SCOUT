@@ -35,9 +35,10 @@ from trade_scout.experiments.contracts import (
 from trade_scout.experiments.registry import DuckDBExperimentRegistry, IndexedManifestStore
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
+from trade_scout.risk.exit_policies import ManagedExitPlan
 from trade_scout.statistics.exit_research import ExitPolicySummary
 
-_CAPTURE_SCHEMA = "strategy-builder-experiment-v0.1"
+_CAPTURE_SCHEMA = "strategy-builder-experiment-v0.2"
 _STANDARD_STAGE = "strategy_builder"
 _ENTRY_SWEEP_STAGE = "strategy_builder_entry_sweep"
 
@@ -289,6 +290,7 @@ def _strategy_request_configuration(request: StrategyBuilderRequest) -> dict[str
         "outcome": {
             "maximum_holding_period_sessions": request.horizon,
             "forced_exit_at_maximum_holding_period": True,
+            "maximum_holding_period_role": "research_backstop_and_control",
         },
         "entry": {
             "family": request.entry_family.value,
@@ -315,10 +317,16 @@ def _strategy_request_configuration(request: StrategyBuilderRequest) -> dict[str
         },
         "exit_candidates": {
             "hold_to_horizon_control": True,
+            "same_bar_stop_target_policy": request.same_bar_policy.value,
+            "managed_exit_plans": [
+                _managed_plan_payload(item) for item in request.managed_exit_plans
+            ],
+            "legacy_stop_grid_used": not bool(request.managed_exit_plans),
             "fixed_stop_percentages": [value * 100.0 for value in request.fixed_percentages],
             "trailing_stop_percentages": [value * 100.0 for value in request.trailing_percentages],
             "atr_stop_multiples": list(request.atr_multiples),
             "trailing_atr_multiples": list(request.trailing_atr_multiples),
+            "partial_position_exits_supported": False,
         },
         "execution_costs_bps": {
             "entry_slippage": request.entry_slippage_bps,
@@ -329,9 +337,19 @@ def _strategy_request_configuration(request: StrategyBuilderRequest) -> dict[str
     }
 
 
+def _managed_plan_payload(plan: ManagedExitPlan) -> dict[str, JSONValue]:
+    return {
+        "stop_family": plan.stop_family.value,
+        "stop_value": plan.stop_value,
+        "target_family": None if plan.target_family is None else plan.target_family.value,
+        "target_value": plan.target_value,
+        "same_bar_policy": plan.same_bar_policy.value,
+    }
+
+
 def _strategy_report_payload(report: StrategyBuilderReport) -> dict[str, JSONValue]:
     return {
-        "schema_version": "strategy-builder-result-v0.1",
+        "schema_version": "strategy-builder-result-v0.2",
         "application_version": report.application_version,
         "research_state": report.research_state,
         "provider_calls_made": report.provider_calls_made,
@@ -367,9 +385,15 @@ def _policy_summary_payload(item: ExitPolicySummary) -> dict[str, JSONValue]:
         "policy_version": item.policy_version,
         "family": item.family.value,
         "resolved_parameters": dict(item.resolved_parameters),
+        "target_family": None if item.target_family is None else item.target_family.value,
+        "target_parameters": dict(item.target_parameters),
         "sample_size": item.sample_size,
         "stop_out_count": item.stop_out_count,
         "stop_out_rate": item.stop_out_rate,
+        "target_hit_count": item.target_hit_count,
+        "target_hit_rate": item.target_hit_rate,
+        "same_bar_ambiguous_count": item.same_bar_ambiguous_count,
+        "same_bar_ambiguous_rate": item.same_bar_ambiguous_rate,
         "expectancy_return": item.expectancy,
         "expectancy_delta_vs_hold_return": item.expectancy_delta_vs_hold,
         "median_return": item.median_return,

@@ -17,14 +17,13 @@ def test_compact_asset_summarizes_configured_entry_rules() -> None:
     assert "param-deviations" in STRATEGY_BUILDER_COMPACT_JS
 
 
-def test_sweep_controls_hide_bound_rows_and_offer_multiple_chart_metrics() -> None:
-    assert "display', 'none', 'important'" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
-    assert "controlled by Section 5" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
+def test_sweep_controls_offer_multiple_managed_exit_chart_metrics() -> None:
     assert "Primary chart metric" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
     assert "Optional second metric" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
+    assert "Delta vs hold" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
+    assert "Target-hit rate" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
     assert "P05 / 5th-percentile return" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
-    assert "Profit factor" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
-    assert "Average holding period" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
+    assert "The table remains the exact numeric evidence" in STRATEGY_BUILDER_SWEEP_CONTROLS_JS
 
 
 def test_workbench_serves_compact_and_sweep_control_assets() -> None:

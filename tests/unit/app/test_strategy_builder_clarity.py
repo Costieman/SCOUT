@@ -7,11 +7,15 @@ from trade_scout.app.research_workbench_console import build_research_workbench_
 from trade_scout.app.strategy_builder_clarity import STRATEGY_BUILDER_CLARITY_JS
 
 
-def test_clarity_asset_documents_execution_and_forced_horizon_semantics() -> None:
+def test_clarity_asset_documents_execution_and_horizon_backstop_semantics() -> None:
     assert "SCOUT baseline — liquid US equities" in STRATEGY_BUILDER_CLARITY_JS
     assert "entry: 5, exit: 5, stop: 10, commission: 0" in STRATEGY_BUILDER_CLARITY_JS
-    assert "Maximum holding period (forced exit)" in STRATEGY_BUILDER_CLARITY_JS
-    assert "not merely a reporting window" in STRATEGY_BUILDER_CLARITY_JS
+    assert "Maximum holding / research horizon" in STRATEGY_BUILDER_CLARITY_JS
+    assert "final research backstop" in STRATEGY_BUILDER_CLARITY_JS
+    assert "scientific control" in STRATEGY_BUILDER_CLARITY_JS
+    assert (
+        "not presented as a recommendation to trade without a stop" in STRATEGY_BUILDER_CLARITY_JS
+    )
     assert "ma_above" in STRATEGY_BUILDER_CLARITY_JS
     assert "No 0/1 value needs to be entered" in STRATEGY_BUILDER_CLARITY_JS
 

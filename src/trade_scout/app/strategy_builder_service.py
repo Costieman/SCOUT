@@ -45,8 +45,11 @@ from trade_scout.risk.exit_policies import (
     DEFAULT_TRAILING_PERCENT_GRID,
     ExitPolicy,
     ExitPolicyResult,
+    ManagedExitPlan,
+    SameBarExitPolicy,
     evaluate_exit_policy_grid,
     exit_policy_grid,
+    managed_exit_policy_grid,
 )
 from trade_scout.risk.initial_stops import CostModel
 from trade_scout.statistics.exit_research import (
@@ -116,6 +119,8 @@ class StrategyBuilderRequest:
     atr_multiples: tuple[float, ...] = DEFAULT_ATR_GRID
     trailing_percentages: tuple[float, ...] = DEFAULT_TRAILING_PERCENT_GRID
     trailing_atr_multiples: tuple[float, ...] = DEFAULT_TRAILING_ATR_GRID
+    managed_exit_plans: tuple[ManagedExitPlan, ...] = ()
+    same_bar_policy: SameBarExitPolicy = SameBarExitPolicy.STOP_FIRST
     entry_slippage_bps: float = 0.0
     exit_slippage_bps: float = 0.0
     stop_slippage_bps: float = 0.0
@@ -168,6 +173,12 @@ class StrategyBuilderRequest:
                 raise ValueError(f"{field} values must be positive")
             if upper is not None and any(value >= upper for value in values):
                 raise ValueError(f"{field} values must be below 100%")
+        if len(set(self.managed_exit_plans)) != len(self.managed_exit_plans):
+            raise ValueError("managed_exit_plans must not contain duplicates")
+        if any(
+            plan.same_bar_policy is not self.same_bar_policy for plan in self.managed_exit_plans
+        ):
+            raise ValueError("all managed exit plans must use the request same-bar policy")
         costs = (
             self.entry_slippage_bps,
             self.exit_slippage_bps,
@@ -212,7 +223,7 @@ class StrategyBuilderReport:
     performance: StrategyBuilderPerformance
     provider_calls_made: bool = False
     research_state: str = "EXPLORATORY"
-    application_version: str = "strategy-builder-v0.6"
+    application_version: str = "strategy-builder-v0.7"
 
 
 @dataclass(frozen=True, slots=True)
@@ -385,11 +396,15 @@ class StrategyBuilderService:
                 entry_definition_version = entry_option.definition_version
                 started = phase("select frozen entry population", started)
 
-        policies = exit_policy_grid(
-            fixed_percentages=request.fixed_percentages,
-            atr_multiples=request.atr_multiples,
-            trailing_percentages=request.trailing_percentages,
-            trailing_atr_multiples=request.trailing_atr_multiples,
+        policies = (
+            managed_exit_policy_grid(request.managed_exit_plans)
+            if request.managed_exit_plans
+            else exit_policy_grid(
+                fixed_percentages=request.fixed_percentages,
+                atr_multiples=request.atr_multiples,
+                trailing_percentages=request.trailing_percentages,
+                trailing_atr_multiples=request.trailing_atr_multiples,
+            )
         )
         cost_model = CostModel(
             entry_slippage_bps=request.entry_slippage_bps,

@@ -15,6 +15,12 @@ from trade_scout.app.strategy_builder_service import StrategyBuilderRequest
 from trade_scout.experiments.contracts import JSONValue
 from trade_scout.features.parameterized_expression import parse_parameterized_feature_name
 from trade_scout.patterns.consolidation_breakout import TrendFilter
+from trade_scout.risk.exit_policies import (
+    ExitFamily,
+    ManagedExitPlan,
+    SameBarExitPolicy,
+    TargetFamily,
+)
 
 
 def strategy_request_from_resolved_configuration(
@@ -32,6 +38,14 @@ def strategy_request_from_resolved_configuration(
     costs = _mapping(configuration, "execution_costs_bps")
     expression = _string(entry, "expression", default="")
     family = EntryFamily(_string(entry, "family"))
+    same_bar_policy = SameBarExitPolicy(
+        _string(
+            exits,
+            "same_bar_stop_target_policy",
+            default=SameBarExitPolicy.STOP_FIRST.value,
+        )
+    )
+    managed_plans = _managed_exit_plans(exits.get("managed_exit_plans"), same_bar_policy)
     return StrategyBuilderRequest(
         universe_id=_string(universe, "universe_id", default="reviewed_canonical"),
         lookback_years=_integer(configuration, "historical_lookback_years", default=2),
@@ -49,10 +63,18 @@ def strategy_request_from_resolved_configuration(
             _string(entry, "trend_filter", default=TrendFilter.ABOVE_SMA_50_100_200.value)
         ),
         min_breakout_volume_ratio=_optional_number(entry.get("minimum_breakout_volume_ratio")),
-        fixed_percentages=_percentage_tuple(exits.get("fixed_stop_percentages")),
-        trailing_percentages=_percentage_tuple(exits.get("trailing_stop_percentages")),
-        atr_multiples=_number_tuple(exits.get("atr_stop_multiples")),
-        trailing_atr_multiples=_number_tuple(exits.get("trailing_atr_multiples")),
+        fixed_percentages=(
+            () if managed_plans else _percentage_tuple(exits.get("fixed_stop_percentages"))
+        ),
+        trailing_percentages=(
+            () if managed_plans else _percentage_tuple(exits.get("trailing_stop_percentages"))
+        ),
+        atr_multiples=() if managed_plans else _number_tuple(exits.get("atr_stop_multiples")),
+        trailing_atr_multiples=(
+            () if managed_plans else _number_tuple(exits.get("trailing_atr_multiples"))
+        ),
+        managed_exit_plans=managed_plans,
+        same_bar_policy=same_bar_policy,
         entry_slippage_bps=_number(costs, "entry_slippage", default=0.0),
         exit_slippage_bps=_number(costs, "normal_exit_slippage", default=0.0),
         stop_slippage_bps=_number(costs, "additional_stop_slippage", default=0.0),
@@ -115,6 +137,41 @@ def source_declared_entry_sweep_values(
     if not isinstance(variable, dict) or variable.get("kind") != "entry_parameter_sweep":
         return ()
     return _number_tuple(variable.get("declared_values"))
+
+
+def _managed_exit_plans(
+    value: JSONValue | None,
+    same_bar_policy: SameBarExitPolicy,
+) -> tuple[ManagedExitPlan, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ValueError("resolved managed exit plans must be a list")
+    plans: list[ManagedExitPlan] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("resolved managed exit plan must be a mapping")
+        stop_family = ExitFamily(_string(item, "stop_family"))
+        stop_value = _number(item, "stop_value", default=0.0)
+        raw_target_family = item.get("target_family")
+        if raw_target_family is None:
+            target_family = None
+            target_value = None
+        else:
+            if not isinstance(raw_target_family, str):
+                raise ValueError("resolved target_family must be text or null")
+            target_family = TargetFamily(raw_target_family)
+            target_value = _number(item, "target_value", default=0.0)
+        plans.append(
+            ManagedExitPlan(
+                stop_family=stop_family,
+                stop_value=stop_value,
+                target_family=target_family,
+                target_value=target_value,
+                same_bar_policy=same_bar_policy,
+            )
+        )
+    return tuple(plans)
 
 
 def _mapping(configuration: dict[str, JSONValue], key: str) -> dict[str, JSONValue]:

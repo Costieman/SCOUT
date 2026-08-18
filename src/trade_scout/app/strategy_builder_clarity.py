@@ -3,7 +3,7 @@
 
 This companion asset does not change research calculations. It makes execution assumptions explicit,
 hides irrelevant numeric controls for boolean trigger conditions, and labels the current research
-horizon according to its actual forced-exit semantics.
+horizon according to its actual backstop semantics.
 """
 
 STRATEGY_BUILDER_CLARITY_JS = r"""
@@ -25,7 +25,7 @@ STRATEGY_BUILDER_CLARITY_JS = r"""
   }
 
   const horizon = byName('horizon');
-  setLabelText(horizon, 'Maximum holding period (forced exit)');
+  setLabelText(horizon, 'Maximum holding / research horizon');
 
   const signalLimit = byName('per_session_limit');
   setLabelText(signalLimit, 'Daily signal cap (500 = current app maximum)');
@@ -39,7 +39,7 @@ STRATEGY_BUILDER_CLARITY_JS = r"""
   if (scopeCard && !scopeCard.querySelector('.horizon-semantics-note')) {
     const note = document.createElement('div');
     note.className = 'section-note horizon-semantics-note';
-    note.innerHTML = '<strong>Current exit-duration behavior:</strong> if no stop triggers, SCOUT closes the simulated trade at this maximum holding period. This is a real forced exit, not merely a reporting window. Open-ended "hold until the stop triggers" research needs a separate censored/open-position mode and is not yet represented by this control.';
+    note.innerHTML = '<strong>Maximum-holding role:</strong> this is the final research backstop when neither the protective stop nor an optional profit target has ended the simulated trade. Hold-to-maximum is also retained as the scientific control so SCOUT can measure whether the managed exit improved the outcome distribution. It is not presented as a recommendation to trade without a stop.';
     scopeCard.append(note);
   }
 

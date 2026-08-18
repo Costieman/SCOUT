@@ -2,7 +2,7 @@
 
 The main Strategy Builder asset preserves submitted and example configurations. This small
 presentation-only companion runs only when the operator opens ``/research/strategy`` without a
-query string, removing opinionated example conditions/stops from the first impression.
+query string, removing opinionated example conditions/exit plans from the first impression.
 """
 
 STRATEGY_BUILDER_CLEAN_DEFAULTS_JS = r"""
@@ -11,7 +11,7 @@ STRATEGY_BUILDER_CLEAN_DEFAULTS_JS = r"""
   if (window.location.pathname !== '/research/strategy' || window.location.search) return;
 
   const rules = document.getElementById('rule-rows');
-  const stops = document.getElementById('stop-rows');
+  const exits = document.getElementById('exit-plan-rows');
   const signalLimit = document.querySelector('input[name="per_session_limit"]');
 
   function addEmptyState(container, selector, text) {
@@ -40,9 +40,10 @@ STRATEGY_BUILDER_CLEAN_DEFAULTS_JS = r"""
     'No entry conditions selected. Use + Add condition to build the hypothesis.'
   );
   addEmptyState(
-    stops,
-    '.stop-row',
-    'No additional exit candidates selected. Hold-to-horizon remains the control.'
+    exits,
+    '.exit-plan-row',
+    'No managed exit plans selected. ' +
+      'Add a protective stop plan before running normal exit research.'
   );
 
   if (signalLimit) {

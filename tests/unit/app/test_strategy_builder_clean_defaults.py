@@ -11,7 +11,8 @@ def test_clean_defaults_asset_only_targets_fresh_strategy_builder_load() -> None
     assert "window.location.pathname !== '/research/strategy'" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
     assert "window.location.search" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
     assert "No entry conditions selected" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
-    assert "No additional exit candidates selected" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
+    assert "No managed exit plans selected" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
+    assert "protective stop plan" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
     assert "signalLimit.value = '500'" in STRATEGY_BUILDER_CLEAN_DEFAULTS_JS
 
 

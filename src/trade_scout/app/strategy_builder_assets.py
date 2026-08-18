@@ -10,9 +10,9 @@ STRATEGY_BUILDER_JS = r"""
 
   const catalog = JSON.parse($('strategy-catalog-json').textContent || '[]');
   const rules0 = JSON.parse($('initial-rules-json').textContent || '[]');
-  const stops0 = JSON.parse($('initial-stops-json').textContent || '[]');
+  const exitPlans0 = JSON.parse($('initial-exit-plans-json').textContent || '[]');
   const rules = $('rule-rows');
-  const stops = $('stop-rows');
+  const exitPlans = $('exit-plan-rows');
 
   const INDUSTRY = [
     ['moving_average', 'Moving Average (SMA / EMA)'],
@@ -258,18 +258,74 @@ STRATEGY_BUILDER_JS = r"""
   }
 
   const stopBounds = (family) => (family === 'fixed' || family === 'trailing')
-    ? {min: 0.01, max: 99.99, step: 0.01, unit: '%'} : {min: 0.01, max: 20, step: 0.01, unit: 'x ATR'};
-  function stopRow(stop = null) {
-    const row = document.createElement('div'); row.className = 'composer-row stop-row';
-    row.innerHTML = '<label>Exit type<select class="stop-family"><option value="fixed">Fixed % stop</option><option value="trailing">Trailing % stop</option><option value="atr">ATR stop</option><option value="trailing_atr">Trailing ATR stop</option></select></label><label>Exact value<input class="stop-value" type="number"></label><label class="slider-wrap">Slider<input class="stop-slider" type="range"></label><div class="stop-unit"></div><button class="remove-row" type="button">Remove</button>';
-    const family = row.querySelector('.stop-family'), value = row.querySelector('.stop-value'), slider = row.querySelector('.stop-slider'), unit = row.querySelector('.stop-unit');
-    family.value = stop?.family || 'fixed'; value.value = stop?.value || 5;
-    function bounds() {
-      const spec = stopBounds(family.value); Object.assign(value, {min: spec.min, max: spec.max, step: spec.step}); Object.assign(slider, {min: spec.min, max: spec.max, step: spec.step});
-      let numeric = Number(value.value); if (!Number.isFinite(numeric) || numeric < spec.min || numeric > spec.max) numeric = family.value.includes('atr') ? 2 : 5;
-      value.value = numeric; slider.value = numeric; unit.textContent = `${spec.unit} · ${spec.min} to ${spec.max}`;
+    ? {min: 0.01, max: 99.99, step: 0.01, unit: '%'}
+    : {min: 0.01, max: 20, step: 0.01, unit: 'x ATR'};
+  const targetBounds = (family) => {
+    if (family === 'fixed') return {min: 0.01, max: 500, step: 0.01, unit: '%'};
+    if (family === 'atr') return {min: 0.01, max: 20, step: 0.01, unit: 'x ATR'};
+    if (family === 'r') return {min: 0.01, max: 20, step: 0.01, unit: 'R'};
+    return null;
+  };
+
+  function syncNumberSlider(value, slider, spec, fallback) {
+    Object.assign(value, {min: spec.min, max: spec.max, step: spec.step});
+    Object.assign(slider, {min: spec.min, max: spec.max, step: spec.step});
+    let numeric = Number(value.value);
+    if (!Number.isFinite(numeric) || numeric < spec.min || numeric > spec.max) numeric = fallback;
+    value.value = numeric; slider.value = numeric;
+  }
+
+  function exitPlanRow(plan = null) {
+    const row = document.createElement('div'); row.className = 'exit-plan-row';
+    row.innerHTML = `
+      <label>Protective stop<select class="exit-stop-family"><option value="fixed">Fixed % stop</option><option value="trailing">Trailing % stop</option><option value="atr">ATR stop</option><option value="trailing_atr">Trailing ATR stop</option></select></label>
+      <label>Stop value<input class="exit-stop-value" type="number"></label>
+      <label>Stop slider<input class="exit-stop-slider" type="range"></label>
+      <label>Profit target<select class="exit-target-family"><option value="none">No fixed target / let the stop manage it</option><option value="fixed">Fixed % gain</option><option value="atr">ATR multiple</option><option value="r">R multiple of initial risk</option></select></label>
+      <label class="exit-target-value-label">Target value<input class="exit-target-value" type="number"></label>
+      <label class="exit-target-slider-label">Target slider<input class="exit-target-slider" type="range"></label>
+      <button class="remove-row" type="button">Remove</button>
+      <div class="exit-unit stop-unit"></div><div class="exit-unit target-unit"></div>`;
+    const stopFamily = row.querySelector('.exit-stop-family');
+    const stopValue = row.querySelector('.exit-stop-value');
+    const stopSlider = row.querySelector('.exit-stop-slider');
+    const stopUnit = row.querySelector('.stop-unit');
+    const targetFamily = row.querySelector('.exit-target-family');
+    const targetValue = row.querySelector('.exit-target-value');
+    const targetSlider = row.querySelector('.exit-target-slider');
+    const targetUnit = row.querySelector('.target-unit');
+    const targetValueLabel = row.querySelector('.exit-target-value-label');
+    const targetSliderLabel = row.querySelector('.exit-target-slider-label');
+
+    stopFamily.value = plan?.stop_family || 'fixed';
+    stopValue.value = plan?.stop_value ?? 5;
+    targetFamily.value = plan?.target_family || 'none';
+    targetValue.value = plan?.target_value ?? 10;
+
+    function syncStopBounds() {
+      const spec = stopBounds(stopFamily.value);
+      syncNumberSlider(stopValue, stopSlider, spec, stopFamily.value.includes('atr') ? 2 : 5);
+      stopUnit.textContent = `Stop: ${spec.unit} · ${spec.min} to ${spec.max}`;
     }
-    family.addEventListener('change', bounds); value.addEventListener('input', () => slider.value = value.value); slider.addEventListener('input', () => value.value = slider.value); row.querySelector('.remove-row').addEventListener('click', () => row.remove()); bounds(); return row;
+    function syncTargetBounds() {
+      const spec = targetBounds(targetFamily.value);
+      const disabled = spec === null;
+      targetValueLabel.hidden = disabled; targetSliderLabel.hidden = disabled;
+      targetValue.disabled = disabled; targetSlider.disabled = disabled;
+      if (disabled) { targetUnit.textContent = 'No fixed profit target; stop or maximum holding backstop ends the trade.'; return; }
+      const fallback = targetFamily.value === 'fixed' ? 10 : targetFamily.value === 'atr' ? 2 : 2;
+      syncNumberSlider(targetValue, targetSlider, spec, fallback);
+      targetUnit.textContent = `Target: ${spec.unit} · ${spec.min} to ${spec.max}`;
+    }
+    stopFamily.addEventListener('change', syncStopBounds);
+    stopValue.addEventListener('input', () => stopSlider.value = stopValue.value);
+    stopSlider.addEventListener('input', () => stopValue.value = stopSlider.value);
+    targetFamily.addEventListener('change', syncTargetBounds);
+    targetValue.addEventListener('input', () => targetSlider.value = targetValue.value);
+    targetSlider.addEventListener('input', () => targetValue.value = targetSlider.value);
+    row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+    syncStopBounds(); syncTargetBounds();
+    return row;
   }
 
   function hidden(name, value) { const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value; input.dataset.gen = '1'; form.append(input); }
@@ -283,9 +339,26 @@ STRATEGY_BUILDER_JS = r"""
     return {feature: featureName(row), operator, value, join: index === 0 ? 'and' : row.querySelector('.rule-join').value};
   }
 
+  function compileExitPlan(row) {
+    const stopFamily = row.querySelector('.exit-stop-family').value;
+    const stopValue = Number(row.querySelector('.exit-stop-value').value);
+    const stopSpec = stopBounds(stopFamily);
+    if (!Number.isFinite(stopValue) || stopValue < stopSpec.min || stopValue > stopSpec.max) {
+      throw new Error(`Protective stop value must be ${stopSpec.min} to ${stopSpec.max} ${stopSpec.unit}.`);
+    }
+    const targetFamily = row.querySelector('.exit-target-family').value;
+    if (targetFamily === 'none') return `${stopFamily}:${stopValue}|none:`;
+    const targetValue = Number(row.querySelector('.exit-target-value').value);
+    const targetSpec = targetBounds(targetFamily);
+    if (!targetSpec || !Number.isFinite(targetValue) || targetValue < targetSpec.min || targetValue > targetSpec.max) {
+      throw new Error(`Profit target value is outside the allowed range for ${targetFamily}.`);
+    }
+    return `${stopFamily}:${stopValue}|${targetFamily}:${targetValue}`;
+  }
+
   $('add-rule').addEventListener('click', () => addRule());
-  $('add-stop').addEventListener('click', () => stops.append(stopRow()));
-  $('clear-stops').addEventListener('click', () => stops.replaceChildren());
+  $('add-exit-plan').addEventListener('click', () => exitPlans.append(exitPlanRow()));
+  $('clear-exit-plans').addEventListener('click', () => exitPlans.replaceChildren());
   form.addEventListener('submit', (event) => {
     form.querySelectorAll('[data-gen="1"]').forEach((node) => node.remove());
     try {
@@ -299,18 +372,16 @@ STRATEGY_BUILDER_JS = r"""
       } else {
         const expression = $('advanced-expression').value.trim(); if (!expression) throw new Error('Advanced expression cannot be empty.'); hidden('expression', expression);
       }
-      const grouped = {fixed: [], trailing: [], atr: [], trailing_atr: []};
-      for (const row of stops.querySelectorAll('.stop-row')) {
-        const family = row.querySelector('.stop-family').value, value = Number(row.querySelector('.stop-value').value), spec = stopBounds(family);
-        if (!Number.isFinite(value) || value < spec.min || value > spec.max) throw new Error(`Exit value must be ${spec.min} to ${spec.max}.`); grouped[family].push(value);
+      for (const row of exitPlans.querySelectorAll('.exit-plan-row')) {
+        if (row.dataset.sweepBound === '1') continue;
+        hidden('exit_plan', compileExitPlan(row));
       }
-      hidden('fixed_stops', grouped.fixed.join(',')); hidden('trailing_stops', grouped.trailing.join(',')); hidden('atr_stops', grouped.atr.join(',')); hidden('trailing_atr', grouped.trailing_atr.join(','));
     } catch (error) { event.preventDefault(); $('composer-error').hidden = false; $('composer-error').textContent = error.message || String(error); }
   });
 
   if (rules0.length) rules0.forEach(addRule);
   else addRule();
-  stops0.forEach((stop) => stops.append(stopRow(stop)));
+  exitPlans0.forEach((plan) => exitPlans.append(exitPlanRow(plan)));
   function syncMode() { $('visual-builder-panel').hidden = !$('entry-mode-visual').checked; $('advanced-builder-panel').hidden = !$('entry-mode-advanced').checked; }
   $('entry-mode-visual').addEventListener('change', syncMode); $('entry-mode-advanced').addEventListener('change', syncMode); syncMode();
 })();
