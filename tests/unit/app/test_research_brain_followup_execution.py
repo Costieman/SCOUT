@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -255,12 +255,7 @@ def test_brain_change_after_approval_blocks_execution(tmp_path: Path) -> None:
     source, recorder, service, brain_id, proposal_id = _prepare_approved_plain(tmp_path)
     another = recorder.run_strategy(
         source,
-        StrategyBuilderRequest(
-            **{
-                **_plain_request().__dict__,  # type: ignore[attr-defined]
-                "expression": "relative_volume_20 > 3",
-            }
-        ),
+        replace(_plain_request(), expression="relative_volume_20 > 3"),
     )
     service.add_experiment(
         brain_id=brain_id,
