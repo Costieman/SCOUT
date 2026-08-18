@@ -168,9 +168,9 @@ def test_create_post_uses_plain_language_form_and_generated_id(tmp_path: Path) -
     experiment_root = tmp_path / "research" / "experiments"
     recorder = _recorder(experiment_root)
     body = (
-        "action=create&name=Volatility+research&"
-        "research_question=Does+volatility+matter%3F&actor=local-user&notes=First+thread"
-    ).encode()
+        b"action=create&name=Volatility+research&"
+        b"research_question=Does+volatility+matter%3F&actor=local-user&notes=First+thread"
+    )
 
     status, location = handle_research_brain_post(body, recorder)
 
