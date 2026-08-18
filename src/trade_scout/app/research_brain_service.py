@@ -15,6 +15,11 @@ from trade_scout.app.research_brain_checkpoints import (
     FileResearchBrainCheckpointStore,
     ResearchBrainReviewCheckpoint,
 )
+from trade_scout.app.research_brain_followup_execution import (
+    FileResearchBrainFollowUpExecutionStore,
+    ResearchBrainComparatorExecutor,
+    ResearchBrainFollowUpExecution,
+)
 from trade_scout.app.research_brain_followups import (
     FileResearchBrainFollowUpStore,
     ResearchBrainFollowUpApproval,
@@ -22,6 +27,8 @@ from trade_scout.app.research_brain_followups import (
     ResearchBrainFollowUpView,
 )
 from trade_scout.app.research_brain_review import build_research_brain_review
+from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
+from trade_scout.app.strategy_builder_service import StrategyBuilderSource
 from trade_scout.experiments.contracts import ExperimentStatus, JSONScalar
 from trade_scout.experiments.research_brains import (
     BrainExperimentMembership,
@@ -44,12 +51,13 @@ class ResearchBrainExperimentView:
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainView:
-    """Presentation-ready brain definition, evidence, checkpoints, and follow-up plans."""
+    """Presentation-ready brain definition, evidence, checkpoints, plans, and executions."""
 
     snapshot: ResearchBrainSnapshot
     experiments: tuple[ResearchBrainExperimentView, ...]
     review_checkpoints: tuple[ResearchBrainReviewCheckpoint, ...] = ()
     follow_up_proposals: tuple[ResearchBrainFollowUpView, ...] = ()
+    follow_up_executions: tuple[ResearchBrainFollowUpExecution, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,10 +77,12 @@ class ResearchBrainWorkbenchService:
     """Expose explicit brain mutations while retaining experiment evidence as authority."""
 
     def __init__(self, *, experiment_root: Path, brain_root: Path) -> None:
+        self._experiment_root = experiment_root
         self._brain_root = brain_root
         self._brain_store = FileResearchBrainStore(brain_root)
         self._checkpoint_store = FileResearchBrainCheckpointStore(brain_root)
         self._follow_up_store = FileResearchBrainFollowUpStore(brain_root)
+        self._execution_store = FileResearchBrainFollowUpExecutionStore(brain_root)
         self._experiment_store = FileManifestStore(experiment_root)
         self._experiment_library = ExperimentLibraryService(experiment_root)
 
@@ -139,6 +149,7 @@ class ResearchBrainWorkbenchService:
             experiments=base.experiments,
             review_checkpoints=base.review_checkpoints,
             follow_up_proposals=self._follow_up_store.list(base),
+            follow_up_executions=self._execution_store.list(brain_id),
         )
 
     def create_brain(
@@ -251,6 +262,34 @@ class ResearchBrainWorkbenchService:
             approved_by=approved_by.strip(),
             note=note.strip(),
             approved_at=approved_at,
+        )
+
+    def execute_follow_up_comparator(
+        self,
+        *,
+        brain_id: str,
+        proposal_id: str,
+        executed_by: str,
+        recorder: StrategyBuilderExperimentRecorder,
+        source: StrategyBuilderSource,
+        candidate_value: float | None = None,
+        executed_at: datetime | None = None,
+    ) -> ResearchBrainFollowUpExecution:
+        """Execute one approved comparator proposal through the governed experiment stack."""
+
+        if recorder.experiment_root != self._experiment_root:
+            raise ValueError("follow-up recorder experiment root does not match the brain service")
+        executor = ResearchBrainComparatorExecutor(
+            brain_root=self._brain_root,
+            recorder=recorder,
+            source=source,
+        )
+        return executor.execute(
+            brain_id=brain_id,
+            proposal_id=proposal_id,
+            executed_by=executed_by.strip(),
+            candidate_value=candidate_value,
+            executed_at=executed_at,
         )
 
 
