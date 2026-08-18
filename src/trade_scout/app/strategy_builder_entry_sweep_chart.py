@@ -62,7 +62,7 @@ def render_entry_sweep_chart(report: StrategyBuilderEntrySweepReport) -> str:
     label = escape(report.parameter_label)
     unit = escape(report.unit_label)
     return f"""<svg viewBox="0 0 {width:g} {height:g}" role="img" aria-label="Hold expectancy across {label} sweep" style="width:100%;min-height:300px;background:#10151d;border:1px solid #293241;border-radius:10px">
-{''.join(y_ticks)}
+{"".join(y_ticks)}
 <line class="entry-sweep-axis" x1="{left:g}" x2="{left:g}" y1="{top:g}" y2="{height - bottom:g}" stroke="#657184" stroke-width="1.4"/>
 <line class="entry-sweep-axis" x1="{left:g}" x2="{width - right:g}" y1="{height - bottom:g}" y2="{height - bottom:g}" stroke="#657184" stroke-width="1.4"/>
 {x_ticks}
