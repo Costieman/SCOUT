@@ -30,7 +30,9 @@ def test_baseline_catalog_contains_exactly_twenty_unique_editable_suites() -> No
     )
 
 
-def test_catalog_exposes_new_phase_three_primitives_without_overstating_structural_support() -> None:
+def test_catalog_exposes_new_phase_three_primitives_without_overstating_structural_support() -> (
+    None
+):
     keltner = strategy_suite("TS-S06-KELTNER-BREAKOUT")
     nr7 = strategy_suite("TS-S19-NR7-BREAKOUT")
     vcp = strategy_suite("TS-S08-VCP")
