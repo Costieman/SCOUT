@@ -168,6 +168,7 @@ def build_research_workbench_post_response(
     body: bytes,
     *,
     experiment_recorder: StrategyBuilderExperimentRecorder | None = None,
+    config: LocalConsoleConfig | None = None,
 ) -> ConsoleResponse:
     """Apply one explicit local workbench mutation; analytical routes remain GET-only."""
 
@@ -195,8 +196,13 @@ def build_research_workbench_post_response(
             body=b"Research Brain form is too large.\n",
             headers=_interactive_security_headers(),
         )
+    strategy_source = config.strategy_builder_source if config is not None else None
     try:
-        status, location = handle_research_brain_post(body, experiment_recorder)
+        status, location = handle_research_brain_post(
+            body,
+            experiment_recorder,
+            strategy_source=strategy_source,
+        )
     except (KeyError, OSError, ValueError, ResearchBrainError) as exc:
         html = render_research_brain_post_error(exc, experiment_recorder)
         return _html_response(HTTPStatus.BAD_REQUEST, html)
@@ -286,6 +292,7 @@ def serve_research_workbench_console(
                     self.headers.get("Content-Type", ""),
                     body,
                     experiment_recorder=experiment_recorder,
+                    config=config,
                 )
             except Exception as exc:
                 payload = f"application unavailable: {type(exc).__name__}: {exc}\n".encode()
