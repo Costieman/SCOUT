@@ -60,7 +60,11 @@ def test_strategy_builder_surface_is_visual_composer_not_preset_menu() -> None:
 
     assert "Visual Strategy Builder" in html
     assert "+ Add condition" in html
-    assert "+ Add exit candidate" in html
-    assert "0.01% to 99.99%" in html
+    assert "Exit plans to compare" in html
+    assert "+ Add exit plan" in html
+    assert "protective stop" in html
+    assert "profit target" in html
+    assert "Hold-to-maximum" in html
+    assert "Partial scale-outs are not modeled yet" in html
     assert 'src="/assets/strategy-builder.js"' in html
     assert "Load an example hypothesis" in html
