@@ -272,8 +272,7 @@ _EXECUTABLE_PARAMETERS: dict[str, dict[str, str]] = {
         "lookback_years": "2",
         "horizon": "10",
         "expression": (
-            "pi__bollinger_bands__bb_lower_reached__close__p20__k2 == 1 and "
-            "rsi_wilder_14 <= 30"
+            "pi__bollinger_bands__bb_lower_reached__close__p20__k2 == 1 and rsi_wilder_14 <= 30"
         ),
         "rank_feature": "rsi_wilder_14",
         "rank_direction": "asc",
