@@ -35,7 +35,7 @@ from trade_scout.experiments.contracts import (
 from trade_scout.experiments.registry import DuckDBExperimentRegistry, IndexedManifestStore
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
-from trade_scout.risk.exit_policies import ManagedExitPlan, TargetFamily
+from trade_scout.risk.exit_policies import ManagedExitPlan
 from trade_scout.statistics.exit_research import ExitPolicySummary
 
 _CAPTURE_SCHEMA = "strategy-builder-experiment-v0.2"
@@ -318,7 +318,9 @@ def _strategy_request_configuration(request: StrategyBuilderRequest) -> dict[str
         "exit_candidates": {
             "hold_to_horizon_control": True,
             "same_bar_stop_target_policy": request.same_bar_policy.value,
-            "managed_exit_plans": [_managed_plan_payload(item) for item in request.managed_exit_plans],
+            "managed_exit_plans": [
+                _managed_plan_payload(item) for item in request.managed_exit_plans
+            ],
             "legacy_stop_grid_used": not bool(request.managed_exit_plans),
             "fixed_stop_percentages": [value * 100.0 for value in request.fixed_percentages],
             "trailing_stop_percentages": [value * 100.0 for value in request.trailing_percentages],
