@@ -194,7 +194,9 @@ def _follow_up_section(
 ) -> str:
     proposals = "".join(_follow_up_card(item) for item in reversed(view.follow_up_proposals))
     if not proposals:
-        proposals = '<div class="subtle">No follow-up proposal has been drafted for this brain yet.</div>'
+        proposals = (
+            '<div class="subtle">No follow-up proposal has been drafted for this brain yet.</div>'
+        )
     if view.snapshot.succeeded_count:
         draft = f"""<form class="followup-actions" method="post" action="/research/brains"><input type="hidden" name="action" value="draft_follow_up"><input type="hidden" name="brain_id" value="{escape(view.snapshot.definition.brain_id)}"><label>Researcher<input name="actor" required value="local-user"></label><div class="subtle">SCOUT will freeze the current priority, source experiment and brain evidence state into a proposal. It will not run the proposal.</div><button type="submit">Draft next experiment</button></form>"""
     else:
@@ -220,7 +222,11 @@ def _follow_up_card(item: ResearchBrainFollowUpView) -> str:
         "APPROVED_NOT_RUN": "Approved — not run",
         "STALE": "Stale — brain evidence changed",
     }[status]
-    frozen = "<ul>" + "".join(f"<li>{escape(value)}</li>" for value in proposal.frozen_elements) + "</ul>"
+    frozen = (
+        "<ul>"
+        + "".join(f"<li>{escape(value)}</li>" for value in proposal.frozen_elements)
+        + "</ul>"
+    )
     required = (
         "<ul>"
         + "".join(f"<li>{escape(value)}</li>" for value in proposal.required_operator_inputs)
@@ -240,7 +246,7 @@ def _follow_up_card(item: ResearchBrainFollowUpView) -> str:
         approval = f"""<form class="followup-actions" method="post" action="/research/brains"><input type="hidden" name="action" value="approve_follow_up"><input type="hidden" name="brain_id" value="{escape(proposal.brain_id)}"><input type="hidden" name="proposal_id" value="{escape(proposal.proposal_id)}"><label>Researcher<input name="actor" required value="local-user"></label><label>Approval note<input name="note" placeholder="Why this is the right next evidence challenge"></label><button type="submit">Approve plan — do not run</button></form>"""
     return f"""<div class="followup-card"><strong>{escape(proposal.title)}</strong><br><span class="followup-status {status_class}">{escape(status_label)}</span>
 <div class="followup-grid"><div><strong>Hypothesis</strong><div>{escape(proposal.hypothesis)}</div><h4>Keep fixed</h4>{frozen}</div><div><strong>Change only this</strong><div>{escape(proposal.proposed_change)}</div><h4>Still needs your input</h4>{required}</div></div>
-<div class="banner"><strong>Why SCOUT suggested this:</strong> {escape(proposal.rationale)}<br><strong>Source experiment:</strong> <a href="/research/experiments?experiment={escape(proposal.source_experiment_id)}">{escape(proposal.source_experiment_id)}</a><br><strong>Plan readiness:</strong> {escape(proposal.readiness.value.replace('_', ' ').title())}<br><span class="subtle">{escape(proposal.execution_boundary)}</span></div>
+<div class="banner"><strong>Why SCOUT suggested this:</strong> {escape(proposal.rationale)}<br><strong>Source experiment:</strong> <a href="/research/experiments?experiment={escape(proposal.source_experiment_id)}">{escape(proposal.source_experiment_id)}</a><br><strong>Plan readiness:</strong> {escape(proposal.readiness.value.replace("_", " ").title())}<br><span class="subtle">{escape(proposal.execution_boundary)}</span></div>
 <div class="subtle">Proposal ID: <code>{escape(proposal.proposal_id)}</code> · drafted {escape(_short_timestamp(proposal.created_at))}</div>{approval}
 </div>"""
 
