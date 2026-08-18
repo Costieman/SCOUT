@@ -130,9 +130,11 @@ class ExperimentLibraryService:
             if selected.code_version is not None and record.code_version != selected.code_version:
                 continue
             item = self._item(record)
-            if selected.strategy_family is not None:
-                if item.strategy_family != selected.strategy_family:
-                    continue
+            if (
+                selected.strategy_family is not None
+                and item.strategy_family != selected.strategy_family
+            ):
+                continue
             if selected.text.strip() and not _matches_text(item, selected.text):
                 continue
             items.append(item)
