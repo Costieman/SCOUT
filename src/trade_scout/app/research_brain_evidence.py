@@ -71,13 +71,14 @@ class ResearchBrainEvidenceService:
     """Read the canonical validation-review store and describe evidence coverage only."""
 
     def __init__(self, validation_review_root: Path) -> None:
+        self._root = validation_review_root
         self._store = FileValidationReviewStore(validation_review_root)
 
     @property
     def validation_review_root(self) -> Path:
         """Return the configured governed validation-review root."""
 
-        return self._store._root  # type: ignore[attr-defined]
+        return self._root
 
     def experiment_coverage(self, experiment_id: str) -> BrainExperimentEvidenceCoverage:
         """Summarize every verified validation review that cites one experiment."""
