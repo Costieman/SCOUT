@@ -83,14 +83,10 @@ class _WindowedSource:
         selected: list[DailyBar] = []
         instruments = sorted({str(item.instrument_id) for item in self.daily})
         for instrument_id in instruments:
-            rows = tuple(
-                item for item in self.daily if str(item.instrument_id) == instrument_id
-            )
+            rows = tuple(item for item in self.daily if str(item.instrument_id) == instrument_id)
             before = tuple(item for item in rows if item.trade_date < signal_start)
             warmup = before[-warmup_observations:]
-            active = tuple(
-                item for item in rows if signal_start <= item.trade_date <= signal_end
-            )
+            active = tuple(item for item in rows if signal_start <= item.trade_date <= signal_end)
             selected.extend((*warmup, *active))
         return tuple(sorted(selected, key=lambda item: (str(item.instrument_id), item.trade_date)))
 
@@ -248,7 +244,9 @@ def test_approved_comparator_runs_as_child_and_returns_result_to_same_brain(
         source=source,
     )
     assert repeated == receipt
-    assert sum(item.experiment_id == child.experiment_id for item in detail.snapshot.memberships) == 1
+    assert (
+        sum(item.experiment_id == child.experiment_id for item in detail.snapshot.memberships) == 1
+    )
 
 
 def test_brain_change_after_approval_blocks_execution(tmp_path: Path) -> None:
