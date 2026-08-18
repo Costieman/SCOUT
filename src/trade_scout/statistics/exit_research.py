@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from hashlib import sha256
 from statistics import median
 
-from trade_scout.risk.exit_policies import ExitFamily, ExitPolicy, ExitPolicyResult
+from trade_scout.risk.exit_policies import (
+    ExitFamily,
+    ExitPolicy,
+    ExitPolicyResult,
+    TargetFamily,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,9 +23,15 @@ class ExitPolicySummary:
     policy_version: str
     family: ExitFamily
     resolved_parameters: Mapping[str, float]
+    target_family: TargetFamily | None
+    target_parameters: Mapping[str, float]
     sample_size: int
     stop_out_count: int
     stop_out_rate: float
+    target_hit_count: int
+    target_hit_rate: float
+    same_bar_ambiguous_count: int
+    same_bar_ambiguous_rate: float
     expectancy: float | None
     expectancy_delta_vs_hold: float | None
     median_return: float | None
@@ -50,7 +61,7 @@ class ExitResearchComparison:
     policy_summaries: tuple[ExitPolicySummary, ...]
     warnings: tuple[str, ...]
     research_state: str = "EXPLORATORY"
-    comparison_definition_version: str = "generic-exit-comparison-v0.1"
+    comparison_definition_version: str = "generic-exit-comparison-v0.2"
 
 
 def summarize_exit_policy_results(
@@ -75,11 +86,15 @@ def summarize_exit_policy_results(
         by_policy[result.policy_id].append(result)
 
     hold_policy = next(
-        (item for item in policies if item.family is ExitFamily.HOLD_TO_HORIZON),
+        (
+            item
+            for item in policies
+            if item.family is ExitFamily.HOLD_TO_HORIZON and item.target_family is None
+        ),
         None,
     )
     if hold_policy is None:
-        raise ValueError("exit comparison requires a hold-to-horizon baseline")
+        raise ValueError("exit comparison requires a pure hold-to-horizon baseline")
     hold_results = tuple(by_policy[hold_policy.policy_id])
     baseline_ids = tuple(item.event_id for item in hold_results)
     if len(set(baseline_ids)) != len(baseline_ids):
@@ -103,8 +118,13 @@ def summarize_exit_policy_results(
         )
         for policy in policies
     )
-    warnings = (
+    target_enabled = any(item.target_family is not None for item in policies)
+    warnings = [
         "Exit policies are applied after event detection and never change which events existed.",
+        (
+            "The maximum holding period is a research backstop and scientific control. Managed "
+            "plans may exit earlier when their protective stop or profit target triggers."
+        ),
         (
             "Trailing stops use only the prior session's completed high-water mark; same-session "
             "high/low ordering is never invented from daily OHLC bars."
@@ -117,14 +137,22 @@ def summarize_exit_policy_results(
             "This grid is exploratory. The best-looking row is not a validated recommendation "
             "without multiplicity control and out-of-sample testing."
         ),
-    )
-    fingerprint = sha256("\n".join(sorted(baseline_population)).encode("utf-8")).hexdigest()
+    ]
+    if target_enabled:
+        warnings.insert(
+            3,
+            (
+                "When one daily bar touches both a stop and target, the configured same-bar "
+                "ordering assumption is recorded and the ambiguous case is counted explicitly."
+            ),
+        )
+    fingerprint = sha256("\n".join(sorted(baseline_population)).encode()).hexdigest()
     return ExitResearchComparison(
         horizon=horizon,
         complete_event_count=len(hold_results),
         event_population_fingerprint=fingerprint,
         policy_summaries=summaries,
-        warnings=warnings,
+        warnings=tuple(warnings),
     )
 
 
@@ -138,6 +166,8 @@ def _summary(
     winners = tuple(value for value in returns if value > 0)
     losers = tuple(value for value in returns if value < 0)
     stopped = tuple(item for item in results if item.stopped)
+    targeted = tuple(item for item in results if item.targeted)
+    ambiguous = tuple(item for item in results if item.same_bar_stop_target_ambiguous)
     gaps = tuple(item for item in stopped if item.gap_through_stop)
     expectancy = _mean(returns)
     average_winner = _mean(winners)
@@ -152,9 +182,15 @@ def _summary(
         policy_version=policy.version,
         family=policy.family,
         resolved_parameters=policy.parameters,
+        target_family=policy.target_family,
+        target_parameters=policy.target_parameters,
         sample_size=len(results),
         stop_out_count=len(stopped),
         stop_out_rate=len(stopped) / len(results) if results else 0.0,
+        target_hit_count=len(targeted),
+        target_hit_rate=len(targeted) / len(results) if results else 0.0,
+        same_bar_ambiguous_count=len(ambiguous),
+        same_bar_ambiguous_rate=len(ambiguous) / len(results) if results else 0.0,
         expectancy=expectancy,
         expectancy_delta_vs_hold=(
             expectancy - hold_mean if expectancy is not None and hold_mean is not None else None
