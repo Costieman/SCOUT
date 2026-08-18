@@ -11,6 +11,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
+from trade_scout.app.experiment_library_http import build_experiment_library_page
 from trade_scout.app.local_console import (
     ConsoleResponse,
     LocalConsoleConfig,
@@ -43,6 +44,7 @@ _READOUT_ASSET_PATH = "/assets/strategy-builder-readout.js"
 _SWEEP_ASSET_PATH = "/assets/strategy-builder-sweep.js"
 _SWEEP_CONTROLS_ASSET_PATH = "/assets/strategy-builder-sweep-controls.js"
 _STRATEGY_PATH = "/research/strategy"
+_EXPERIMENT_LIBRARY_PATH = "/research/experiments"
 _SCRIPT_MARKER = '<script src="/assets/strategy-builder.js" defer></script>'
 _CLEAN_DEFAULTS_SCRIPT = '<script src="/assets/strategy-builder-clean-defaults.js" defer></script>'
 _CLARITY_SCRIPT = '<script src="/assets/strategy-builder-clarity.js" defer></script>'
@@ -82,6 +84,22 @@ def build_research_workbench_response(
         return _javascript_response(STRATEGY_BUILDER_SWEEP_JS)
     if path == _SWEEP_CONTROLS_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_SWEEP_CONTROLS_JS)
+
+    if path == _EXPERIMENT_LIBRARY_PATH:
+        if experiment_recorder is None:
+            return ConsoleResponse(
+                status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+                content_type="text/plain; charset=utf-8",
+                body=b"Experiment Library is not configured for this workbench.\n",
+                headers=_interactive_security_headers(),
+            )
+        status, html = build_experiment_library_page(parsed_target.query, experiment_recorder)
+        return ConsoleResponse(
+            status_code=status,
+            content_type="text/html; charset=utf-8",
+            body=html.encode("utf-8"),
+            headers=_interactive_security_headers(),
+        )
 
     strategy_parameters = (
         parse_qs(parsed_target.query, keep_blank_values=True) if path == _STRATEGY_PATH else {}
@@ -127,6 +145,12 @@ def build_research_workbench_response(
             f"{_SWEEP_SCRIPT}\n{_SWEEP_CONTROLS_SCRIPT}\n{_ENTRY_SWEEP_SCRIPT}"
         )
         body = html.replace(_SCRIPT_MARKER, scripts, 1).encode("utf-8")
+    elif (
+        path in {"/", "/index.html"}
+        and experiment_recorder is not None
+        and response.content_type.startswith("text/html")
+    ):
+        body = _with_experiment_library_link(body)
 
     return ConsoleResponse(
         status_code=response.status_code,
@@ -199,6 +223,15 @@ def serve_research_workbench_console(
         server.serve_forever(poll_interval=0.25)
     finally:
         server.server_close()
+
+
+def _with_experiment_library_link(body: bytes) -> bytes:
+    html = body.decode("utf-8")
+    marker = '<a href="#research">Research</a>'
+    if marker not in html:
+        return body
+    link = '<a href="/research/experiments">Experiment Library</a>'
+    return html.replace(marker, marker + link, 1).encode("utf-8")
 
 
 def _javascript_response(source: str) -> ConsoleResponse:
