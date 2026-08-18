@@ -61,35 +61,75 @@ The normal UI translates internal scope states into plain language while retaini
 - `DRIFT_WARNING`: outside one or more declared boundaries; kept in history with a scope warning.
 - `UNASSESSED`: no strict focus boundary was available to evaluate it.
 
+## Evidence coverage
+
+The brain may summarize **which governed challenges have actually been persisted** for its attached
+experiments. This is intentionally an inventory, not a confidence score.
+
+The evidence reader reuses `FileValidationReviewStore`; it does not recompute statistics or inspect
+raw market data. For each attached experiment it can report whether checksum-verified reviews contain:
+
+- validation evidence;
+- comparator effects;
+- uncertainty intervals;
+- walk-forward evidence;
+- robustness evidence;
+- final-holdout evidence;
+- parameter surfaces and multiplicity metadata.
+
+The browser translates that coverage into plain language such as `Exploratory history only`,
+`Governed validation review present`, `Time-ordered evidence present`, or
+`Final holdout evidence present`. These labels describe **what exists**, not whether it passed.
+
+The local operator convention for these immutable review bundles is:
+
+```text
+<workspace>/research/validation-reviews/<report_id>.json
+```
+
+This is a sibling of the existing `experiments/` and `brains/` research stores. It is not a new
+statistical system: governed validation workflows still create and verify the review bundles through
+the existing validation package.
+
+A brain also exposes one methodological **next challenge** based on missing evidence coverage. For
+example, exploratory-only history points toward freezing a candidate for governed validation rather
+than continuing to tune the same historical peak. Comparator, uncertainty, walk-forward,
+robustness, and final holdout gaps are surfaced in that order. These are workflow suggestions, not
+scientific conclusions or automatic experiment launches.
+
 ## Conditioning boundary
 
-This foundation deliberately does **not** condition or summarize the brain yet. `conditioning_readiness`
-is `NOT_ASSESSED`. SCOUT does not infer readiness from an arbitrary fixed count such as five, ten,
-or twenty runs.
+Automatic conditioning remains `NOT_ASSESSED`. SCOUT does not infer readiness from an arbitrary
+fixed count such as five, ten, or twenty runs, and the evidence-coverage summary does not change
+that state.
 
-A later conditioning layer should first assess evidence sufficiency and then synthesize the complete
-preserved history. Its output should distinguish what appears to matter, what does not, and which
-conclusions are comparatively solid or shaky. Any proposed follow-up experiments must still execute
-through the governed experiment system, and any scientific promotion remains subject to the
-existing validation and decision boundaries.
+A later conditioning layer should synthesize the complete preserved history only after an explicit
+evidence-sufficiency design exists. Its output should distinguish what appears to matter, what does
+not, and which conclusions are comparatively solid or shaky. Any proposed follow-up experiments
+must still execute through the governed experiment system, and any scientific promotion remains
+subject to the existing validation and explicit research-decision boundaries.
 
 Likewise, exchanging knowledge between brains should operate through explicit experiment/evidence
 references or governed batches rather than silently merging mutable internal state.
 
 ## Private storage
 
-The operator store lives outside the Git repository:
+The operator stores live outside the Git repository:
 
 ```text
-<workspace>/research/brains/
-  <brain_id>/
-    definition.json
-    memberships/
-      <experiment_id>.json
+<workspace>/research/
+  experiments/
+  brains/
+    <brain_id>/
+      definition.json
+      memberships/
+        <experiment_id>.json
+  validation-reviews/
+    <report_id>.json
 ```
 
-Definitions and memberships use deterministic canonical JSON and SHA-256 checksums. No market-data
-provider calls are made by this layer.
+Definitions, memberships, experiment manifests, and validation reviews retain their own checksum
+and immutability rules. No market-data provider calls are made by the brain layer.
 
 ## Operator command
 
@@ -100,5 +140,5 @@ provider calls are made by this layer.
 - `show`: inspect the complete preserved brain inventory and scope warnings;
 - `list`: list available brains with success, failure, drift, and conditioning-readiness counts.
 
-There is intentionally no delete, winner-selection, auto-conditioning, or auto-promotion action in
-this slice.
+There is intentionally no delete, winner-selection, top-percent optimization, auto-conditioning,
+auto-promotion, or cross-brain auto-merge action in this slice.
