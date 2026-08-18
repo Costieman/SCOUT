@@ -63,7 +63,6 @@ def handle_research_brain_post(
 
     if action == "create":
         definition = service.create_brain(
-            brain_id=_required(parameters, "brain_id"),
             name=_required(parameters, "name"),
             research_question=_required(parameters, "research_question"),
             created_by=_required(parameters, "actor"),
@@ -82,10 +81,7 @@ def handle_research_brain_post(
             added_by=_required(parameters, "actor"),
             note=_one(parameters, "note", default="").strip(),
         )
-        message = (
-            f"Added {membership.experiment_id} with alignment "
-            f"{membership.alignment_state.value}."
-        )
+        message = _membership_message(membership.alignment_state.value, membership.experiment_id)
         return HTTPStatus.SEE_OTHER, _redirect_target(
             brain_id=membership.brain_id,
             message=message,
@@ -112,6 +108,17 @@ def _service(recorder: StrategyBuilderExperimentRecorder) -> ResearchBrainWorkbe
         experiment_root=recorder.experiment_root,
         brain_root=recorder.experiment_root.parent / "brains",
     )
+
+
+def _membership_message(alignment: str, experiment_id: str) -> str:
+    if alignment == "DRIFT_WARNING":
+        return (
+            f"Added {experiment_id}. It is outside one or more focus boundaries, so SCOUT kept it "
+            "with a scope warning."
+        )
+    if alignment == "UNASSESSED":
+        return f"Added {experiment_id}. This brain has no strict focus boundary to check it against."
+    return f"Added {experiment_id} to the research brain."
 
 
 def _redirect_target(*, brain_id: str, message: str) -> str:
