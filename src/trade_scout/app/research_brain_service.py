@@ -89,7 +89,7 @@ class ResearchBrainWorkbenchService:
         )
 
     def detail(self, brain_id: str) -> ResearchBrainView:
-        """Return one brain and verify every referenced experiment against its membership binding."""
+        """Return one brain and verify all referenced experiment bindings."""
 
         snapshot = self._brain_store.snapshot(brain_id)
         experiments: list[ResearchBrainExperimentView] = []
