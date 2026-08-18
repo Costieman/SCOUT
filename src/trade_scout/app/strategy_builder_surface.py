@@ -15,7 +15,7 @@ from trade_scout.app.strategy_indicator_catalog import indicator_catalog_json_re
 from trade_scout.app.strategy_presets import StrategyPreset, available_strategy_presets
 from trade_scout.app.universe_research_service import UniverseOption
 from trade_scout.app.visual_rule_builder import recover_visual_conditions
-from trade_scout.risk.exit_policies import ExitFamily, ManagedExitPlan, TargetFamily
+from trade_scout.risk.exit_policies import ExitFamily, TargetFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary
 
 
