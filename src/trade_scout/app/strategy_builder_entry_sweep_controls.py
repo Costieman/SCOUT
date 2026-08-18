@@ -14,6 +14,7 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
   const preview = document.getElementById('sweep-preview');
   if (!form || !rules || !variable || !from || !to || !step || !preview) return;
 
+  const MAX_INTERACTIVE_ENTRY_VALUES = 8;
   const query = new URLSearchParams(window.location.search);
   const restoredFeature = query.get('entry_sweep_feature');
   const restoredParameter = query.get('entry_sweep_parameter');
@@ -104,7 +105,7 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
         restored = true;
       }
     }
-    syncEntrySweep(true);
+    syncEntrySweep(true, false);
   }
 
   function scheduleRebuild() {
@@ -114,13 +115,6 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
       rebuildQueued = false;
       rebuildOptions();
     });
-  }
-
-  function mutationOnlyTouchesSweepBadges(mutation) {
-    const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
-    return nodes.length > 0 && nodes.every(
-      (node) => node instanceof HTMLElement && node.classList.contains('entry-sweep-badge')
-    );
   }
 
   function bounds(selection) {
@@ -146,6 +140,20 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
     return {min: 2, max: 1000, step: 1, start: Math.max(2, current - spread), end: Math.min(1000, current + spread), increment};
   }
 
+  function entrySweepStatus(selection) {
+    const start = Number(from.value), end = Number(to.value), increment = Number(step.value);
+    if (![start, end, increment].every(Number.isFinite)) return {error: 'From, To and Step must be numbers.'};
+    if (increment <= 0) return {error: 'Step must be greater than zero.'};
+    if (end < start) return {error: 'To must be greater than or equal to From.'};
+    if (selection.parameter !== 'standard_deviations') {
+      if (![start, end, increment].every(Number.isInteger)) {
+        return {error: 'Indicator-period sweeps use whole trading-day values.'};
+      }
+    }
+    const count = Math.floor((end - start) / increment + 1e-9) + 1;
+    return {count};
+  }
+
   function unlockBoundControl() {
     document.querySelectorAll('[data-entry-sweep-bound="1"]').forEach((node) => {
       node.disabled = false;
@@ -166,6 +174,8 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
     const slider = row.querySelector(`${option.dataset.controlSelector}-slider`);
     if (slider) { slider.disabled = true; slider.dataset.entrySweepBound = '1'; slider.style.opacity = '.55'; }
     const summary = row.querySelector('.rule-summary-main') || row;
+    const existing = summary.querySelector('.entry-sweep-badge');
+    if (existing) return;
     const badge = document.createElement('span');
     badge.className = 'entry-sweep-badge';
     badge.textContent = 'UNDER TEST IN SECTION 5';
@@ -173,34 +183,69 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
     summary.append(badge);
   }
 
-  function syncEntrySweep(useRestoredValues = false) {
+  function renderEntryPreview(selection) {
+    const status = entrySweepStatus(selection);
+    const label = variable.selectedOptions[0]?.textContent || 'Entry parameter';
+    if (status.error) {
+      preview.innerHTML = `<strong>Fix entry sweep:</strong> ${status.error}`;
+      return;
+    }
+    const count = status.count;
+    if (count > MAX_INTERACTIVE_ENTRY_VALUES) {
+      preview.innerHTML = `<strong>${count} entry definitions selected.</strong> To keep this local browser workbench responsive, interactive entry sweeps are temporarily capped at ${MAX_INTERACTIVE_ENTRY_VALUES} values. Increase Step or narrow the range. Exit sweeps are unaffected.`;
+      return;
+    }
+    preview.innerHTML = `<strong>Entry parameter under test:</strong> ${label}. ${count} point-in-time child definition${count === 1 ? '' : 's'} will run. N is reported separately for every child; hold-to-maximum-period is used so stop selection remains a separate research dimension.`;
+  }
+
+  function syncEntrySweep(useRestoredValues = false, preserveValues = false) {
     const selection = parsedEntrySelection();
     if (!selection) { unlockBoundControl(); return; }
     const spec = bounds(selection);
     for (const input of [from, to, step]) {
       input.disabled = false; input.min = String(spec.min); input.max = String(spec.max); input.step = String(spec.step);
     }
-    if (useRestoredValues && restoredFeature) {
-      from.value = restoredFrom || String(spec.start);
-      to.value = restoredTo || String(spec.end);
-      step.value = restoredStep || String(spec.increment);
-    } else {
-      from.value = String(spec.start); to.value = String(spec.end); step.value = String(spec.increment);
+    if (!preserveValues) {
+      if (useRestoredValues && restoredFeature) {
+        from.value = restoredFrom || String(spec.start);
+        to.value = restoredTo || String(spec.end);
+        step.value = restoredStep || String(spec.increment);
+      } else {
+        from.value = String(spec.start); to.value = String(spec.end); step.value = String(spec.increment);
+      }
     }
     lockBoundControl();
-    preview.innerHTML = `<strong>Entry parameter under test:</strong> ${variable.selectedOptions[0]?.textContent}. Each value creates its own point-in-time entry population. SCOUT will report N for every child and evaluate hold-to-maximum-period so stop selection remains a separate research dimension.`;
+    renderEntryPreview(selection);
   }
 
-  variable.addEventListener('change', () => queueMicrotask(() => syncEntrySweep(false)));
+  variable.addEventListener('change', () => syncEntrySweep(false, false));
+  for (const input of [from, to, step]) {
+    input.addEventListener('input', () => {
+      if (parsedEntrySelection()) syncEntrySweep(false, true);
+    });
+  }
   rules.addEventListener('change', scheduleRebuild);
   new MutationObserver((mutations) => {
-    if (mutations.every(mutationOnlyTouchesSweepBadges)) return;
-    scheduleRebuild();
-  }).observe(rules, {childList: true, subtree: true});
+    const ruleStructureChanged = mutations.some((mutation) =>
+      [...mutation.addedNodes, ...mutation.removedNodes].some(
+        (node) => node instanceof HTMLElement && node.matches('.rule-row')
+      )
+    );
+    if (ruleStructureChanged) scheduleRebuild();
+  }).observe(rules, {childList: true});
 
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', (event) => {
     const selection = parsedEntrySelection();
     if (!selection) return;
+    const status = entrySweepStatus(selection);
+    if (status.error || status.count > MAX_INTERACTIVE_ENTRY_VALUES) {
+      event.preventDefault();
+      const composerError = document.getElementById('composer-error');
+      const message = status.error || `Entry sweep has ${status.count} values; the current interactive safety limit is ${MAX_INTERACTIVE_ENTRY_VALUES}. Increase Step or narrow the range.`;
+      if (composerError) { composerError.hidden = false; composerError.textContent = message; }
+      renderEntryPreview(selection);
+      return;
+    }
     form.querySelectorAll('[data-entry-sweep-gen="1"]').forEach((node) => node.remove());
     const add = (name, value) => {
       const input = document.createElement('input');

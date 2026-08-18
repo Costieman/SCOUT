@@ -19,6 +19,8 @@ from trade_scout.app.strategy_builder_surface import render_strategy_builder_htm
 from trade_scout.patterns.consolidation_breakout import TrendFilter
 from trade_scout.statistics.strategy_research import available_strategy_features
 
+INTERACTIVE_ENTRY_SWEEP_LIMIT = 8
+
 
 def is_entry_sweep_query(query: str) -> bool:
     """Return whether one Strategy Builder request explicitly asks for an entry sweep."""
@@ -101,6 +103,12 @@ def build_entry_sweep_page(
             step=float(_one(parameters, "entry_sweep_step")),
             parameter=sweep_parameter,
         )
+        if len(values) > INTERACTIVE_ENTRY_SWEEP_LIMIT:
+            raise ValueError(
+                "interactive entry sweeps are temporarily limited to "
+                f"{INTERACTIVE_ENTRY_SWEEP_LIMIT} values to protect local browser responsiveness; "
+                "increase Step or narrow the range"
+            )
         report = StrategyBuilderEntrySweepService(source).run(
             request,
             target_feature_name=target_feature_name,
@@ -141,4 +149,8 @@ def _one(
     return values[0]
 
 
-__all__ = ["build_entry_sweep_page", "is_entry_sweep_query"]
+__all__ = [
+    "INTERACTIVE_ENTRY_SWEEP_LIMIT",
+    "build_entry_sweep_page",
+    "is_entry_sweep_query",
+]
