@@ -191,7 +191,9 @@ class FileResearchBrainStore:
         if manifest.status not in {ExperimentStatus.SUCCEEDED, ExperimentStatus.FAILED}:
             raise ResearchBrainError("only terminal experiments may be added to a research brain")
         if manifest.manifest_checksum is None:
-            raise ResearchBrainError("experiment manifest must be checksum-verified before membership")
+            raise ResearchBrainError(
+                "experiment manifest must be checksum-verified before membership"
+            )
         _safe_identifier(manifest.experiment_id, "experiment_id")
         if not added_by.strip():
             raise ValueError("added_by must be non-empty")
@@ -202,7 +204,10 @@ class FileResearchBrainStore:
             )
 
         alignment, reasons = assess_brain_alignment(definition, manifest)
-        timestamp = (added_at or datetime.now(UTC)).astimezone(UTC)
+        timestamp = added_at or datetime.now(UTC)
+        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+            raise ValueError("added_at must be timezone-aware")
+        timestamp = timestamp.astimezone(UTC)
         membership = BrainExperimentMembership(
             membership_id=_membership_id(brain_id, manifest.experiment_id),
             brain_id=brain_id,
@@ -248,7 +253,9 @@ class FileResearchBrainStore:
         root = self._brain_dir(brain_id) / "memberships"
         if not root.exists():
             return ()
-        items = tuple(self.read_membership(brain_id, path.stem) for path in sorted(root.glob("*.json")))
+        items = tuple(
+            self.read_membership(brain_id, path.stem) for path in sorted(root.glob("*.json"))
+        )
         return tuple(sorted(items, key=lambda item: (item.added_at, item.membership_id)))
 
     def snapshot(self, brain_id: str) -> ResearchBrainSnapshot:
@@ -326,9 +333,7 @@ def assess_brain_alignment(
     for rule in definition.focus_rules:
         found, value = _configuration_value(configuration, rule.configuration_path)
         if not found:
-            reasons.append(
-                f"missing focus path {rule.configuration_path!r}: {rule.rationale}"
-            )
+            reasons.append(f"missing focus path {rule.configuration_path!r}: {rule.rationale}")
             continue
         if value not in rule.allowed_values:
             allowed = ", ".join(repr(item) for item in rule.allowed_values)
