@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Mapping
 
 from trade_scout.app.strategy_suite_registry import (
     StrategySuite,
@@ -171,9 +171,8 @@ def propose_single_axis_iteration(
     suite = strategy_suite(current.suite_id)
     normalized_axis = axis.strip()
     if normalized_axis not in suite.parameter_axes:
-        raise ValueError(
-            f"axis {axis!r} is not declared by {suite.suite_id}; choose one of {suite.parameter_axes}"
-        )
+        choices = suite.parameter_axes
+        raise ValueError(f"axis {axis!r} is not declared by {suite.suite_id}; choose one of {choices}")
     parameter_name = _AXIS_PARAMETER_NAMES.get((suite.suite_id, normalized_axis), normalized_axis)
     if parameter_name not in current.parameters:
         raise ValueError(
@@ -193,14 +192,15 @@ def propose_single_axis_iteration(
     ]
     if differing != [parameter_name]:
         raise RuntimeError("controlled iteration changed more than one machine parameter")
+    rationale = (
+        f"Change only {normalized_axis} from {prior_value} to {next_value}; preserve the "
+        "remaining configuration so any result difference has a clear local interpretation."
+    )
     return IterationProposal(
         axis=normalized_axis,
         prior_value=prior_value,
         proposed_value=next_value,
-        rationale=(
-            f"Change only {normalized_axis} from {prior_value} to {next_value}; preserve the remaining "
-            "configuration so any result difference has a clear local interpretation."
-        ),
+        rationale=rationale,
         configuration=candidate,
     )
 
