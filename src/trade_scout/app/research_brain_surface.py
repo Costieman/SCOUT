@@ -12,6 +12,7 @@ from trade_scout.app.research_brain_conditioning import (
     ResearchBrainConditioning,
     build_research_brain_conditioning,
 )
+from trade_scout.app.research_brain_followups import ResearchBrainFollowUpView
 from trade_scout.app.research_brain_review import (
     ResearchBrainReview,
     build_research_brain_review,
@@ -59,9 +60,10 @@ def render_research_brains_html(
 * {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1500px,96vw); margin:0 auto; padding:28px 0 70px; }} header {{ display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:14px 0 8px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s4 {{ grid-column:span 4; }} .s6 {{ grid-column:span 6; }} .s8 {{ grid-column:span 8; }}
 .banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .success {{ border:1px solid #245a42; background:#0e2119; color:#9de2bd; padding:10px 12px; border-radius:8px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:10px 12px; border-radius:8px; margin:14px 0; }} .review {{ border:1px solid #665a2d; background:#17140b; padding:14px; border-radius:10px; margin-top:18px; }} .review-columns {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }} .review-box {{ border:1px solid var(--border); border-radius:8px; padding:12px; background:#0f141c; }} .checkpoint {{ border-top:1px solid var(--border); margin-top:14px; padding-top:14px; }} .checkpoint-form {{ display:grid; grid-template-columns:1fr 2fr auto; gap:10px; align-items:end; margin-top:10px; }}
 .conditioning {{ border:1px solid #31526a; background:#0d1720; padding:14px; border-radius:10px; margin-top:18px; }} .condition-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }} .condition-card {{ border:1px solid var(--border); border-radius:8px; padding:12px; background:#0d131b; min-width:0; }} .condition-card h4 {{ margin:0 0 6px; font-size:14px; }} .condition-state {{ display:inline-block; margin-bottom:8px; font-size:11px; font-weight:800; letter-spacing:.04em; }} .state-available {{ color:var(--good); }} .state-partial {{ color:var(--warn); }} .state-missing {{ color:#f0a2a2; }} .state-check-needed {{ color:var(--bad); }} .state-not-applicable {{ color:var(--muted); }} .priority {{ border:1px solid #665a2d; background:#1b170c; padding:12px; border-radius:8px; margin-top:12px; }}
+.followups {{ border:1px solid #3d4f75; background:#101521; padding:14px; border-radius:10px; margin-top:18px; }} .followup-card {{ border:1px solid var(--border); background:#0d121b; border-radius:9px; padding:13px; margin-top:12px; }} .followup-status {{ display:inline-block; font-size:11px; font-weight:850; letter-spacing:.04em; margin:4px 0 10px; }} .followup-draft {{ color:var(--warn); }} .followup-approved {{ color:var(--good); }} .followup-stale {{ color:var(--bad); }} .followup-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }} .followup-actions {{ display:grid; grid-template-columns:1fr 2fr auto; gap:10px; align-items:end; margin-top:12px; }}
 label {{ display:grid; gap:5px; margin-bottom:10px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} input,select,textarea,button {{ width:100%; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} textarea {{ min-height:92px; resize:vertical; }} button,.button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }}
 table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }} .scroll {{ overflow:auto; }} code {{ color:#d9e3ef; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px 7px; font-size:11px; font-weight:750; }} .in-scope {{ color:var(--good); }} .drift {{ color:var(--warn); }} .unassessed {{ color:var(--muted); }} .failed {{ color:var(--bad); }} ul {{ padding-left:20px; }} details {{ margin:12px 0; }} summary {{ cursor:pointer; color:var(--accent); font-weight:700; }} .plain-state {{ display:block; margin-top:4px; color:var(--muted); font-size:12px; }}
-@media(max-width:1100px) {{ .condition-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }} @media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} .review-columns,.checkpoint-form,.condition-grid {{ grid-template-columns:1fr; }} }}
+@media(max-width:1100px) {{ .condition-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }} @media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} .review-columns,.checkpoint-form,.condition-grid,.followup-grid,.followup-actions {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body><div class="wrap">
@@ -132,6 +134,7 @@ def _brain_detail(view: ResearchBrainView) -> str:
 </table></div><div class="s4"><h3>What is in this brain?</h3><ul><li>{len(snapshot.memberships)} saved experiments</li><li>{snapshot.succeeded_count} successful runs</li><li>{snapshot.failed_count} failed runs retained</li><li>{snapshot.in_scope_count} match the declared focus</li><li>{snapshot.drift_warning_count} scope warnings</li><li>{snapshot.unassessed_count} not scope-classified</li></ul><strong>Brain summary: {_conditioning_label(snapshot.conditioning_readiness)}</strong><div class="subtle">{escape(snapshot.conditioning_note)}</div></div></div>
 {_review_section(review, definition.brain_id, view.review_checkpoints)}
 {_conditioning_section(conditioning)}
+{_follow_up_section(view, conditioning)}
 <details><summary>Advanced: focus boundaries</summary><ul>{focus}</ul></details>
 <h3>Experiments remembered by this brain</h3><div class="scroll"><table><thead><tr><th>Added</th><th>Experiment</th><th>Run status</th><th>Fits this brain?</th><th>Result glimpse</th><th>Your note</th><th>Evidence check</th></tr></thead><tbody>{experiment_rows}</tbody></table></div>
 </div>"""
@@ -183,6 +186,69 @@ def _conditioning_card(item: ConditioningDimension) -> str:
         f"<div>{escape(item.summary)}</div>{evidence}{next_step}"
         "</div>"
     )
+
+
+def _follow_up_section(
+    view: ResearchBrainView,
+    conditioning: ResearchBrainConditioning,
+) -> str:
+    proposals = "".join(_follow_up_card(item) for item in reversed(view.follow_up_proposals))
+    if not proposals:
+        proposals = (
+            '<div class="subtle">No follow-up proposal has been drafted for this brain yet.</div>'
+        )
+    if view.snapshot.succeeded_count:
+        draft = f"""<form class="followup-actions" method="post" action="/research/brains"><input type="hidden" name="action" value="draft_follow_up"><input type="hidden" name="brain_id" value="{escape(view.snapshot.definition.brain_id)}"><label>Researcher<input name="actor" required value="local-user"></label><div class="subtle">SCOUT will freeze the current priority, source experiment and brain evidence state into a proposal. It will not run the proposal.</div><button type="submit">Draft next experiment</button></form>"""
+    else:
+        draft = '<div class="subtle">A proposal needs at least one readable successful experiment as its frozen source.</div>'
+    return f"""<div class="followups"><h3>Proposed next experiment — approval gate</h3>
+<div class="banner"><strong>Suggestion is not execution.</strong> SCOUT can turn the current conditioning priority into a frozen follow-up plan. You must approve that exact plan separately, and approval still does not launch research. A later executor will only be allowed to consume approved, non-stale plans.</div>
+<div><strong>Current conditioning priority:</strong> {escape(conditioning.priority_title)}<br>{escape(conditioning.priority_action)}</div>
+{draft}
+<h3>Follow-up proposal history</h3>{proposals}
+</div>"""
+
+
+def _follow_up_card(item: ResearchBrainFollowUpView) -> str:
+    proposal = item.proposal
+    status = item.status
+    status_class = {
+        "DRAFT": "followup-draft",
+        "APPROVED_NOT_RUN": "followup-approved",
+        "STALE": "followup-stale",
+    }[status]
+    status_label = {
+        "DRAFT": "Draft — awaiting your approval",
+        "APPROVED_NOT_RUN": "Approved — not run",
+        "STALE": "Stale — brain evidence changed",
+    }[status]
+    frozen = (
+        "<ul>"
+        + "".join(f"<li>{escape(value)}</li>" for value in proposal.frozen_elements)
+        + "</ul>"
+    )
+    required = (
+        "<ul>"
+        + "".join(f"<li>{escape(value)}</li>" for value in proposal.required_operator_inputs)
+        + "</ul>"
+        if proposal.required_operator_inputs
+        else '<div class="subtle">No additional scientific input is required to preserve this proposal as a plan.</div>'
+    )
+    approval = ""
+    if item.stale:
+        approval = '<div class="error"><strong>Cannot approve this version.</strong> The brain has changed since it was drafted. Draft a fresh proposal so the plan binds the new evidence state.</div>'
+    elif item.approval is not None:
+        approval = (
+            f'<div class="success"><strong>Approved by {escape(item.approval.approved_by)}</strong> at {escape(_short_timestamp(item.approval.approved_at))}. '
+            f"No research execution occurred.{(' Note: ' + escape(item.approval.note)) if item.approval.note else ''}</div>"
+        )
+    else:
+        approval = f"""<form class="followup-actions" method="post" action="/research/brains"><input type="hidden" name="action" value="approve_follow_up"><input type="hidden" name="brain_id" value="{escape(proposal.brain_id)}"><input type="hidden" name="proposal_id" value="{escape(proposal.proposal_id)}"><label>Researcher<input name="actor" required value="local-user"></label><label>Approval note<input name="note" placeholder="Why this is the right next evidence challenge"></label><button type="submit">Approve plan — do not run</button></form>"""
+    return f"""<div class="followup-card"><strong>{escape(proposal.title)}</strong><br><span class="followup-status {status_class}">{escape(status_label)}</span>
+<div class="followup-grid"><div><strong>Hypothesis</strong><div>{escape(proposal.hypothesis)}</div><h4>Keep fixed</h4>{frozen}</div><div><strong>Change only this</strong><div>{escape(proposal.proposed_change)}</div><h4>Still needs your input</h4>{required}</div></div>
+<div class="banner"><strong>Why SCOUT suggested this:</strong> {escape(proposal.rationale)}<br><strong>Source experiment:</strong> <a href="/research/experiments?experiment={escape(proposal.source_experiment_id)}">{escape(proposal.source_experiment_id)}</a><br><strong>Plan readiness:</strong> {escape(proposal.readiness.value.replace("_", " ").title())}<br><span class="subtle">{escape(proposal.execution_boundary)}</span></div>
+<div class="subtle">Proposal ID: <code>{escape(proposal.proposal_id)}</code> · drafted {escape(_short_timestamp(proposal.created_at))}</div>{approval}
+</div>"""
 
 
 def _conditioning_state_label(state: ConditioningState) -> str:
