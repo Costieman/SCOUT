@@ -26,7 +26,10 @@ def test_entry_sweep_ignores_its_own_badge_mutations() -> None:
     assert "mutationOnlyTouchesSweepBadges" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "mutations.every(mutationOnlyTouchesSweepBadges)" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
     assert "scheduleRebuild" in STRATEGY_BUILDER_ENTRY_SWEEP_JS
-    assert "MutationObserver(() => queueMicrotask(rebuildOptions))" not in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    assert (
+        "MutationObserver(() => queueMicrotask(rebuildOptions))"
+        not in STRATEGY_BUILDER_ENTRY_SWEEP_JS
+    )
 
 
 def test_entry_sweep_query_detection_is_explicit() -> None:
