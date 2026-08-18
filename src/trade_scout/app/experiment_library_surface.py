@@ -107,7 +107,7 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 <h2>Experiment registry</h2>
 <form action="/research/experiments" method="get">
 <div class="scroll"><table><thead><tr><th>Compare</th><th>Created</th><th>Experiment</th><th>Strategy family</th><th>Mode</th><th>Status</th><th>Dataset</th><th>Result glimpse</th><th>Lineage</th></tr></thead><tbody>{rows}</tbody></table></div>
-<div class="compare-actions"><span class="subtle">Select 2–4 rows for a configuration/result comparison. No composite score is calculated.</span><button type="submit">Compare selected</button></div>
+<div class="compare-actions"><span class="subtle">Select 2-4 rows for a configuration/result comparison. No composite score is calculated.</span><button type="submit">Compare selected</button></div>
 </form>
 </div>
 {comparison_html}
