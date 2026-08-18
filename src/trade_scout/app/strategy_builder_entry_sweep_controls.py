@@ -21,6 +21,7 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
   const restoredTo = query.get('entry_sweep_to');
   const restoredStep = query.get('entry_sweep_step');
   let restored = false;
+  let rebuildQueued = false;
 
   const numberToken = (value) => Number(value).toFixed(8)
     .replace(/0+$/, '').replace(/\.$/, '').replaceAll('-', 'm').replaceAll('.', 'p');
@@ -106,6 +107,22 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
     syncEntrySweep(true);
   }
 
+  function scheduleRebuild() {
+    if (rebuildQueued) return;
+    rebuildQueued = true;
+    queueMicrotask(() => {
+      rebuildQueued = false;
+      rebuildOptions();
+    });
+  }
+
+  function mutationOnlyTouchesSweepBadges(mutation) {
+    const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+    return nodes.length > 0 && nodes.every(
+      (node) => node instanceof HTMLElement && node.classList.contains('entry-sweep-badge')
+    );
+  }
+
   function bounds(selection) {
     const option = [...variable.options].find((item) => item.value === variable.value);
     const index = Number(option?.dataset.ruleIndex);
@@ -175,8 +192,11 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
   }
 
   variable.addEventListener('change', () => queueMicrotask(() => syncEntrySweep(false)));
-  rules.addEventListener('change', () => queueMicrotask(rebuildOptions));
-  new MutationObserver(() => queueMicrotask(rebuildOptions)).observe(rules, {childList: true, subtree: true});
+  rules.addEventListener('change', scheduleRebuild);
+  new MutationObserver((mutations) => {
+    if (mutations.every(mutationOnlyTouchesSweepBadges)) return;
+    scheduleRebuild();
+  }).observe(rules, {childList: true, subtree: true});
 
   form.addEventListener('submit', () => {
     const selection = parsedEntrySelection();
