@@ -302,9 +302,7 @@ def _evaluate_exit_policy_validated(
     active_stop = initial_stop
     peak_through_prior_session = market_entry
     for offset, bar in enumerate(path):
-        stop_hit = (
-            _stop_fill(bar, active_stop, market_entry) if active_stop is not None else None
-        )
+        stop_hit = _stop_fill(bar, active_stop, market_entry) if active_stop is not None else None
         target_hit = _target_fill(bar, initial_target) if initial_target is not None else None
         if stop_hit is not None or target_hit is not None:
             selected, ambiguous = _select_exit_hit(
@@ -549,7 +547,9 @@ def _select_exit_hit(
     if target_at_open and not stop_at_open:
         return _normalize_target_hit(target_hit), False
 
-    selected = stop_hit if policy is SameBarExitPolicy.STOP_FIRST else _normalize_target_hit(target_hit)
+    selected = (
+        stop_hit if policy is SameBarExitPolicy.STOP_FIRST else _normalize_target_hit(target_hit)
+    )
     return selected, True
 
 
