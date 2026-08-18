@@ -5,6 +5,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode
 
+from trade_scout.app.research_brain_checkpoints import ResearchBrainCheckpointError
 from trade_scout.app.research_brain_service import (
     ResearchBrainWorkbenchService,
     parse_focus_rules,
@@ -36,7 +37,7 @@ def build_research_brains_page(
             message=message,
         )
         return HTTPStatus.OK, html
-    except (KeyError, OSError, ValueError, ResearchBrainError) as exc:
+    except (KeyError, OSError, ValueError, ResearchBrainError, ResearchBrainCheckpointError) as exc:
         html = render_research_brains_html(
             brains=service.list_brains(),
             prefill_experiment_id=prefill,
@@ -85,6 +86,17 @@ def handle_research_brain_post(
         return HTTPStatus.SEE_OTHER, _redirect_target(
             brain_id=membership.brain_id,
             message=message,
+        )
+
+    if action == "checkpoint":
+        checkpoint = service.save_review_checkpoint(
+            brain_id=_required(parameters, "brain_id"),
+            created_by=_required(parameters, "actor"),
+            note=_one(parameters, "note", default="").strip(),
+        )
+        return HTTPStatus.SEE_OTHER, _redirect_target(
+            brain_id=checkpoint.brain_id,
+            message=f"Saved brain review checkpoint {checkpoint.checkpoint_id}.",
         )
 
     raise ValueError("unknown research-brain form action")
