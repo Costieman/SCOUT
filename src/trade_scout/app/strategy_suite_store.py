@@ -1,8 +1,8 @@
 """Small file-backed store for user-created Strategy Builder suites.
 
-Built-in suites remain code-defined and immutable.  This store persists only user-owned copies and
-custom suites so the application can offer build, duplicate, edit, save, reload, and delete workflows
-without turning UI state into analytical truth.
+Built-in suites remain code-defined and immutable. This store persists only user-owned copies and
+custom suites so the application can offer build, duplicate, edit, save, reload, and delete
+workflows without turning UI state into analytical truth.
 """
 
 from __future__ import annotations
