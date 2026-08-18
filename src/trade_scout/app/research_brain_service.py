@@ -12,7 +12,6 @@ from trade_scout.app.experiment_library_service import (
     ExperimentLibraryService,
 )
 from trade_scout.app.research_brain_evidence import (
-    BrainExperimentEvidenceCoverage,
     ResearchBrainEvidenceService,
     ResearchBrainEvidenceSummary,
 )
@@ -29,21 +28,20 @@ from trade_scout.experiments.store import FileManifestStore
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainExperimentView:
-    """One preserved membership paired with experiment and governed evidence metadata."""
+    """One preserved membership paired with its current checksum-verified experiment evidence."""
 
     membership: BrainExperimentMembership
     experiment: ExperimentLibraryDetail | None
-    evidence: BrainExperimentEvidenceCoverage
     integrity_error: str | None
 
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainView:
-    """Presentation-ready brain definition, inventory, evidence coverage, and experiments."""
+    """Presentation-ready brain definition, inventory, and referenced experiments."""
 
     snapshot: ResearchBrainSnapshot
     experiments: tuple[ResearchBrainExperimentView, ...]
-    evidence_summary: ResearchBrainEvidenceSummary
+    evidence_summary: ResearchBrainEvidenceSummary | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,12 +113,8 @@ class ResearchBrainWorkbenchService:
         snapshot = self._brain_store.snapshot(brain_id)
         experiment_ids = tuple(item.experiment_id for item in snapshot.memberships)
         evidence_summary = self._evidence.brain_summary(experiment_ids)
-        coverage_by_id = {
-            item.experiment_id: item for item in evidence_summary.experiments
-        }
         experiments: list[ResearchBrainExperimentView] = []
         for membership in snapshot.memberships:
-            coverage = coverage_by_id[membership.experiment_id]
             try:
                 manifest = self._experiment_store.read_manifest(membership.experiment_id)
                 self._brain_store.verify_membership_experiment(brain_id, manifest)
@@ -130,7 +124,6 @@ class ResearchBrainWorkbenchService:
                     ResearchBrainExperimentView(
                         membership=membership,
                         experiment=None,
-                        evidence=coverage,
                         integrity_error=f"{type(exc).__name__}: {exc}",
                     )
                 )
@@ -139,7 +132,6 @@ class ResearchBrainWorkbenchService:
                 ResearchBrainExperimentView(
                     membership=membership,
                     experiment=experiment,
-                    evidence=coverage,
                     integrity_error=None,
                 )
             )
