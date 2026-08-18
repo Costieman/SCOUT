@@ -148,14 +148,19 @@ def serve_research_workbench_console(
                     body=body,
                     headers=_interactive_security_headers(),
                 )
-            self.send_response(response.status_code)
-            self.send_header("Content-Type", response.content_type)
-            self.send_header("Content-Length", str(len(response.body)))
-            for name, value in response.headers:
-                self.send_header(name, value)
-            self.end_headers()
-            if not head_only and response.body:
-                self.wfile.write(response.body)
+            try:
+                self.send_response(response.status_code)
+                self.send_header("Content-Type", response.content_type)
+                self.send_header("Content-Length", str(len(response.body)))
+                for name, value in response.headers:
+                    self.send_header(name, value)
+                self.end_headers()
+                if not head_only and response.body:
+                    self.wfile.write(response.body)
+            except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+                # A local browser tab may be closed or replaced while a synchronous research
+                # response is being prepared. That is a client disconnect, not an application error.
+                return
 
     server = ThreadingHTTPServer((host, port), Handler)
     try:
