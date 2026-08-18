@@ -75,12 +75,16 @@ def _failed_manifest(root: Path, *, experiment_id: str, family: str) -> Experime
 
 def _brain(*, with_focus: bool = True) -> ResearchBrainDefinition:
     rules = (
-        BrainFocusRule(
-            configuration_path="entry.family",
-            allowed_values=("feature_expression",),
-            rationale="This brain studies feature-expression entry questions.",
-        ),
-    ) if with_focus else ()
+        (
+            BrainFocusRule(
+                configuration_path="entry.family",
+                allowed_values=("feature_expression",),
+                rationale="This brain studies feature-expression entry questions.",
+            ),
+        )
+        if with_focus
+        else ()
+    )
     return ResearchBrainDefinition(
         brain_id="brain_entry_context",
         name="Entry context brain",
@@ -217,3 +221,21 @@ def test_non_terminal_experiment_cannot_enter_brain(tmp_path: Path) -> None:
 
     with pytest.raises(ResearchBrainError, match="terminal"):
         store.add_experiment("brain_entry_context", running, added_by="researcher")
+
+
+def test_membership_rejects_naive_timestamp(tmp_path: Path) -> None:
+    manifest = _successful_manifest(
+        tmp_path / "experiments",
+        experiment_id="exp_naive_time",
+        family="feature_expression",
+    )
+    store = FileResearchBrainStore(tmp_path / "brains")
+    store.create(_brain())
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        store.add_experiment(
+            "brain_entry_context",
+            manifest,
+            added_by="researcher",
+            added_at=datetime(2026, 8, 18, 7, 0),
+        )
