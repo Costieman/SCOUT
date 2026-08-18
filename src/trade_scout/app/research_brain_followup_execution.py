@@ -179,7 +179,7 @@ class FileResearchBrainFollowUpExecutionStore:
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainComparatorExecutor:
-    """Run one approved comparator proposal and attach its terminal child experiment to the brain."""
+    """Run one approved comparator and attach its terminal child experiment."""
 
     brain_root: Path
     recorder: StrategyBuilderExperimentRecorder
@@ -234,7 +234,8 @@ class ResearchBrainComparatorExecutor:
             )
         if source_manifest.definition.dataset_version != self.recorder.dataset_version:
             raise ResearchBrainFollowUpExecutionError(
-                "source experiment dataset is not the workbench's currently selected immutable dataset"
+                "source experiment dataset is not the workbench's currently selected "
+                "immutable dataset"
             )
         configuration = source_manifest.definition.resolved_configuration
         request = strategy_request_from_resolved_configuration(configuration)
@@ -243,8 +244,8 @@ class ResearchBrainComparatorExecutor:
         if declared_values:
             if candidate_value is None:
                 raise ResearchBrainFollowUpExecutionError(
-                    "source is a parameter sweep; choose one already-declared candidate value before "
-                    "running the comparator"
+                    "source is a parameter sweep; choose one already-declared candidate "
+                    "value before running the comparator"
                 )
             resolved_candidate = float(candidate_value)
             request = freeze_entry_sweep_candidate(configuration, request, resolved_candidate)
@@ -434,7 +435,7 @@ class _RandomTimingComparatorStage:
             rank_feature=self.request.rank_feature,
             descending=self.request.descending,
             per_session_limit=self.request.per_session_limit,
-            description="Frozen source entry definition used by an approved Research Brain follow-up.",
+            description="Frozen source entry used by an approved Research Brain follow-up.",
         )
         specs = extract_parameterized_specs(strategy.expression)
         fixed_warmup = required_strategy_warmup_observations(strategy)
@@ -465,7 +466,8 @@ class _RandomTimingComparatorStage:
             for item in feature_report.signals
         ):
             raise RuntimeError(
-                "follow-up comparator could not reproduce the frozen Strategy Builder signal population"
+                "follow-up comparator could not reproduce the frozen Strategy Builder "
+                "signal population"
             )
         research_by_instrument = _research_by_instrument(daily_bars)
         control = run_same_instrument_random_timing_control(
