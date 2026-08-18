@@ -16,8 +16,8 @@ def render_entry_sweep_chart(report: StrategyBuilderEntrySweepReport) -> str:
     if not points:
         return '<div class="section-note">No complete outcomes are available for this sweep.</div>'
 
-    width, height = 920.0, 310.0
-    left, right, top, bottom = 72.0, 28.0, 28.0, 58.0
+    width, height = 920.0, 340.0
+    left, right, top, bottom = 78.0, 34.0, 34.0, 72.0
     x_min = min(item.value for item in points)
     x_max = max(item.value for item in points)
     values = tuple(cast(float, item.expectancy) * 100.0 for item in points)
@@ -25,7 +25,7 @@ def render_entry_sweep_chart(report: StrategyBuilderEntrySweepReport) -> str:
     if y_min == y_max:
         y_min -= 0.5
         y_max += 0.5
-    padding = max((y_max - y_min) * 0.12, 0.05)
+    padding = max((y_max - y_min) * 0.18, 0.08)
     y_min -= padding
     y_max += padding
 
@@ -40,18 +40,34 @@ def render_entry_sweep_chart(report: StrategyBuilderEntrySweepReport) -> str:
         f"{x(item.value):.1f},{y(cast(float, item.expectancy) * 100.0):.1f}" for item in points
     )
     circles = "".join(
-        f'<circle cx="{x(item.value):.1f}" cy="{y(cast(float, item.expectancy) * 100.0):.1f}" r="4.5" fill="#f1c84b"><title>{item.value:g} {escape(report.unit_label)}: {_pct(item.expectancy)}, complete N={item.complete_event_count}</title></circle>'
+        f'<circle cx="{x(item.value):.1f}" cy="{y(cast(float, item.expectancy) * 100.0):.1f}" r="5" fill="#f1c84b"><title>{item.value:g} {escape(report.unit_label)}: {_pct(item.expectancy)}, complete N={item.complete_event_count}</title></circle>'
         for item in points
     )
+    point_labels = "".join(
+        f'<text x="{x(item.value):.1f}" y="{y(cast(float, item.expectancy) * 100.0) - 10:.1f}" text-anchor="middle" fill="#dce5ef" font-size="11">{_pct(item.expectancy)}</text>'
+        for item in points
+    )
+    x_ticks = "".join(
+        f'<line class="entry-sweep-axis" x1="{x(item.value):.1f}" x2="{x(item.value):.1f}" y1="{height - bottom:g}" y2="{height - bottom + 5:g}" stroke="#657184"/><text x="{x(item.value):.1f}" y="{height - bottom + 22:g}" text-anchor="middle" fill="#c8d1dc" font-size="11">{item.value:g}</text>'
+        for item in points
+    )
+    y_ticks: list[str] = []
+    for index in range(5):
+        value = y_min + (y_max - y_min) * index / 4.0
+        y_pos = y(value)
+        y_ticks.append(
+            f'<line class="entry-sweep-grid" x1="{left:g}" x2="{width - right:g}" y1="{y_pos:.1f}" y2="{y_pos:.1f}" stroke="#354052" stroke-width="1" opacity=".65"/>'
+            f'<text x="{left - 10:g}" y="{y_pos + 4:.1f}" text-anchor="end" fill="#c8d1dc" font-size="11">{value:+.2f}%</text>'
+        )
     label = escape(report.parameter_label)
     unit = escape(report.unit_label)
-    return f"""<svg viewBox="0 0 {width:g} {height:g}" role="img" aria-label="Hold expectancy across {label} sweep" style="width:100%;min-height:280px;background:#10151d;border:1px solid #293241;border-radius:10px">
-<line x1="{left:g}" x2="{left:g}" y1="{top:g}" y2="{height - bottom:g}" stroke="#657184"/>
-<line x1="{left:g}" x2="{width - right:g}" y1="{height - bottom:g}" y2="{height - bottom:g}" stroke="#657184"/>
-<polyline points="{polyline}" fill="none" stroke="#f1c84b" stroke-width="3"/>{circles}
-<text x="{left:g}" y="{height - 20:g}" fill="#98a6b8" font-size="11">{x_min:g}</text>
-<text x="{width - right:g}" y="{height - 20:g}" text-anchor="end" fill="#98a6b8" font-size="11">{x_max:g}</text>
-<text x="{(left + width - right) / 2:g}" y="{height - 20:g}" text-anchor="middle" fill="#edf1f7" font-size="12">{label} ({unit})</text>
+    return f"""<svg viewBox="0 0 {width:g} {height:g}" role="img" aria-label="Hold expectancy across {label} sweep" style="width:100%;min-height:300px;background:#10151d;border:1px solid #293241;border-radius:10px">
+{''.join(y_ticks)}
+<line class="entry-sweep-axis" x1="{left:g}" x2="{left:g}" y1="{top:g}" y2="{height - bottom:g}" stroke="#657184" stroke-width="1.4"/>
+<line class="entry-sweep-axis" x1="{left:g}" x2="{width - right:g}" y1="{height - bottom:g}" y2="{height - bottom:g}" stroke="#657184" stroke-width="1.4"/>
+{x_ticks}
+<polyline points="{polyline}" fill="none" stroke="#f1c84b" stroke-width="3"/>{circles}{point_labels}
+<text x="{(left + width - right) / 2:g}" y="{height - 18:g}" text-anchor="middle" fill="#edf1f7" font-size="12">{label} ({unit})</text>
 <text transform="translate(18 {(top + height - bottom) / 2:g}) rotate(-90)" text-anchor="middle" fill="#edf1f7" font-size="12">Hold expectancy per trade (%)</text>
 </svg>"""
 
