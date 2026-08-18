@@ -67,9 +67,7 @@ def test_bollinger_bandwidth_percentile_uses_only_trailing_information() -> None
 
     assert values[-1].availability_status is FeatureAvailabilityStatus.AVAILABLE
     assert values[-1].value == 25.0
-    assert all(
-        item.availability_status is FeatureAvailabilityStatus.WARMUP for item in values[:-1]
-    )
+    assert all(item.availability_status is FeatureAvailabilityStatus.WARMUP for item in values[:-1])
 
 
 def test_keltner_channel_materializes_point_in_time_bandwidth() -> None:
