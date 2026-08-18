@@ -5,6 +5,9 @@ from __future__ import annotations
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode
 
+from trade_scout.app.research_brain_evidence_surface import (
+    attach_research_brain_evidence_html,
+)
 from trade_scout.app.research_brain_service import (
     ResearchBrainWorkbenchService,
     parse_focus_rules,
@@ -35,6 +38,7 @@ def build_research_brains_page(
             prefill_experiment_id=prefill,
             message=message,
         )
+        html = attach_research_brain_evidence_html(html, detail)
         return HTTPStatus.OK, html
     except (KeyError, OSError, ValueError, ResearchBrainError) as exc:
         html = render_research_brains_html(
