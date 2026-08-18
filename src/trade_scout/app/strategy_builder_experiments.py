@@ -145,7 +145,10 @@ class StrategyBuilderExperimentRecorder:
         }
         definition = ExperimentDefinition(
             name=f"Strategy Builder entry sweep — {parameter.value}",
-            hypothesis="Map one predeclared entry-indicator parameter while all other settings remain fixed.",
+            hypothesis=(
+                "Map one predeclared entry-indicator parameter while all other settings remain "
+                "fixed."
+            ),
             mode=ResearchMode.EXPLORATORY,
             dataset_version=self.dataset_version,
             universe_version=self.universe_version,
@@ -239,7 +242,10 @@ class _EntrySweepStage:
             stage_name=self.name,
             outputs=_entry_sweep_report_payload(report),
             warnings=(
-                "Entry-parameter sweep is exploratory and does not validate the best observed cell.",
+                (
+                    "Entry-parameter sweep is exploratory and does not validate the best observed "
+                    "cell."
+                ),
                 "Each declared entry value may create a different point-in-time event population.",
             ),
         )
@@ -252,11 +258,21 @@ def attach_experiment_record_html(html: str, manifest: ExperimentManifest) -> st
     if marker not in html:
         raise RuntimeError("Strategy Builder renderer omitted its closing application marker")
     checksum = manifest.manifest_checksum or "pending-verification"
-    card = f"""<div class="card" id="experiment-record">
-<h2>Saved experiment record</h2>
-<div class="section-note"><strong>Automatically saved:</strong> this run is now part of the durable SCOUT research record rather than only this browser page. Future Experiment Library / research-brain views can index this same record.</div>
-<table><tr><th>Experiment ID</th><td><code>{escape(manifest.experiment_id)}</code></td></tr><tr><th>Status</th><td>{escape(manifest.status.value)}</td></tr><tr><th>Research mode</th><td>{escape(manifest.definition.mode.value)}</td></tr><tr><th>Dataset</th><td><code>{escape(manifest.definition.dataset_version)}</code></td></tr><tr><th>Manifest checksum</th><td><code>{escape(checksum)}</code></td></tr></table>
-</div>"""
+    card = (
+        '<div class="card" id="experiment-record">\n'
+        "<h2>Saved experiment record</h2>\n"
+        '<div class="section-note"><strong>Automatically saved:</strong> this run is now part of '
+        "the durable SCOUT research record rather than only this browser page. Future Experiment "
+        "Library / research-brain views can index this same record.</div>\n"
+        "<table>"
+        f"<tr><th>Experiment ID</th><td><code>{escape(manifest.experiment_id)}</code></td></tr>"
+        f"<tr><th>Status</th><td>{escape(manifest.status.value)}</td></tr>"
+        f"<tr><th>Research mode</th><td>{escape(manifest.definition.mode.value)}</td></tr>"
+        "<tr><th>Dataset</th><td><code>"
+        f"{escape(manifest.definition.dataset_version)}</code></td></tr>"
+        f"<tr><th>Manifest checksum</th><td><code>{escape(checksum)}</code></td></tr>"
+        "</table>\n</div>"
+    )
     return html.replace(marker, card + marker, 1)
 
 
