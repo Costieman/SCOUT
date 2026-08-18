@@ -62,7 +62,9 @@ _COMPACT_SCRIPT = '<script src="/assets/strategy-builder-compact.js" defer></scr
 _ENTRY_SWEEP_SCRIPT = '<script src="/assets/strategy-builder-entry-sweep.js" defer></script>'
 _HELP_SCRIPT = '<script src="/assets/strategy-builder-help.js" defer></script>'
 _READOUT_SCRIPT = '<script src="/assets/strategy-builder-readout.js" defer></script>'
-_RESEARCH_MEMORY_SCRIPT = '<script src="/assets/strategy-builder-research-memory.js" defer></script>'
+_RESEARCH_MEMORY_SCRIPT = (
+    '<script src="/assets/strategy-builder-research-memory.js" defer></script>'
+)
 _SWEEP_SCRIPT = '<script src="/assets/strategy-builder-sweep.js" defer></script>'
 _SWEEP_CONTROLS_SCRIPT = '<script src="/assets/strategy-builder-sweep-controls.js" defer></script>'
 
