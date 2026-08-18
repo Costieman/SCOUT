@@ -98,21 +98,42 @@ STRATEGY_BUILDER_SWEEP_JS = r"""
       delete row.dataset.sweepBound; delete row.dataset.sweepExtra;
     }
   }
+  function activateTargetOnFirstPlan(meta) {
+    if (meta.component !== 'target') return null;
+    const row = exits.querySelector('.exit-plan-row');
+    if (!row) return null;
+    const targetFamily = row.querySelector('.exit-target-family');
+    if (!targetFamily) return null;
+    targetFamily.value = meta.family;
+    targetFamily.dispatchEvent(new Event('change', {bubbles:true}));
+    row.scrollIntoView({block:'nearest', behavior:'smooth'});
+    return row;
+  }
   function bindRows() {
     releaseRows();
     const meta = META[variable.value];
     if (!meta) { boundNotice.hidden = true; return null; }
-    const rows = matchingRows(meta);
+    let rows = matchingRows(meta);
+    let autoActivated = false;
+    if (!rows.length && meta.component === 'target') {
+      const activated = activateTargetOnFirstPlan(meta);
+      if (activated) { rows = matchingRows(meta); autoActivated = rows.length > 0; }
+    }
     if (!rows.length) {
       boundNotice.hidden = false;
-      boundNotice.innerHTML = `<strong>Needs a matching exit plan.</strong> Add one ${meta.label} plan in Section 3, then select this research variable again.`;
+      boundNotice.innerHTML = meta.component === 'target'
+        ? '<strong>Add an exit plan first.</strong> A profit-target sweep needs one managed exit plan in Section 3 so SCOUT knows which protective stop remains fixed.'
+        : `<strong>Needs a matching exit plan.</strong> Add one ${meta.label} plan in Section 3, then select this research variable again.`;
       return null;
     }
     const template = rows[0];
-    template.dataset.sweepBound = '1'; template.style.opacity = '.55'; template.style.pointerEvents = 'none';
+    template.dataset.sweepBound = '1'; template.style.opacity = '.72';
     for (const row of rows.slice(1)) { row.dataset.sweepBound = '1'; row.dataset.sweepExtra = '1'; row.hidden = true; }
     boundNotice.hidden = false;
-    boundNotice.innerHTML = `<strong>Under test:</strong> ${meta.label}. The first matching exit plan supplies the fixed stop/target partner; its swept value is controlled by Section 5. <button id="sweep-use-single" type="button">Use one exact value instead</button>`;
+    const activationText = autoActivated
+      ? `<strong>Profit target enabled automatically.</strong> SCOUT attached ${meta.label} to the first exit plan in Section 3 and kept that plan's protective stop fixed. `
+      : `<strong>Under test:</strong> ${meta.label}. The highlighted exit plan supplies the fixed partner component. `;
+    boundNotice.innerHTML = activationText + `Section 5 controls the swept value. <button id="sweep-use-single" type="button">Use one exact value instead</button>`;
     document.getElementById('sweep-use-single')?.addEventListener('click', () => {
       const extras = [...exits.querySelectorAll('[data-sweep-extra="1"]')]; extras.forEach((row) => row.remove());
       variable.value = ''; lastVariable = ''; refresh(false);
@@ -152,7 +173,7 @@ STRATEGY_BUILDER_SWEEP_JS = r"""
     const stopValue = meta.component === 'stop' ? sweptValue : Number(row.querySelector('.exit-stop-value').value);
     if (!Number.isFinite(stopValue)) throw new Error('Bound protective stop value is invalid.');
     if (targetFamily === 'none') {
-      if (meta.component === 'target') throw new Error('The selected target sweep needs an exit plan with that target family.');
+      if (meta.component === 'target') throw new Error('Choose a profit-target type in Section 3 before running this target sweep.');
       return `${stopFamily}:${stopValue}|none:`;
     }
     const targetValue = meta.component === 'target' ? sweptValue : Number(row.querySelector('.exit-target-value').value);
@@ -165,7 +186,7 @@ STRATEGY_BUILDER_SWEEP_JS = r"""
     try {
       const meta = META[variable.value];
       const template = matchingRows(meta)[0];
-      if (!template) throw new Error(`Add one matching ${meta.label} exit plan before running the sweep.`);
+      if (!template) throw new Error(meta.component === 'target' ? 'Add an exit plan in Section 3; SCOUT will attach the selected profit-target sweep to it.' : `Add one matching ${meta.label} exit plan before running the sweep.`);
       form.querySelectorAll('input[name="exit_plan"][data-sweep-gen="1"]').forEach((node) => node.remove());
       for (const value of valuesForCurrentSweep()) {
         const hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = 'exit_plan'; hidden.value = planToken(template, meta, value); hidden.dataset.sweepGen = '1'; form.append(hidden);
