@@ -11,6 +11,11 @@ from trade_scout.app.experiment_library_service import (
     ExperimentLibraryDetail,
     ExperimentLibraryService,
 )
+from trade_scout.app.research_brain_checkpoints import (
+    FileResearchBrainCheckpointStore,
+    ResearchBrainReviewCheckpoint,
+)
+from trade_scout.app.research_brain_review import build_research_brain_review
 from trade_scout.experiments.contracts import ExperimentStatus, JSONScalar
 from trade_scout.experiments.research_brains import (
     BrainExperimentMembership,
@@ -33,10 +38,11 @@ class ResearchBrainExperimentView:
 
 @dataclass(frozen=True, slots=True)
 class ResearchBrainView:
-    """Presentation-ready brain definition, inventory, and referenced experiments."""
+    """Presentation-ready brain definition, inventory, evidence, and review checkpoints."""
 
     snapshot: ResearchBrainSnapshot
     experiments: tuple[ResearchBrainExperimentView, ...]
+    review_checkpoints: tuple[ResearchBrainReviewCheckpoint, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +64,7 @@ class ResearchBrainWorkbenchService:
     def __init__(self, *, experiment_root: Path, brain_root: Path) -> None:
         self._brain_root = brain_root
         self._brain_store = FileResearchBrainStore(brain_root)
+        self._checkpoint_store = FileResearchBrainCheckpointStore(brain_root)
         self._experiment_store = FileManifestStore(experiment_root)
         self._experiment_library = ExperimentLibraryService(experiment_root)
 
@@ -114,7 +121,11 @@ class ResearchBrainWorkbenchService:
                     integrity_error=None,
                 )
             )
-        return ResearchBrainView(snapshot=snapshot, experiments=tuple(experiments))
+        return ResearchBrainView(
+            snapshot=snapshot,
+            experiments=tuple(experiments),
+            review_checkpoints=self._checkpoint_store.list(brain_id),
+        )
 
     def create_brain(
         self,
@@ -170,6 +181,26 @@ class ResearchBrainWorkbenchService:
             added_by=added_by.strip(),
             note=note.strip(),
             added_at=added_at,
+        )
+
+    def save_review_checkpoint(
+        self,
+        *,
+        brain_id: str,
+        created_by: str,
+        note: str = "",
+        created_at: datetime | None = None,
+    ) -> ResearchBrainReviewCheckpoint:
+        """Freeze the current descriptive review without changing experiment or brain membership."""
+
+        view = self.detail(brain_id)
+        review = build_research_brain_review(view.snapshot, view.experiments)
+        return self._checkpoint_store.create(
+            view,
+            review,
+            created_by=created_by.strip(),
+            note=note.strip(),
+            created_at=created_at,
         )
 
 
