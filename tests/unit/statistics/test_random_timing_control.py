@@ -107,7 +107,9 @@ def test_random_timing_control_is_deterministic_and_preserves_counts() -> None:
     assert report.eligible_timing_count > report.sample_size
     assert report.comparator_kind == "same_instrument_random_eligible_timing"
     assert 0.0 < report.one_sided_empirical_p_value <= 1.0
-    assert report.null_interval_lower <= report.random_timing_mean_return <= report.null_interval_upper
+    assert (
+        report.null_interval_lower <= report.random_timing_mean_return <= report.null_interval_upper
+    )
 
 
 def test_random_timing_control_rejects_missing_complete_population() -> None:
