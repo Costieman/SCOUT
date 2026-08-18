@@ -12,7 +12,6 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -288,7 +287,9 @@ class FileResearchBrainFollowUpStore:
                     stale=not self.matches_current_state(proposal, view),
                 )
             )
-        return tuple(sorted(items, key=lambda item: (item.proposal.created_at, item.proposal.proposal_id)))
+        return tuple(
+            sorted(items, key=lambda item: (item.proposal.created_at, item.proposal.proposal_id))
+        )
 
     def read_proposal(self, brain_id: str, proposal_id: str) -> ResearchBrainFollowUpProposal:
         """Read and verify one immutable proposal."""
@@ -338,7 +339,9 @@ class FileResearchBrainFollowUpStore:
             )
         proposal = self.read_proposal(brain_id, proposal_id)
         if approval.proposal_checksum != sha256_json(proposal):
-            raise ResearchBrainFollowUpError("approval does not bind the current immutable proposal")
+            raise ResearchBrainFollowUpError(
+                "approval does not bind the current immutable proposal"
+            )
         return approval
 
     def matches_current_state(
@@ -500,9 +503,7 @@ def _proposal_plan(
                 "Run a predeclared time-ordered/walk-forward stability challenge using the frozen source "
                 "definition."
             ),
-            required_operator_inputs=(
-                "Define the walk-forward/fold schedule before execution.",
-            ),
+            required_operator_inputs=("Define the walk-forward/fold schedule before execution.",),
             readiness=FollowUpReadiness.OPERATOR_INPUT_REQUIRED,
             rationale=conditioning.priority_action,
         )
@@ -599,7 +600,9 @@ def _proposal_from_mapping(raw: dict[str, object]) -> ResearchBrainFollowUpPropo
         source_experiment_id=str(raw["source_experiment_id"]),
         source_experiment_manifest_checksum=str(raw["source_experiment_manifest_checksum"]),
         source_resolved_configuration_checksum=str(raw["source_resolved_configuration_checksum"]),
-        frozen_elements=tuple(str(item) for item in cast(list[object], raw.get("frozen_elements", []))),
+        frozen_elements=tuple(
+            str(item) for item in cast(list[object], raw.get("frozen_elements", []))
+        ),
         proposed_change=str(raw["proposed_change"]),
         required_operator_inputs=tuple(
             str(item) for item in cast(list[object], raw.get("required_operator_inputs", []))
