@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from html import escape
 
+from trade_scout.app.research_brain_evidence import BrainEvidenceCoverageState
 from trade_scout.app.research_brain_service import (
     ResearchBrainExperimentView,
     ResearchBrainListItem,
@@ -45,11 +46,11 @@ def render_research_brains_html(
 <title>Trade Scout — Research Brains</title>
 <style>
 :root {{ color-scheme:dark; --bg:#0b0e13; --panel:#121720; --panel2:#171d27; --border:#293241; --text:#edf1f7; --muted:#98a6b8; --accent:#f1c84b; --good:#63d39a; --bad:#ef7b7b; --warn:#f2bd60; --blue:#7fc8ff; }}
-* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1500px,96vw); margin:0 auto; padding:28px 0 70px; }} header {{ display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:14px 0 8px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s4 {{ grid-column:span 4; }} .s6 {{ grid-column:span 6; }} .s8 {{ grid-column:span 8; }}
-.banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .success {{ border:1px solid #245a42; background:#0e2119; color:#9de2bd; padding:10px 12px; border-radius:8px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:10px 12px; border-radius:8px; margin:14px 0; }}
+* {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1500px,96vw); margin:0 auto; padding:28px 0 70px; }} header {{ display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:14px 0 8px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s3 {{ grid-column:span 3; }} .s4 {{ grid-column:span 4; }} .s6 {{ grid-column:span 6; }} .s8 {{ grid-column:span 8; }}
+.banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .success {{ border:1px solid #245a42; background:#0e2119; color:#9de2bd; padding:10px 12px; border-radius:8px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:10px 12px; border-radius:8px; margin:14px 0; }} .next {{ border-left:3px solid var(--accent); padding:10px 12px; background:#19170d; border-radius:6px; }}
 label {{ display:grid; gap:5px; margin-bottom:10px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} input,select,textarea,button {{ width:100%; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} textarea {{ min-height:92px; resize:vertical; }} button,.button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }}
-table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }} .scroll {{ overflow:auto; }} code {{ color:#d9e3ef; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px 7px; font-size:11px; font-weight:750; }} .in-scope {{ color:var(--good); }} .drift {{ color:var(--warn); }} .unassessed {{ color:var(--muted); }} .failed {{ color:var(--bad); }} ul {{ padding-left:20px; }} details {{ margin:12px 0; }} summary {{ cursor:pointer; color:var(--accent); font-weight:700; }} .plain-state {{ display:block; margin-top:4px; color:var(--muted); font-size:12px; }}
-@media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} }}
+table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }} .scroll {{ overflow:auto; }} code {{ color:#d9e3ef; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px 7px; font-size:11px; font-weight:750; }} .in-scope {{ color:var(--good); }} .drift {{ color:var(--warn); }} .unassessed {{ color:var(--muted); }} .failed {{ color:var(--bad); }} .blue {{ color:var(--blue); }} ul {{ padding-left:20px; }} details {{ margin:12px 0; }} summary {{ cursor:pointer; color:var(--accent); font-weight:700; }} .plain-state {{ display:block; margin-top:4px; color:var(--muted); font-size:12px; }} .metric {{ font-size:24px; font-weight:800; }}
+@media(max-width:1000px) {{ .s3,.s4,.s6,.s8 {{ grid-column:1/-1; }} }}
 </style>
 </head>
 <body><div class="wrap">
@@ -98,6 +99,7 @@ def _brain_row(item: ResearchBrainListItem) -> str:
 def _brain_detail(view: ResearchBrainView) -> str:
     snapshot = view.snapshot
     definition = snapshot.definition
+    evidence = view.evidence_summary
     focus = (
         "".join(
             f"<li><code>{escape(rule.configuration_path)}</code> must be one of {escape(repr(rule.allowed_values))}</li>"
@@ -107,7 +109,7 @@ def _brain_detail(view: ResearchBrainView) -> str:
     )
     experiment_rows = "".join(_experiment_row(item) for item in view.experiments)
     if not experiment_rows:
-        experiment_rows = '<tr><td colspan="7" class="subtle">No experiments have been added to this brain yet.</td></tr>'
+        experiment_rows = '<tr><td colspan="8" class="subtle">No experiments have been added to this brain yet.</td></tr>'
     return f"""<div class="card" id="brain-detail"><h2>{escape(definition.name)}</h2>
 <div class="grid"><div class="s8"><table>
 <tr><th>Research question</th><td>{escape(definition.research_question)}</td></tr>
@@ -115,9 +117,17 @@ def _brain_detail(view: ResearchBrainView) -> str:
 <tr><th>Created at</th><td>{escape(definition.created_at)}</td></tr>
 <tr><th>Notes</th><td>{escape(definition.notes or "—")}</td></tr>
 <tr><th>Technical brain ID</th><td><code>{escape(definition.brain_id)}</code></td></tr>
-</table></div><div class="s4"><h3>What is in this brain?</h3><ul><li>{len(snapshot.memberships)} saved experiments</li><li>{snapshot.succeeded_count} successful runs</li><li>{snapshot.failed_count} failed runs retained</li><li>{snapshot.in_scope_count} match the declared focus</li><li>{snapshot.drift_warning_count} scope warnings</li><li>{snapshot.unassessed_count} not scope-classified</li></ul><strong>Brain summary: {_conditioning_label(snapshot.conditioning_readiness)}</strong><div class="subtle">{escape(snapshot.conditioning_note)}</div></div></div>
+</table></div><div class="s4"><h3>What is in this brain?</h3><ul><li>{len(snapshot.memberships)} saved experiments</li><li>{snapshot.succeeded_count} successful runs</li><li>{snapshot.failed_count} failed runs retained</li><li>{snapshot.drift_warning_count} scope warnings</li></ul><strong>Automatic conditioning: {_conditioning_label(snapshot.conditioning_readiness)}</strong><div class="subtle">{escape(snapshot.conditioning_note)}</div></div></div>
 <details><summary>Advanced: focus boundaries</summary><ul>{focus}</ul></details>
-<h3>Experiments remembered by this brain</h3><div class="scroll"><table><thead><tr><th>Added</th><th>Experiment</th><th>Run status</th><th>Fits this brain?</th><th>Result glimpse</th><th>Your note</th><th>Evidence check</th></tr></thead><tbody>{experiment_rows}</tbody></table></div>
+<h3>Evidence coverage</h3><div class="grid">
+<div class="card s3"><div class="subtle">Governed reviews</div><div class="metric">{evidence.reviewed_experiment_count}</div></div>
+<div class="card s3"><div class="subtle">Walk-forward evidence</div><div class="metric">{evidence.walk_forward_experiment_count}</div></div>
+<div class="card s3"><div class="subtle">Robustness evidence</div><div class="metric">{evidence.robustness_experiment_count}</div></div>
+<div class="card s3"><div class="subtle">Final holdout evidence</div><div class="metric">{evidence.final_holdout_experiment_count}</div></div>
+</div>
+<div class="banner"><strong>What this means:</strong> {escape(evidence.interpretation_boundary)}</div>
+<div class="next"><strong>Best next challenge:</strong> {escape(evidence.next_challenge)}</div>
+<h3>Experiments remembered by this brain</h3><div class="scroll"><table><thead><tr><th>Added</th><th>Experiment</th><th>Run status</th><th>Fits this brain?</th><th>Evidence coverage</th><th>Result glimpse</th><th>Your note</th><th>Evidence check</th></tr></thead><tbody>{experiment_rows}</tbody></table></div>
 </div>"""
 
 
@@ -136,18 +146,47 @@ def _experiment_row(item: ResearchBrainExperimentView) -> str:
     else:
         experiment_name = item.experiment.manifest.definition.name
         result = _result_text(item.experiment)
-    integrity = escape(item.integrity_error) if item.integrity_error else "Verified"
+    integrity_parts = [item.integrity_error] if item.integrity_error else []
+    integrity_parts.extend(item.evidence.integrity_errors)
+    integrity = "Verified" if not integrity_parts else "; ".join(integrity_parts)
     return (
         "<tr>"
         f"<td>{escape(_short_timestamp(membership.added_at))}</td>"
         f'<td><a href="/research/experiments?experiment={escape(membership.experiment_id)}"><strong>{escape(experiment_name)}</strong></a><br><code>{escape(membership.experiment_id)}</code></td>'
         f"<td>{escape(membership.experiment_status.value)}</td>"
         f'<td class="{alignment_class}">{_alignment_label(membership.alignment_state)}{reason_html}</td>'
+        f"<td>{_coverage_label(item.evidence.coverage_state)}{_coverage_details(item)}</td>"
         f"<td>{escape(result)}</td>"
         f"<td>{escape(membership.note or '—')}</td>"
-        f"<td>{integrity}</td>"
+        f"<td>{escape(integrity)}</td>"
         "</tr>"
     )
+
+
+def _coverage_details(item: ResearchBrainExperimentView) -> str:
+    coverage = item.evidence
+    details: list[str] = []
+    if coverage.comparator_kinds:
+        details.append("Comparator: " + ", ".join(kind.value for kind in coverage.comparator_kinds))
+    if coverage.has_uncertainty_intervals:
+        details.append("Uncertainty intervals present")
+    if coverage.has_multiplicity_metadata:
+        details.append("Multiplicity metadata present")
+    if coverage.has_robustness_evidence:
+        details.append("Robustness evidence present")
+    if not details:
+        return ""
+    return '<span class="plain-state">' + " · ".join(escape(part) for part in details) + "</span>"
+
+
+def _coverage_label(state: BrainEvidenceCoverageState) -> str:
+    labels = {
+        BrainEvidenceCoverageState.EXPLORATORY_ONLY: "Exploratory history only",
+        BrainEvidenceCoverageState.VALIDATION_REVIEW_PRESENT: "Governed validation review present",
+        BrainEvidenceCoverageState.TIME_ORDERED_EVIDENCE_PRESENT: "Time-ordered evidence present",
+        BrainEvidenceCoverageState.FINAL_HOLDOUT_PRESENT: "Final holdout evidence present",
+    }
+    return escape(labels[state])
 
 
 def _result_text(detail: object) -> str:
