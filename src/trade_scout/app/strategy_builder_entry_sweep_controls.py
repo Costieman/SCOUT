@@ -7,6 +7,7 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
   if (window.location.pathname !== '/research/strategy') return;
   const form = document.getElementById('strategy-form');
   const rules = document.getElementById('rule-rows');
+  const stops = document.getElementById('stop-rows');
   const variable = document.getElementById('sweep-variable');
   const from = document.getElementById('sweep-from');
   const to = document.getElementById('sweep-to');
@@ -23,6 +24,28 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
   const restoredStep = query.get('entry_sweep_step');
   let restored = false;
   let rebuildQueued = false;
+
+  const sweepCard = document.getElementById('strategy-sweep-card');
+  const sweepPurpose = sweepCard?.querySelector('.section-note');
+  if (sweepPurpose) {
+    sweepPurpose.innerHTML = '<strong>Purpose:</strong> test one declared parameter range while every other analytical setting stays fixed. Exit-policy sweeps reuse one frozen entry population. Entry-indicator sweeps create a separate point-in-time child population for every value and use hold-to-maximum-period so exit selection remains a separate research dimension.';
+  }
+
+  const exitCard = stops?.closest('.card');
+  if (exitCard) {
+    const style = document.createElement('style');
+    style.textContent = `
+      .entry-sweep-exits-inactive .stop-row,
+      .entry-sweep-exits-inactive .toolbar { opacity:.42; pointer-events:none; }
+      .entry-sweep-exits-inactive .stop-row * { cursor:not-allowed !important; }
+      #entry-sweep-exit-inactive-note { opacity:1 !important; pointer-events:auto !important; }
+      @media print {
+        .entry-sweep-exits-inactive .stop-row,
+        .entry-sweep-exits-inactive .toolbar { opacity:.45 !important; }
+      }
+    `;
+    document.head.append(style);
+  }
 
   const numberToken = (value) => Number(value).toFixed(8)
     .replace(/0+$/, '').replace(/\.$/, '').replaceAll('-', 'm').replaceAll('.', 'p');
@@ -183,6 +206,25 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
     summary.append(badge);
   }
 
+  function syncExitPolicyPresentation(entryActive) {
+    if (!exitCard) return;
+    let notice = document.getElementById('entry-sweep-exit-inactive-note');
+    if (entryActive) {
+      exitCard.classList.add('entry-sweep-exits-inactive');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'entry-sweep-exit-inactive-note';
+        notice.className = 'section-note';
+        exitCard.querySelector('h2')?.insertAdjacentElement('afterend', notice);
+      }
+      notice.hidden = false;
+      notice.innerHTML = '<strong>Entry-parameter sweep active — exits are not applied in this run.</strong> Exit candidates shown below are preserved for later experiments, but every child entry definition is measured with the Research Scope maximum holding period as the forced exit. Turn Section 5 back to “No sweep” or choose an exit-policy variable to edit and apply exits.';
+    } else {
+      exitCard.classList.remove('entry-sweep-exits-inactive');
+      if (notice) notice.hidden = true;
+    }
+  }
+
   function renderEntryPreview(selection) {
     const status = entrySweepStatus(selection);
     const label = variable.selectedOptions[0]?.textContent || 'Entry parameter';
@@ -200,6 +242,7 @@ STRATEGY_BUILDER_ENTRY_SWEEP_JS = r"""
 
   function syncEntrySweep(useRestoredValues = false, preserveValues = false) {
     const selection = parsedEntrySelection();
+    syncExitPolicyPresentation(Boolean(selection));
     if (!selection) { unlockBoundControl(); return; }
     const spec = bounds(selection);
     for (const input of [from, to, step]) {
