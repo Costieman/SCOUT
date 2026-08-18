@@ -84,7 +84,9 @@ class ResearchBrainWorkbenchService:
                     conditioning_readiness=snapshot.conditioning_readiness,
                 )
             )
-        return tuple(sorted(rows, key=lambda item: (item.definition.name, item.definition.brain_id)))
+        return tuple(
+            sorted(rows, key=lambda item: (item.definition.name, item.definition.brain_id))
+        )
 
     def detail(self, brain_id: str) -> ResearchBrainView:
         """Return one brain and verify every referenced experiment against its membership binding."""
