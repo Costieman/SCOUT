@@ -259,7 +259,7 @@ class FileResearchBrainStore:
         return tuple(sorted(items, key=lambda item: (item.added_at, item.membership_id)))
 
     def snapshot(self, brain_id: str) -> ResearchBrainSnapshot:
-        """Return an inventory summary without choosing winners or assessing evidence sufficiency."""
+        """Return inventory without choosing winners or assessing evidence sufficiency."""
 
         definition = self.read_definition(brain_id)
         memberships = self.memberships(brain_id)
@@ -359,7 +359,7 @@ def _configuration_value(
 
 
 def _membership_id(brain_id: str, experiment_id: str) -> str:
-    digest = sha256(f"{brain_id}\n{experiment_id}".encode("utf-8")).hexdigest()[:24]
+    digest = sha256(f"{brain_id}\n{experiment_id}".encode()).hexdigest()[:24]
     return f"brainmem_{digest}"
 
 
