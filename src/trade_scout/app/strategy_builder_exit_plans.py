@@ -1,7 +1,8 @@
 """Parse and serialize managed Strategy Builder stop-plus-target plans.
 
 Browser values use human-facing percentages while the analytical risk engine uses decimal returns.
-This module is an application adapter only; trigger and fill logic remains in ``risk.exit_policies``.
+This application adapter only parses presentation values; trigger and fill logic remains in
+``risk.exit_policies``.
 """
 
 from __future__ import annotations
