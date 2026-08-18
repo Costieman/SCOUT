@@ -28,6 +28,7 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
   const cleanStrategyUrl = () => {
     const url = new URL(window.location.href);
     url.hash = "";
+    url.searchParams.delete("brain");
     return url.pathname + (url.search || "");
   };
 
@@ -120,15 +121,29 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
 
   const fetchBrainOptions = async () => {
     try {
-      const response = await fetch("/research/brains", { credentials: "same-origin" });
+      const response = await fetch("/research/brains", { credentials: "same-origin", cache: "no-store" });
       if (!response.ok) return [];
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
-      const select = doc.querySelector('select[name="brain_id"]');
-      if (!select) return [];
-      return [...select.options]
-        .map((option) => ({ id: option.value, name: option.textContent.trim() }))
-        .filter((item) => item.id);
+      const byId = new Map();
+
+      // Prefer the explicit assignment selector when present.
+      for (const option of doc.querySelectorAll('select[name="brain_id"] option')) {
+        const id = option.value.trim();
+        const name = option.textContent.trim();
+        if (id && name) byId.set(id, { id, name });
+      }
+
+      // Fall back to the brain inventory links. This is intentionally redundant because
+      // the Strategy Builder must remain connected even if the assignment form changes.
+      for (const link of doc.querySelectorAll('a[href^="/research/brains?brain="]')) {
+        const href = link.getAttribute("href") || "";
+        const url = new URL(href, window.location.origin);
+        const id = (url.searchParams.get("brain") || "").trim();
+        const name = link.querySelector("strong")?.textContent?.trim() || link.textContent.trim();
+        if (id && name && !byId.has(id)) byId.set(id, { id, name });
+      }
+      return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
     } catch (_) {
       return [];
     }
@@ -178,8 +193,13 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
     const options = await fetchBrainOptions();
     for (const item of options) select.append(new Option(item.name, item.id));
 
+    const queryBrain = (new URL(window.location.href).searchParams.get("brain") || "").trim();
     const priorActive = activeBrainId();
-    if (priorActive && options.some((item) => item.id === priorActive)) select.value = priorActive;
+    const requestedBrain = queryBrain || priorActive;
+    if (requestedBrain && options.some((item) => item.id === requestedBrain)) {
+      select.value = requestedBrain;
+      localStorage.setItem(ACTIVE_BRAIN_KEY, requestedBrain);
+    }
 
     const refresh = () => {
       const brainId = select.value;
@@ -187,7 +207,9 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
       if (!brainId) {
         open.href = "/research/brains";
         resume.hidden = true;
-        status.textContent = "Standalone research. Select a brain to preserve a working-session trail.";
+        status.textContent = options.length
+          ? "Standalone research. Select a brain to preserve a working-session trail."
+          : "No research brains were discovered. Open Research Brains to create one, then return here.";
         showDuplicateNotice(card, null);
         return;
       }
@@ -212,14 +234,17 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
 
     resume.addEventListener("click", () => {
       const state = readState(select.value);
-      if (state?.last_url) window.location.assign(state.last_url);
+      if (state?.last_url) {
+        const url = new URL(state.last_url, window.location.origin);
+        url.searchParams.set("brain", select.value);
+        window.location.assign(url.pathname + url.search);
+      }
     });
 
     form.addEventListener("submit", () => {
       const brainId = select.value;
       if (!brainId) return;
       localStorage.setItem(ACTIVE_BRAIN_KEY, brainId);
-      // The submitted query will be remembered on the resulting page, after all generated controls are materialized.
       writeState(brainId, { pending_run: true });
     });
 
