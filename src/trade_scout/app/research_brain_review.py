@@ -228,8 +228,8 @@ def _cautions(
         if low is not None and high is not None and low < high:
             cautions.append(
                 f"{sweep.variable_label} has uneven sample support across cells "
-                f"(complete-event N ranges from {low} to {high}). Large raw returns in sparse cells "
-                "should be treated as unstable until challenged."
+                f"(complete-event N ranges from {low} to {high}). Large raw returns in "
+                "sparse cells should be treated as unstable until challenged."
             )
     if not snapshot.memberships:
         cautions.append("There is no experiment evidence in this brain yet.")
@@ -308,8 +308,9 @@ def _readiness(
         )
     return (
         "BASIC_REVIEW_AVAILABLE",
-        "The brain can summarize its saved runs, but it has not yet accumulated a parameter surface "
-        "or other structured comparison. Readiness is not inferred from an arbitrary experiment count.",
+        "The brain can summarize its saved runs, but it has not yet accumulated a "
+        "parameter surface or other structured comparison. Readiness is not inferred from an "
+        "arbitrary experiment count.",
     )
 
 
