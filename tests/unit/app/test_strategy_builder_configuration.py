@@ -13,14 +13,42 @@ from trade_scout.features.parameterized_indicators import (
     IndicatorMetric,
     ParameterizedIndicatorSpec,
 )
+from trade_scout.risk.exit_policies import (
+    ExitFamily,
+    SameBarExitPolicy,
+    TargetFamily,
+)
 
 
-def _configuration(*, sweep: bool = False) -> dict[str, object]:
+def _configuration(*, sweep: bool = False, managed: bool = False) -> dict[str, object]:
     ma = ParameterizedIndicatorSpec(
         family=IndicatorFamily.MOVING_AVERAGE,
         metric=IndicatorMetric.MA_DISTANCE_PCT,
         period=20,
     )
+    exit_candidates: dict[str, object] = {
+        "hold_to_horizon_control": True,
+        "fixed_stop_percentages": [5.0],
+        "trailing_stop_percentages": [],
+        "atr_stop_multiples": [2.0],
+        "trailing_atr_multiples": [],
+    }
+    if managed:
+        exit_candidates.update(
+            {
+                "same_bar_stop_target_policy": "target_first",
+                "managed_exit_plans": [
+                    {
+                        "stop_family": "trailing_percent_stop",
+                        "stop_value": 0.08,
+                        "target_family": "atr_multiple_target",
+                        "target_value": 2.0,
+                        "same_bar_policy": "target_first",
+                    }
+                ],
+                "legacy_stop_grid_used": False,
+            }
+        )
     configuration: dict[str, object] = {
         "surface": "visual_strategy_builder",
         "research_state": "EXPLORATORY",
@@ -47,13 +75,7 @@ def _configuration(*, sweep: bool = False) -> dict[str, object]:
             "rank_direction": "descending",
             "per_session_limit": 500,
         },
-        "exit_candidates": {
-            "hold_to_horizon_control": True,
-            "fixed_stop_percentages": [5.0],
-            "trailing_stop_percentages": [],
-            "atr_stop_multiples": [2.0],
-            "trailing_atr_multiples": [],
-        },
+        "exit_candidates": exit_candidates,
         "execution_costs_bps": {
             "entry_slippage": 5.0,
             "normal_exit_slippage": 5.0,
@@ -83,6 +105,22 @@ def test_reconstructs_frozen_strategy_builder_request() -> None:
     assert request.atr_multiples == (2.0,)
     assert request.entry_slippage_bps == 5.0
     assert request.stop_slippage_bps == 10.0
+
+
+def test_reconstructs_managed_stop_target_plan_without_legacy_stop_grid() -> None:
+    request = strategy_request_from_resolved_configuration(  # type: ignore[arg-type]
+        _configuration(managed=True)
+    )
+
+    assert request.fixed_percentages == ()
+    assert request.atr_multiples == ()
+    assert request.same_bar_policy is SameBarExitPolicy.TARGET_FIRST
+    assert len(request.managed_exit_plans) == 1
+    plan = request.managed_exit_plans[0]
+    assert plan.stop_family is ExitFamily.TRAILING_PERCENT_STOP
+    assert plan.stop_value == pytest.approx(0.08)
+    assert plan.target_family is TargetFamily.ATR_MULTIPLE
+    assert plan.target_value == pytest.approx(2.0)
 
 
 def test_freeze_sweep_candidate_requires_an_already_declared_value() -> None:
