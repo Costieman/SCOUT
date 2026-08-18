@@ -124,9 +124,7 @@ def _sweep_observation(detail: ExperimentLibraryDetail) -> BrainSweepObservation
         if not isinstance(point, dict):
             continue
         value = _number(
-            point.get("parameter_value")
-            if "parameter_value" in point
-            else point.get("value")
+            point.get("parameter_value") if "parameter_value" in point else point.get("value")
         )
         expectancy = _number(point.get("expectancy_return"))
         complete = _integer(point.get("complete_event_count"))
@@ -273,7 +271,9 @@ def _next_questions(
             "tunable parameter."
         )
     if not snapshot.memberships:
-        questions.append("Attach the first relevant experiment to establish the brain's evidence history.")
+        questions.append(
+            "Attach the first relevant experiment to establish the brain's evidence history."
+        )
     return tuple(questions)
 
 
