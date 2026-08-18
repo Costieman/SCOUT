@@ -1,15 +1,15 @@
 """Thin local-console adapter for interactive research-workbench presentation assets.
 
-Research calculations still delegate to ``local_console.build_console_response``. This adapter only
-serves self-hosted Strategy Builder JavaScript and extends the existing CSP to permit scripts from
-the same loopback origin; it does not add provider access or analytical logic.
+Research calculations still delegate to application services backed by the canonical data source. The
+workbench additionally routes Strategy Builder executions through the existing governed experiment
+stack when an experiment recorder is configured; the HTTP layer itself contains no analytical logic.
 """
 
 from __future__ import annotations
 
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from trade_scout.app.local_console import (
     ConsoleResponse,
@@ -26,8 +26,10 @@ from trade_scout.app.strategy_builder_entry_sweep_http import (
     build_entry_sweep_page,
     is_entry_sweep_query,
 )
+from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
 from trade_scout.app.strategy_builder_help import STRATEGY_BUILDER_HELP_JS
 from trade_scout.app.strategy_builder_readout import STRATEGY_BUILDER_READOUT_JS
+from trade_scout.app.strategy_builder_recorded_http import build_recorded_strategy_page
 from trade_scout.app.strategy_builder_sweep import STRATEGY_BUILDER_SWEEP_JS
 from trade_scout.app.strategy_builder_sweep_controls import STRATEGY_BUILDER_SWEEP_CONTROLS_JS
 
@@ -55,8 +57,10 @@ _SWEEP_CONTROLS_SCRIPT = '<script src="/assets/strategy-builder-sweep-controls.j
 def build_research_workbench_response(
     request_target: str,
     config: LocalConsoleConfig,
+    *,
+    experiment_recorder: StrategyBuilderExperimentRecorder | None = None,
 ) -> ConsoleResponse:
-    """Serve one workbench response while keeping analytical routing in the existing console."""
+    """Serve one workbench response with optional durable Strategy Builder capture."""
 
     parsed_target = urlsplit(request_target)
     path = parsed_target.path
@@ -79,8 +83,31 @@ def build_research_workbench_response(
     if path == _SWEEP_CONTROLS_ASSET_PATH:
         return _javascript_response(STRATEGY_BUILDER_SWEEP_CONTROLS_JS)
 
+    strategy_parameters = (
+        parse_qs(parsed_target.query, keep_blank_values=True) if path == _STRATEGY_PATH else {}
+    )
     if path == _STRATEGY_PATH and is_entry_sweep_query(parsed_target.query):
-        status, html = build_entry_sweep_page(parsed_target.query, config)
+        status, html = build_entry_sweep_page(
+            parsed_target.query,
+            config,
+            experiment_recorder=experiment_recorder,
+        )
+        response = ConsoleResponse(
+            status_code=status,
+            content_type="text/html; charset=utf-8",
+            body=html.encode("utf-8"),
+            headers=_interactive_security_headers(),
+        )
+    elif (
+        path == _STRATEGY_PATH
+        and experiment_recorder is not None
+        and "universe" in strategy_parameters
+    ):
+        status, html = build_recorded_strategy_page(
+            parsed_target.query,
+            config,
+            experiment_recorder,
+        )
         response = ConsoleResponse(
             status_code=status,
             content_type="text/html; charset=utf-8",
@@ -115,8 +142,9 @@ def serve_research_workbench_console(
     host: str = "127.0.0.1",
     port: int = 8765,
     allow_remote: bool = False,
+    experiment_recorder: StrategyBuilderExperimentRecorder | None = None,
 ) -> None:
-    """Serve the existing console plus same-origin interactive Strategy Builder assets."""
+    """Serve the console, interactive assets, and optional experiment capture."""
 
     validate_bind_host(host, allow_remote=allow_remote)
     if not 1 <= port <= 65535:
@@ -139,7 +167,11 @@ def serve_research_workbench_console(
 
         def _respond(self, *, head_only: bool) -> None:
             try:
-                response = build_research_workbench_response(self.path, config)
+                response = build_research_workbench_response(
+                    self.path,
+                    config,
+                    experiment_recorder=experiment_recorder,
+                )
             except Exception as exc:
                 body = f"application unavailable: {type(exc).__name__}: {exc}\n".encode()
                 response = ConsoleResponse(
