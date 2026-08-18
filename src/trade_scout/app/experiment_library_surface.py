@@ -95,9 +95,9 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 <label class="u2">Execution status<select name="status">{_status_options(selected.status)}</select></label>
 <label class="u2">Research mode<select name="mode">{_mode_options(selected.mode)}</select></label>
 <label class="u2">Strategy family<select name="strategy_family">{family_options}</select></label>
-<label class="u3">Dataset version<input name="dataset_version" value="{escape(selected.dataset_version or '')}" placeholder="exact version"></label>
-<label class="u3">Code version<input name="code_version" value="{escape(selected.code_version or '')}" placeholder="exact commit"></label>
-<label class="u3">Hypothesis family<input name="hypothesis_family_id" value="{escape(selected.hypothesis_family_id or '')}" placeholder="family ID"></label>
+<label class="u3">Dataset version<input name="dataset_version" value="{escape(selected.dataset_version or "")}" placeholder="exact version"></label>
+<label class="u3">Code version<input name="code_version" value="{escape(selected.code_version or "")}" placeholder="exact commit"></label>
+<label class="u3">Hypothesis family<input name="hypothesis_family_id" value="{escape(selected.hypothesis_family_id or "")}" placeholder="family ID"></label>
 <button class="u2" type="submit">Apply filters</button>
 <a class="button u2" href="/research/experiments">Clear</a>
 </form>
@@ -117,11 +117,7 @@ table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-b
 
 def _row(item: ExperimentLibraryItem) -> str:
     record = item.record
-    status_class = (
-        "status-succeeded"
-        if record.status is ExperimentStatus.SUCCEEDED
-        else "status-failed"
-    )
+    status_class = "status-succeeded" if record.status is ExperimentStatus.SUCCEEDED else "status-failed"
     lineage = record.parent_experiment_id or record.reproduction_of or "—"
     integrity = (
         f'<div class="bad">Unreadable evidence: {escape(item.integrity_error)}</div>'
@@ -150,22 +146,31 @@ def _render_detail(
 ) -> str:
     manifest = detail.manifest
     definition = manifest.definition
-    stages = "".join(
-        f"<li><strong>{escape(stage.stage_name)}</strong> · checksum <code>{escape(stage.output_checksum)}</code> · {len(stage.warnings)} warning(s)</li>"
-        for stage in manifest.stages
-    ) or "<li>No completed stage artifacts.</li>"
+    stages = (
+        "".join(
+            f"<li><strong>{escape(stage.stage_name)}</strong> · checksum <code>{escape(stage.output_checksum)}</code> · {len(stage.warnings)} warning(s)</li>"
+            for stage in manifest.stages
+        )
+        or "<li>No completed stage artifacts.</li>"
+    )
     outputs = "".join(
         f"<details><summary>{escape(stage_name)} output</summary><pre>{escape(_pretty_json(payload))}</pre></details>"
         for stage_name, payload in detail.stage_outputs
     )
-    lineage = " → ".join(
-        f'<a href="/research/experiments?experiment={escape(item.experiment_id)}">{escape(item.experiment_id)}</a>'
-        for item in detail.lineage
-    ) or "—"
-    children = "".join(
-        f'<li><a href="/research/experiments?experiment={escape(item.experiment_id)}">{escape(item.name)} · {escape(item.experiment_id)}</a></li>'
-        for item in detail.children
-    ) or "<li>None indexed.</li>"
+    lineage = (
+        " → ".join(
+            f'<a href="/research/experiments?experiment={escape(item.experiment_id)}">{escape(item.experiment_id)}</a>'
+            for item in detail.lineage
+        )
+        or "—"
+    )
+    children = (
+        "".join(
+            f'<li><a href="/research/experiments?experiment={escape(item.experiment_id)}">{escape(item.name)} · {escape(item.experiment_id)}</a></li>'
+            for item in detail.children
+        )
+        or "<li>None indexed.</li>"
+    )
     rerun = _rerun_link(detail, current_dataset_version=current_dataset_version)
     failure = (
         '<div class="error"><strong>Recorded failure:</strong> '
@@ -184,14 +189,14 @@ def _render_detail(
     <tr><th>Hypothesis</th><td>{escape(definition.hypothesis)}</td></tr>
     <tr><th>Mode</th><td>{escape(definition.mode.value)}</td></tr>
     <tr><th>Execution status</th><td>{escape(manifest.status.value)}</td></tr>
-    <tr><th>Strategy family</th><td>{escape(detail.strategy_family or '—')}</td></tr>
+    <tr><th>Strategy family</th><td>{escape(detail.strategy_family or "—")}</td></tr>
     <tr><th>Dataset</th><td><code>{escape(definition.dataset_version)}</code></td></tr>
     <tr><th>Universe</th><td><code>{escape(definition.universe_version)}</code></td></tr>
     <tr><th>Code</th><td><code>{escape(definition.code_version)}</code></td></tr>
     <tr><th>Config schema</th><td><code>{escape(definition.config_schema_version)}</code></td></tr>
     <tr><th>Manifest checksum</th><td><code>{escape(checksum)}</code></td></tr>
   </table></div>
-  <div class="s6"><h3>Result glimpse</h3>{_result_detail(detail.result)}<h3>Run lifecycle</h3><ul><li>Created: {escape(manifest.created_at)}</li><li>Started: {escape(manifest.started_at or '—')}</li><li>Completed: {escape(manifest.completed_at or '—')}</li><li>Warnings: {len(manifest.warnings)}</li></ul>{rerun}</div>
+  <div class="s6"><h3>Result glimpse</h3>{_result_detail(detail.result)}<h3>Run lifecycle</h3><ul><li>Created: {escape(manifest.created_at)}</li><li>Started: {escape(manifest.started_at or "—")}</li><li>Completed: {escape(manifest.completed_at or "—")}</li><li>Warnings: {len(manifest.warnings)}</li></ul>{rerun}</div>
 </div>
 {failure}
 <h3>Lineage</h3><div>{lineage}</div>
@@ -202,9 +207,7 @@ def _render_detail(
 
 
 def _render_comparison(details: tuple[ExperimentLibraryDetail, ...]) -> str:
-    headers = "".join(
-        f"<th>{escape(item.manifest.experiment_id)}</th>" for item in details
-    )
+    headers = "".join(f"<th>{escape(item.manifest.experiment_id)}</th>" for item in details)
     result_rows = "".join(
         f"<tr><th>{escape(label)}</th>"
         + "".join(f"<td>{escape(value)}</td>" for value in values)
@@ -249,8 +252,7 @@ def _configuration_diff(
     details: tuple[ExperimentLibraryDetail, ...],
 ) -> tuple[tuple[str, tuple[str, ...]], ...]:
     flattened = tuple(
-        _flatten_configuration(item.manifest.definition.resolved_configuration)
-        for item in details
+        _flatten_configuration(item.manifest.definition.resolved_configuration) for item in details
     )
     paths = sorted(set().union(*(set(item) for item in flattened)))
     rows: list[tuple[str, tuple[str, ...]]] = []
