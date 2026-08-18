@@ -76,8 +76,10 @@ def main() -> int:
     risk_url = f"{base_url}research/risk"
     exit_url = f"{base_url}research/exits"
     strategy_url = f"{base_url}research/strategy"
+    experiment_library_url = f"{base_url}research/experiments"
     print(f"Trade Scout research console: {base_url}")
     print(f"Visual Strategy Builder: {strategy_url}")
+    print(f"Experiment Library: {experiment_library_url}")
     print(f"Universe Research Analyzer: {universe_url}")
     print(f"Single-stock Edge Explorer: {edge_url}")
     print(f"Risk & Stop Research: {risk_url}")
