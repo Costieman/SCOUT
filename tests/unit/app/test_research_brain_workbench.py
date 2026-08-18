@@ -7,18 +7,21 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
+from trade_scout.app.data_health_service import DataHealthSourcePaths
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.research_brain_http import (
     build_research_brains_page,
     handle_research_brain_post,
 )
-from trade_scout.app.research_brain_service import ResearchBrainWorkbenchService
+from trade_scout.app.research_brain_service import (
+    ResearchBrainWorkbenchService,
+    parse_focus_rules,
+)
 from trade_scout.app.research_workbench_console import (
     build_research_workbench_post_response,
     build_research_workbench_response,
 )
 from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
-from trade_scout.app.data_health_service import DataHealthSourcePaths
 from trade_scout.experiments.contracts import (
     ExperimentContext,
     ExperimentDefinition,
@@ -113,7 +116,9 @@ def _console_config(tmp_path: Path) -> LocalConsoleConfig:
     )
 
 
-def test_brain_workbench_generates_id_and_preserves_scope_warning(tmp_path: Path) -> None:
+def test_brain_workbench_generates_id_preserves_failures_and_warns_on_drift(
+    tmp_path: Path,
+) -> None:
     experiment_root = tmp_path / "research" / "experiments"
     in_scope, drift, failed = _seed_experiments(experiment_root)
     service = ResearchBrainWorkbenchService(
@@ -125,7 +130,7 @@ def test_brain_workbench_generates_id_and_preserves_scope_warning(tmp_path: Path
         name="Volatility in trend",
         research_question="Does volatility change the quality of trend entries?",
         created_by="local-user",
-        focus_rules=(),
+        focus_rules=parse_focus_rules("entry.family=feature_expression"),
         created_at=datetime(2026, 8, 18, 8, 0, tzinfo=UTC),
     )
     assert brain.brain_id.startswith("brain_volatility_in_trend_")
@@ -136,31 +141,27 @@ def test_brain_workbench_generates_id_and_preserves_scope_warning(tmp_path: Path
         added_by="local-user",
         added_at=datetime(2026, 8, 18, 8, 1, tzinfo=UTC),
     )
-    assert first.alignment_state is BrainAlignmentState.UNASSESSED
-
-    focused = service.create_brain(
-        name="Feature expression only",
-        research_question="How do feature-expression entries behave?",
-        created_by="local-user",
-        focus_rules=(),
-        created_at=datetime(2026, 8, 18, 8, 2, tzinfo=UTC),
+    second = service.add_experiment(
+        brain_id=brain.brain_id,
+        experiment_id=drift,
+        added_by="local-user",
+        added_at=datetime(2026, 8, 18, 8, 2, tzinfo=UTC),
     )
-    # The no-focus case remains intentionally UNASSESSED; explicit focus behavior is already
-    # contract-tested in experiments/test_research_brains.py. The workbench still preserves
-    # failed experiments as research memory.
-    service.add_experiment(
-        brain_id=focused.brain_id,
+    third = service.add_experiment(
+        brain_id=brain.brain_id,
         experiment_id=failed,
         added_by="local-user",
         added_at=datetime(2026, 8, 18, 8, 3, tzinfo=UTC),
     )
-    detail = service.detail(focused.brain_id)
-    assert detail.snapshot.failed_count == 1
-    assert detail.experiments[0].integrity_error is None
-    assert detail.experiments[0].membership.experiment_status is ExperimentStatus.FAILED
 
-    # The second successful experiment remains available for a later explicitly focused brain.
-    assert drift == "exp_breakout"
+    assert first.alignment_state is BrainAlignmentState.IN_SCOPE
+    assert second.alignment_state is BrainAlignmentState.DRIFT_WARNING
+    assert third.alignment_state is BrainAlignmentState.IN_SCOPE
+    detail = service.detail(brain.brain_id)
+    assert detail.snapshot.failed_count == 1
+    assert detail.snapshot.drift_warning_count == 1
+    assert all(item.integrity_error is None for item in detail.experiments)
+    assert detail.experiments[-1].membership.experiment_status is ExperimentStatus.FAILED
 
 
 def test_create_post_uses_plain_language_form_and_generated_id(tmp_path: Path) -> None:
@@ -212,9 +213,9 @@ def test_add_post_prefills_experiment_and_get_does_not_mutate(tmp_path: Path) ->
     ).encode()
     status, _ = handle_research_brain_post(body, recorder)
     assert status is HTTPStatus.SEE_OTHER
-    assert [
-        item.experiment_id for item in service.detail(brain.brain_id).snapshot.memberships
-    ] == [experiment_id]
+    assert [item.experiment_id for item in service.detail(brain.brain_id).snapshot.memberships] == [
+        experiment_id
+    ]
 
 
 def test_console_exposes_brain_get_and_only_accepts_explicit_form_post(tmp_path: Path) -> None:
@@ -229,6 +230,15 @@ def test_console_exposes_brain_get_and_only_accepts_explicit_form_post(tmp_path:
     )
     assert get_response.status_code == HTTPStatus.OK
     assert b"Research Brains" in get_response.body
+
+    asset_response = build_research_workbench_response(
+        "/assets/strategy-builder-research-memory.js",
+        config,
+        experiment_recorder=recorder,
+    )
+    assert asset_response.status_code == HTTPStatus.OK
+    assert b"Add this run to a research brain" in asset_response.body
+    assert b"break-inside: avoid-page" in asset_response.body
 
     wrong_type = build_research_workbench_post_response(
         "/research/brains",
