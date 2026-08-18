@@ -139,8 +139,8 @@ def handle_research_brain_post(
         return HTTPStatus.SEE_OTHER, _redirect_target(
             brain_id=approval.brain_id,
             message=(
-                f"Approved proposal {approval.proposal_id}. Approval is recorded, but SCOUT has not "
-                "executed the proposed research."
+                f"Approved proposal {approval.proposal_id}. Approval is recorded, but SCOUT has "
+                "not executed the proposed research."
             ),
         )
 
