@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Presentation asset linking Strategy Builder runs to durable research-brain session memory."""
 
 STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
