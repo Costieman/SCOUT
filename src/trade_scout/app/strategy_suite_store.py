@@ -32,7 +32,9 @@ class StrategySuiteStore:
         """Atomically save one custom/derived suite and return its path."""
 
         if suite.built_in:
-            raise ValueError("built-in suites are immutable and must not be persisted as user suites")
+            raise ValueError(
+                "built-in suites are immutable and must not be persisted as user suites"
+            )
         self.root.mkdir(parents=True, exist_ok=True)
         path = self._path(suite.suite_id)
         payload = _suite_payload(suite)
@@ -91,8 +93,13 @@ def _safe_id(value: str) -> str:
     text = value.strip()
     if not text:
         raise ValueError("strategy suite id must be non-empty")
-    if any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" for character in text):
-        raise ValueError("strategy suite id may contain only letters, numbers, hyphen, and underscore")
+    if any(
+        character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+        for character in text
+    ):
+        raise ValueError(
+            "strategy suite id may contain only letters, numbers, hyphen, and underscore"
+        )
     return text
 
 
