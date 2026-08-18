@@ -151,7 +151,9 @@ def handle_research_brain_post(
 
     if action == "execute_follow_up_comparator":
         if strategy_source is None:
-            raise ValueError("Research Brain comparator execution requires a canonical strategy source")
+            raise ValueError(
+                "Research Brain comparator execution requires a canonical strategy source"
+            )
         raw_candidate = _one(parameters, "candidate_value", default="").strip()
         candidate_value = float(raw_candidate) if raw_candidate else None
         try:
