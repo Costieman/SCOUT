@@ -67,7 +67,9 @@ _READOUT_SCRIPT = '<script src="/assets/strategy-builder-readout.js" defer></scr
 _RESEARCH_MEMORY_SCRIPT = (
     '<script src="/assets/strategy-builder-research-memory.js" defer></script>'
 )
-_RESEARCH_BRAIN_NAVIGATION_SCRIPT = '<script src="/assets/research-brain-navigation.js" defer></script>'
+_RESEARCH_BRAIN_NAVIGATION_SCRIPT = (
+    '<script src="/assets/research-brain-navigation.js" defer></script>'
+)
 _SWEEP_SCRIPT = '<script src="/assets/strategy-builder-sweep.js" defer></script>'
 _SWEEP_CONTROLS_SCRIPT = '<script src="/assets/strategy-builder-sweep-controls.js" defer></script>'
 
