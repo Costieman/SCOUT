@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Presentation-only navigation joining Research Brains back to Strategy Builder."""
 
 RESEARCH_BRAIN_NAVIGATION_JS = r"""
