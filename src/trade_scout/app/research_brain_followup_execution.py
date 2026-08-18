@@ -10,16 +10,16 @@ a child experiment, and appends that terminal result back to the same brain.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from trade_scout.app.entry_strategy_registry import EntryFamily
 from trade_scout.app.research_brain_followups import (
     FileResearchBrainFollowUpStore,
     FollowUpKind,
-    ResearchBrainFollowUpError,
 )
 from trade_scout.app.strategy_builder_configuration import (
     freeze_entry_sweep_candidate,
@@ -59,6 +59,9 @@ from trade_scout.statistics.strategy_research import (
     required_strategy_warmup_observations,
     run_feature_strategy_research,
 )
+
+if TYPE_CHECKING:
+    from trade_scout.app.research_brain_service import ResearchBrainView
 
 _COMPARATOR_KIND = "same_instrument_random_eligible_timing"
 _ITERATIONS = 1000
@@ -140,7 +143,9 @@ class FileResearchBrainFollowUpExecutionStore:
             ) from exc
         receipt = _receipt_from_mapping(payload)
         if receipt.brain_id != brain_id or receipt.proposal_id != proposal_id:
-            raise ResearchBrainFollowUpExecutionError("follow-up execution receipt identity mismatch")
+            raise ResearchBrainFollowUpExecutionError(
+                "follow-up execution receipt identity mismatch"
+            )
         if sha256_json(receipt) != expected:
             raise ResearchBrainFollowUpExecutionError(
                 f"follow-up execution receipt checksum mismatch: {brain_id}/{proposal_id}"
@@ -260,20 +265,25 @@ class ResearchBrainComparatorExecutor:
         timestamp = executed_at or datetime.now(UTC)
         if timestamp.tzinfo is None or timestamp.utcoffset() is None:
             raise ValueError("executed_at must be timezone-aware")
-        seed = int(sha256_json({"proposal_id": proposal_id, "candidate": resolved_candidate})[:8], 16)
+        seed = int(
+            sha256_json({"proposal_id": proposal_id, "candidate": resolved_candidate})[:8], 16
+        )
         execution_inputs: dict[str, JSONValue] = {
             "comparator_kind": _COMPARATOR_KIND,
             "candidate_value": resolved_candidate,
             "iterations": _ITERATIONS,
             "random_seed": seed,
         }
-        execution_id = "brainexec_" + sha256_json(
-            {
-                "proposal_checksum": sha256_json(proposal),
-                "approval_checksum": sha256_json(approval),
-                "execution_inputs": execution_inputs,
-            }
-        )[:24]
+        execution_id = (
+            "brainexec_"
+            + sha256_json(
+                {
+                    "proposal_checksum": sha256_json(proposal),
+                    "approval_checksum": sha256_json(approval),
+                    "execution_inputs": execution_inputs,
+                }
+            )[:24]
+        )
         experiment_id = "exp_" + execution_id
         manifest = self._run_or_recover_child(
             experiment_id=experiment_id,
@@ -341,8 +351,14 @@ class ResearchBrainComparatorExecutor:
                 )
             return existing
 
-        configuration = dict(source_manifest.definition.resolved_configuration)
-        configuration.pop("research_variable", None)
+        configuration = deepcopy(source_manifest.definition.resolved_configuration)
+        source_research_variable = configuration.pop("research_variable", None)
+        entry = configuration.get("entry")
+        if not isinstance(entry, dict):
+            raise ResearchBrainFollowUpExecutionError(
+                "source Strategy Builder configuration is missing its entry definition"
+            )
+        entry["expression"] = request.expression
         configuration["research_brain_follow_up"] = {
             "proposal_id": proposal_id,
             "proposal_checksum": proposal_checksum,
@@ -350,6 +366,8 @@ class ResearchBrainComparatorExecutor:
             "approval_checksum": approval_checksum,
             "source_experiment_id": source_manifest.experiment_id,
             "source_experiment_manifest_checksum": source_manifest.manifest_checksum,
+            "source_research_variable": source_research_variable,
+            "executed_entry_expression": request.expression,
             "challenge": "same_instrument_random_eligible_timing",
             "candidate_value": candidate_value,
             "iterations": _ITERATIONS,
@@ -533,7 +551,7 @@ def _brain_view_for_preflight(
     brain_store: FileResearchBrainStore,
     experiment_root: Path,
     brain_id: str,
-):
+) -> ResearchBrainView:
     from trade_scout.app.experiment_library_service import ExperimentLibraryService
     from trade_scout.app.research_brain_service import (
         ResearchBrainExperimentView,
