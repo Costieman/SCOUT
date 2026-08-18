@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from html import escape
 
+from trade_scout.app.research_brain_checkpoints import ResearchBrainReviewCheckpoint
 from trade_scout.app.research_brain_review import (
     ResearchBrainReview,
     build_research_brain_review,
@@ -50,10 +51,10 @@ def render_research_brains_html(
 <style>
 :root {{ color-scheme:dark; --bg:#0b0e13; --panel:#121720; --panel2:#171d27; --border:#293241; --text:#edf1f7; --muted:#98a6b8; --accent:#f1c84b; --good:#63d39a; --bad:#ef7b7b; --warn:#f2bd60; --blue:#7fc8ff; }}
 * {{ box-sizing:border-box; }} body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }} a {{ color:var(--accent); text-decoration:none; }} .wrap {{ width:min(1500px,96vw); margin:0 auto; padding:28px 0 70px; }} header {{ display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }} h1 {{ margin:0; font-size:30px; }} h2 {{ margin:0 0 10px; font-size:18px; }} h3 {{ margin:14px 0 8px; }} .subtle {{ color:var(--muted); }} .card {{ border:1px solid var(--border); background:var(--panel); border-radius:11px; padding:16px; margin-top:14px; }} .grid {{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }} .s4 {{ grid-column:span 4; }} .s6 {{ grid-column:span 6; }} .s8 {{ grid-column:span 8; }}
-.banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .success {{ border:1px solid #245a42; background:#0e2119; color:#9de2bd; padding:10px 12px; border-radius:8px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:10px 12px; border-radius:8px; margin:14px 0; }} .review {{ border:1px solid #665a2d; background:#17140b; padding:14px; border-radius:10px; margin-top:18px; }} .review-columns {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }} .review-box {{ border:1px solid var(--border); border-radius:8px; padding:12px; background:#0f141c; }}
+.banner {{ border:1px solid #36536b; background:#0d1b26; padding:12px 14px; border-radius:10px; margin:14px 0; }} .success {{ border:1px solid #245a42; background:#0e2119; color:#9de2bd; padding:10px 12px; border-radius:8px; margin:14px 0; }} .error {{ border:1px solid #6b2e2e; background:#221111; color:#f3b1b1; padding:10px 12px; border-radius:8px; margin:14px 0; }} .review {{ border:1px solid #665a2d; background:#17140b; padding:14px; border-radius:10px; margin-top:18px; }} .review-columns {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }} .review-box {{ border:1px solid var(--border); border-radius:8px; padding:12px; background:#0f141c; }} .checkpoint {{ border-top:1px solid var(--border); margin-top:14px; padding-top:14px; }} .checkpoint-form {{ display:grid; grid-template-columns:1fr 2fr auto; gap:10px; align-items:end; margin-top:10px; }}
 label {{ display:grid; gap:5px; margin-bottom:10px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }} input,select,textarea,button {{ width:100%; border:1px solid var(--border); border-radius:8px; background:var(--panel2); color:var(--text); padding:9px 10px; font:inherit; }} textarea {{ min-height:92px; resize:vertical; }} button,.button {{ cursor:pointer; background:#2a2411; border-color:#6d5b24; color:#f7d66e; font-weight:760; }}
 table {{ width:100%; border-collapse:collapse; }} th,td {{ padding:9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }} th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }} .scroll {{ overflow:auto; }} code {{ color:#d9e3ef; }} .pill {{ display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px 7px; font-size:11px; font-weight:750; }} .in-scope {{ color:var(--good); }} .drift {{ color:var(--warn); }} .unassessed {{ color:var(--muted); }} .failed {{ color:var(--bad); }} ul {{ padding-left:20px; }} details {{ margin:12px 0; }} summary {{ cursor:pointer; color:var(--accent); font-weight:700; }} .plain-state {{ display:block; margin-top:4px; color:var(--muted); font-size:12px; }}
-@media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} .review-columns {{ grid-template-columns:1fr; }} }}
+@media(max-width:1000px) {{ .s4,.s6,.s8 {{ grid-column:1/-1; }} .review-columns,.checkpoint-form {{ grid-template-columns:1fr; }} }}
 </style>
 </head>
 <body><div class="wrap">
@@ -121,20 +122,45 @@ def _brain_detail(view: ResearchBrainView) -> str:
 <tr><th>Notes</th><td>{escape(definition.notes or "—")}</td></tr>
 <tr><th>Technical brain ID</th><td><code>{escape(definition.brain_id)}</code></td></tr>
 </table></div><div class="s4"><h3>What is in this brain?</h3><ul><li>{len(snapshot.memberships)} saved experiments</li><li>{snapshot.succeeded_count} successful runs</li><li>{snapshot.failed_count} failed runs retained</li><li>{snapshot.in_scope_count} match the declared focus</li><li>{snapshot.drift_warning_count} scope warnings</li><li>{snapshot.unassessed_count} not scope-classified</li></ul><strong>Brain summary: {_conditioning_label(snapshot.conditioning_readiness)}</strong><div class="subtle">{escape(snapshot.conditioning_note)}</div></div></div>
-{_review_section(review)}
+{_review_section(review, definition.brain_id, view.review_checkpoints)}
 <details><summary>Advanced: focus boundaries</summary><ul>{focus}</ul></details>
 <h3>Experiments remembered by this brain</h3><div class="scroll"><table><thead><tr><th>Added</th><th>Experiment</th><th>Run status</th><th>Fits this brain?</th><th>Result glimpse</th><th>Your note</th><th>Evidence check</th></tr></thead><tbody>{experiment_rows}</tbody></table></div>
 </div>"""
 
 
-def _review_section(review: ResearchBrainReview) -> str:
+def _review_section(
+    review: ResearchBrainReview,
+    brain_id: str,
+    checkpoints: tuple[ResearchBrainReviewCheckpoint, ...],
+) -> str:
     findings = _review_list(review.findings, "No findings yet; add experiment evidence first.")
     cautions = _review_list(review.cautions, "No additional cautions recorded.")
     next_questions = _review_list(review.next_questions, "No follow-up question is available yet.")
+    history = _checkpoint_history(checkpoints)
     return f"""<div class="review"><h3>Brain review — what the saved evidence currently says</h3>
 <div class="banner"><strong>{escape(_review_readiness_label(review.readiness_label))}</strong><br>{escape(review.readiness_explanation)}<br><span class="subtle">This is a descriptive evidence review, not validation, optimization, or a trading recommendation.</span></div>
 <div class="review-columns"><div class="review-box"><strong>What we can say</strong>{findings}</div><div class="review-box"><strong>What is still shaky</strong>{cautions}</div><div class="review-box"><strong>Useful next questions</strong>{next_questions}</div></div>
+<div class="checkpoint"><strong>Freeze this review as a checkpoint</strong><div class="subtle">A checkpoint records this exact descriptive review and the exact experiments currently in the brain. It does not rerun research, choose winners, or validate anything. Later checkpoints let us see how the brain's evidence changed over time.</div>
+<form class="checkpoint-form" method="post" action="/research/brains"><input type="hidden" name="action" value="checkpoint"><input type="hidden" name="brain_id" value="{escape(brain_id)}"><label>Researcher<input name="actor" required value="local-user"></label><label>Optional note<input name="note" placeholder="For example: first volatility review before follow-up comparator tests"></label><button type="submit">Save review checkpoint</button></form>
+{history}</div>
 </div>"""
+
+
+def _checkpoint_history(checkpoints: tuple[ResearchBrainReviewCheckpoint, ...]) -> str:
+    if not checkpoints:
+        return '<div class="subtle">No review checkpoints saved yet.</div>'
+    rows = "".join(
+        "<tr>"
+        f"<td>{escape(_short_timestamp(item.created_at))}</td>"
+        f"<td><code>{escape(item.checkpoint_id)}</code></td>"
+        f"<td>{len(item.memberships)}</td>"
+        f"<td>{escape(_review_readiness_label(item.review.readiness_label))}</td>"
+        f"<td>{escape(item.created_by)}</td>"
+        f"<td>{escape(item.note or '—')}</td>"
+        "</tr>"
+        for item in reversed(checkpoints)
+    )
+    return f'<h3>Saved review checkpoints</h3><div class="scroll"><table><thead><tr><th>Saved</th><th>Checkpoint</th><th>Experiments</th><th>Review state</th><th>Researcher</th><th>Note</th></tr></thead><tbody>{rows}</tbody></table></div>'
 
 
 def _review_list(items: tuple[str, ...], empty: str) -> str:
