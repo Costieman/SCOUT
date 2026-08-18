@@ -153,7 +153,7 @@ class FileResearchBrainCheckpointStore:
         checkpoint: ResearchBrainReviewCheckpoint,
         view: ResearchBrainView,
     ) -> bool:
-        """Return whether the checkpoint still matches the brain's current definition/memberships."""
+        """Return whether this checkpoint still matches the brain's current membership state."""
 
         if checkpoint.brain_id != view.snapshot.definition.brain_id:
             return False
