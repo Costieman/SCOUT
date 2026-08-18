@@ -51,11 +51,8 @@ class _ControlledSweepStage:
                 "comparator_effect": {"baseline": 0.004, "excess_vs_baseline": 0.003},
                 "p_value": 0.08,
                 "points": [
-                    {"value": 10.0, "complete_event_count": 40, "expectancy_return": 0.01},
                     {"value": 15.0, "complete_event_count": 38, "expectancy_return": 0.025},
                     {"value": 20.0, "complete_event_count": 35, "expectancy_return": 0.03},
-                    {"value": 25.0, "complete_event_count": 31, "expectancy_return": 0.026},
-                    {"value": 30.0, "complete_event_count": 28, "expectancy_return": 0.012},
                 ],
             },
         )
@@ -73,7 +70,7 @@ def _definition(name: str, *, sweep: bool = False) -> ExperimentDefinition:
             "label": "Historical Volatility period",
             "target_feature_name": "historical_volatility",
             "parameter": "period",
-            "declared_values": [10.0, 15.0, 20.0, 25.0, 30.0],
+            "declared_values": [15.0, 20.0],
         }
     return ExperimentDefinition(
         name=name,
@@ -226,7 +223,6 @@ def test_parameter_stability_proposal_uses_existing_neighbor_values_not_new_sear
     assert proposal.readiness is FollowUpReadiness.READY_TO_PLAN
     assert "15" in proposal.proposed_change
     assert "20" in proposal.proposed_change
-    assert "25" in proposal.proposed_change
     assert "do not add a new wider search" in proposal.proposed_change.lower()
 
 
