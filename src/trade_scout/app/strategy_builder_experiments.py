@@ -24,10 +24,10 @@ from trade_scout.app.strategy_builder_service import (
     StrategyBuilderSource,
 )
 from trade_scout.experiments.contracts import (
+    ExperimentContext,
     ExperimentDefinition,
     ExperimentExecutionError,
     ExperimentManifest,
-    ExperimentContext,
     JSONValue,
     ResearchMode,
     StageResult,
@@ -35,6 +35,7 @@ from trade_scout.experiments.contracts import (
 from trade_scout.experiments.registry import DuckDBExperimentRegistry, IndexedManifestStore
 from trade_scout.experiments.runner import ExperimentRunner
 from trade_scout.experiments.store import FileManifestStore
+from trade_scout.statistics.exit_research import ExitPolicySummary
 
 _CAPTURE_SCHEMA = "strategy-builder-experiment-v0.1"
 _STANDARD_STAGE = "strategy_builder"
@@ -90,7 +91,9 @@ class StrategyBuilderExperimentRecorder:
     ) -> RecordedStrategyBuilderRun:
         """Execute and persist one ordinary Strategy Builder research request."""
 
-        stage = _StrategyBuilderStage(source, request, expected_dataset_version=self.dataset_version)
+        stage = _StrategyBuilderStage(
+            source, request, expected_dataset_version=self.dataset_version
+        )
         definition = ExperimentDefinition(
             name=f"Strategy Builder — {request.entry_family.value}",
             hypothesis="Interactive exploratory Strategy Builder hypothesis.",
@@ -228,7 +231,9 @@ class _EntrySweepStage:
             values=self._values,
         )
         if report.dataset_version != self._expected_dataset_version:
-            raise StrategyBuilderError("entry-sweep dataset does not match the experiment definition")
+            raise StrategyBuilderError(
+                "entry-sweep dataset does not match the experiment definition"
+            )
         self.report = report
         return StageResult(
             stage_name=self.name,
@@ -295,9 +300,7 @@ def _strategy_request_configuration(request: StrategyBuilderRequest) -> dict[str
         "exit_candidates": {
             "hold_to_horizon_control": True,
             "fixed_stop_percentages": [value * 100.0 for value in request.fixed_percentages],
-            "trailing_stop_percentages": [
-                value * 100.0 for value in request.trailing_percentages
-            ],
+            "trailing_stop_percentages": [value * 100.0 for value in request.trailing_percentages],
             "atr_stop_multiples": list(request.atr_multiples),
             "trailing_atr_multiples": list(request.trailing_atr_multiples),
         },
@@ -342,11 +345,7 @@ def _strategy_report_payload(report: StrategyBuilderReport) -> dict[str, JSONVal
     }
 
 
-def _policy_summary_payload(item: object) -> dict[str, JSONValue]:
-    from trade_scout.statistics.exit_research import ExitPolicySummary
-
-    if not isinstance(item, ExitPolicySummary):
-        raise TypeError("unexpected exit-policy summary type")
+def _policy_summary_payload(item: ExitPolicySummary) -> dict[str, JSONValue]:
     return {
         "policy_id": item.policy_id,
         "policy_version": item.policy_version,
