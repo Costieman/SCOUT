@@ -36,7 +36,8 @@ def _bar(index: int, *, close: float, width: float = 1.0) -> DailyBar:
 
 
 def test_nr7_marks_only_strictly_narrowest_current_range() -> None:
-    bars = tuple(_bar(index, close=100.0 + index, width=1.0) for index in range(6)) + (
+    bars = (
+        *tuple(_bar(index, close=100.0 + index, width=1.0) for index in range(6)),
         _bar(6, close=106.0, width=0.25),
     )
     spec = StrategyPrimitiveSpec(
