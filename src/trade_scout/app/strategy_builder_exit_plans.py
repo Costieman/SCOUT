@@ -35,7 +35,9 @@ def parse_exit_plan_tokens(
 ) -> tuple[ManagedExitPlan, ...]:
     """Parse repeated ``stop:value|target:value`` browser tokens into typed plans."""
 
-    plans = tuple(_parse_exit_plan_token(value, same_bar_policy=same_bar_policy) for value in values)
+    plans = tuple(
+        _parse_exit_plan_token(value, same_bar_policy=same_bar_policy) for value in values
+    )
     if len(set(plans)) != len(plans):
         raise ValueError("managed exit plans must not contain duplicates")
     return plans
@@ -61,7 +63,9 @@ def exit_plan_json_ready(plan: ManagedExitPlan) -> dict[str, object]:
     return {
         "stop_family": _REVERSE_STOP[plan.stop_family],
         "stop_value": _display_stop_value(plan),
-        "target_family": "none" if plan.target_family is None else _REVERSE_TARGET[plan.target_family],
+        "target_family": "none"
+        if plan.target_family is None
+        else _REVERSE_TARGET[plan.target_family],
         "target_value": None if plan.target_family is None else _display_target_value(plan),
     }
 
@@ -87,11 +91,7 @@ def _parse_exit_plan_token(value: str, *, same_bar_policy: SameBarExitPolicy) ->
             raise ValueError(f"unsupported profit target family {target_family_key!r}")
         if target_value is None:
             raise ValueError("profit target value is required")
-        resolved_target = (
-            target_value / 100.0
-            if target_family is TargetFamily.FIXED_PERCENT
-            else target_value
-        )
+        resolved_target = target_value / 100.0 if target_family is TargetFamily.FIXED_PERCENT else target_value
     return ManagedExitPlan(
         stop_family=stop_family,
         stop_value=resolved_stop,
