@@ -31,7 +31,11 @@ def render_research_brains_html(
         for item in brains
     )
     message_html = f'<div class="success">{escape(message)}</div>' if message else ""
-    error_html = f'<div class="error"><strong>Could not complete that action:</strong> {escape(error)}</div>' if error else ""
+    error_html = (
+        f'<div class="error"><strong>Could not complete that action:</strong> {escape(error)}</div>'
+        if error
+        else ""
+    )
     detail_html = _brain_detail(detail) if detail is not None else ""
     return f"""<!doctype html>
 <html lang="en">
@@ -94,10 +98,13 @@ def _brain_row(item: ResearchBrainListItem) -> str:
 def _brain_detail(view: ResearchBrainView) -> str:
     snapshot = view.snapshot
     definition = snapshot.definition
-    focus = "".join(
-        f"<li><code>{escape(rule.configuration_path)}</code> must be one of {escape(repr(rule.allowed_values))}</li>"
-        for rule in definition.focus_rules
-    ) or "<li>No strict focus boundaries were set. SCOUT will preserve experiments without trying to classify them as in or out of scope.</li>"
+    focus = (
+        "".join(
+            f"<li><code>{escape(rule.configuration_path)}</code> must be one of {escape(repr(rule.allowed_values))}</li>"
+            for rule in definition.focus_rules
+        )
+        or "<li>No strict focus boundaries were set. SCOUT will preserve experiments without trying to classify them as in or out of scope.</li>"
+    )
     experiment_rows = "".join(_experiment_row(item) for item in view.experiments)
     if not experiment_rows:
         experiment_rows = '<tr><td colspan="7" class="subtle">No experiments have been added to this brain yet.</td></tr>'
@@ -106,7 +113,7 @@ def _brain_detail(view: ResearchBrainView) -> str:
 <tr><th>Research question</th><td>{escape(definition.research_question)}</td></tr>
 <tr><th>Created by</th><td>{escape(definition.created_by)}</td></tr>
 <tr><th>Created at</th><td>{escape(definition.created_at)}</td></tr>
-<tr><th>Notes</th><td>{escape(definition.notes or '—')}</td></tr>
+<tr><th>Notes</th><td>{escape(definition.notes or "—")}</td></tr>
 <tr><th>Technical brain ID</th><td><code>{escape(definition.brain_id)}</code></td></tr>
 </table></div><div class="s4"><h3>What is in this brain?</h3><ul><li>{len(snapshot.memberships)} saved experiments</li><li>{snapshot.succeeded_count} successful runs</li><li>{snapshot.failed_count} failed runs retained</li><li>{snapshot.in_scope_count} match the declared focus</li><li>{snapshot.drift_warning_count} scope warnings</li><li>{snapshot.unassessed_count} not scope-classified</li></ul><strong>Brain summary: {_conditioning_label(snapshot.conditioning_readiness)}</strong><div class="subtle">{escape(snapshot.conditioning_note)}</div></div></div>
 <details><summary>Advanced: focus boundaries</summary><ul>{focus}</ul></details>
@@ -150,11 +157,21 @@ def _result_text(detail: object) -> str:
         return "No completed result summary"
     result = detail.result
     if result.kind == "strategy_builder":
-        expectancy = "—" if result.hold_expectancy is None else f"{result.hold_expectancy * 100:+.2f}%"
+        expectancy = (
+            "—" if result.hold_expectancy is None else f"{result.hold_expectancy * 100:+.2f}%"
+        )
         return f"N={result.complete_event_count or 0}; hold expectancy {expectancy}"
     if result.kind == "strategy_builder_entry_sweep":
-        low = "—" if result.sweep_expectancy_low is None else f"{result.sweep_expectancy_low * 100:+.2f}%"
-        high = "—" if result.sweep_expectancy_high is None else f"{result.sweep_expectancy_high * 100:+.2f}%"
+        low = (
+            "—"
+            if result.sweep_expectancy_low is None
+            else f"{result.sweep_expectancy_low * 100:+.2f}%"
+        )
+        high = (
+            "—"
+            if result.sweep_expectancy_high is None
+            else f"{result.sweep_expectancy_high * 100:+.2f}%"
+        )
         return f"{result.sweep_point_count or 0} tested values; expectancy {low} to {high}"
     return result.kind
 
