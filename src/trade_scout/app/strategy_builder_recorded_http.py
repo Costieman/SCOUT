@@ -1,4 +1,9 @@
-"""HTTP-query adapter for governed Strategy Builder entry-parameter sweeps."""
+"""Recorded HTTP adapter for normal Strategy Builder research requests.
+
+The legacy local-console route remains usable without an experiment recorder. The research workbench
+uses this adapter when durable experiment capture is configured so the same validated request model
+and analytical service execute inside the existing ExperimentRunner.
+"""
 
 from __future__ import annotations
 
@@ -8,12 +13,6 @@ from urllib.parse import parse_qs
 from trade_scout.app.entry_strategy_registry import EntryFamily, available_entry_strategies
 from trade_scout.app.exit_policy_lab_service import parse_multiple_grid, parse_percentage_grid
 from trade_scout.app.local_console import LocalConsoleConfig
-from trade_scout.app.strategy_builder_entry_sweep import (
-    EntrySweepParameter,
-    StrategyBuilderEntrySweepService,
-    materialize_entry_sweep_values,
-)
-from trade_scout.app.strategy_builder_entry_sweep_surface import attach_entry_sweep_html
 from trade_scout.app.strategy_builder_experiments import (
     StrategyBuilderExperimentRecorder,
     attach_experiment_record_html,
@@ -23,23 +22,13 @@ from trade_scout.app.strategy_builder_surface import render_strategy_builder_htm
 from trade_scout.patterns.consolidation_breakout import TrendFilter
 from trade_scout.statistics.strategy_research import available_strategy_features
 
-INTERACTIVE_ENTRY_SWEEP_LIMIT = 8
 
-
-def is_entry_sweep_query(query: str) -> bool:
-    """Return whether one Strategy Builder request explicitly asks for an entry sweep."""
-
-    parameters = parse_qs(query, keep_blank_values=True)
-    return bool(parameters.get("entry_sweep_feature"))
-
-
-def build_entry_sweep_page(
+def build_recorded_strategy_page(
     query: str,
     config: LocalConsoleConfig,
-    *,
-    experiment_recorder: StrategyBuilderExperimentRecorder | None = None,
+    recorder: StrategyBuilderExperimentRecorder,
 ) -> tuple[HTTPStatus, str]:
-    """Run one declared entry-indicator sweep and return its Strategy Builder page."""
+    """Run one normal Strategy Builder request as a durable governed experiment."""
 
     source = config.strategy_builder_source
     entries = available_entry_strategies()
@@ -51,9 +40,7 @@ def build_entry_sweep_page(
                 universes=(),
                 entries=entries,
                 features=features,
-                error=(
-                    "Strategy Builder entry sweeps require a configured canonical research source."
-                ),
+                error="Strategy Builder experiment capture requires a configured canonical source.",
             ),
         )
     try:
@@ -79,7 +66,13 @@ def build_entry_sweep_page(
             ),
             lookback_years=int(_one(parameters, "lookback_years", default="2")),
             horizon=int(_one(parameters, "horizon", default="20")),
-            expression=_one(parameters, "expression"),
+            expression=_one(
+                parameters,
+                "expression",
+                default=(
+                    "return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"
+                ),
+            ),
             rank_feature=_one(parameters, "rank_feature", default="return_20"),
             descending=_one(parameters, "rank_direction", default="desc") == "desc",
             per_session_limit=int(_one(parameters, "per_session_limit", default="500")),
@@ -87,6 +80,9 @@ def build_entry_sweep_page(
             max_range_pct=float(_one(parameters, "max_range_pct", default="12")) / 100.0,
             trend_filter=TrendFilter(
                 _one(parameters, "trend_filter", default=TrendFilter.ABOVE_SMA_50_100_200.value)
+            ),
+            min_breakout_volume_ratio=_optional_volume_ratio(
+                _one(parameters, "volume_ratio", default="none")
             ),
             fixed_percentages=parse_percentage_grid(_one(parameters, "fixed_stops", default="")),
             trailing_percentages=parse_percentage_grid(
@@ -101,48 +97,15 @@ def build_entry_sweep_page(
             stop_slippage_bps=float(_one(parameters, "stop_slip", default="0")),
             commission_bps_per_side=float(_one(parameters, "commission", default="0")),
         )
-        target_feature_name = _one(parameters, "entry_sweep_feature")
-        sweep_parameter = EntrySweepParameter(_one(parameters, "entry_sweep_parameter"))
-        values = materialize_entry_sweep_values(
-            start=float(_one(parameters, "entry_sweep_from")),
-            end=float(_one(parameters, "entry_sweep_to")),
-            step=float(_one(parameters, "entry_sweep_step")),
-            parameter=sweep_parameter,
-        )
-        if len(values) > INTERACTIVE_ENTRY_SWEEP_LIMIT:
-            raise ValueError(
-                "interactive entry sweeps are temporarily limited to "
-                f"{INTERACTIVE_ENTRY_SWEEP_LIMIT} values to protect local browser responsiveness; "
-                "increase Step or narrow the range"
-            )
-        if experiment_recorder is None:
-            report = StrategyBuilderEntrySweepService(source).run(
-                request,
-                target_feature_name=target_feature_name,
-                parameter=sweep_parameter,
-                values=values,
-            )
-            manifest = None
-        else:
-            recorded = experiment_recorder.run_entry_sweep(
-                source,
-                request,
-                target_feature_name=target_feature_name,
-                parameter=sweep_parameter,
-                values=values,
-            )
-            report = recorded.report
-            manifest = recorded.manifest
+        recorded = recorder.run_strategy(source, request)
         html = render_strategy_builder_html(
             universes=universes,
             entries=entries,
             features=features,
             request=request,
+            report=recorded.report,
         )
-        html = attach_entry_sweep_html(html, report)
-        if manifest is not None:
-            html = attach_experiment_record_html(html, manifest)
-        return HTTPStatus.OK, html
+        return HTTPStatus.OK, attach_experiment_record_html(html, recorded.manifest)
     except (ValueError, StrategyBuilderError) as exc:
         html = render_strategy_builder_html(
             universes=universes,
@@ -152,6 +115,15 @@ def build_entry_sweep_page(
             error=str(exc),
         )
         return HTTPStatus.BAD_REQUEST, html
+
+
+def _optional_volume_ratio(value: str) -> float | None:
+    if value.strip().lower() == "none":
+        return None
+    result = float(value)
+    if result <= 0:
+        raise ValueError("volume_ratio must be positive or 'none'")
+    return result
 
 
 def _one(
@@ -170,8 +142,4 @@ def _one(
     return values[0]
 
 
-__all__ = [
-    "INTERACTIVE_ENTRY_SWEEP_LIMIT",
-    "build_entry_sweep_page",
-    "is_entry_sweep_query",
-]
+__all__ = ["build_recorded_strategy_page"]
