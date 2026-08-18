@@ -11,16 +11,18 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 from trade_scout.app.research_brain_review import (
     BrainSweepObservation,
     ResearchBrainReview,
 )
-from trade_scout.app.research_brain_service import ResearchBrainView
 from trade_scout.experiments.research_brains import BrainExperimentMembership
 from trade_scout.experiments.serialization import canonical_json, sha256_json
+
+if TYPE_CHECKING:
+    from trade_scout.app.research_brain_service import ResearchBrainView
 
 
 class ResearchBrainCheckpointError(RuntimeError):
