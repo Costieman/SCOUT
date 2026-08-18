@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 import webbrowser
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
 from trade_scout.app.research_workbench_console import serve_research_workbench_console
+from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
 from trade_scout.app.windowed_canonical_source import WindowedCanonicalUniverseResearchSource
 
 
@@ -62,6 +64,12 @@ def main() -> int:
         universe_research_source=universe_source,
         strategy_builder_source=universe_source,
     )
+    experiment_root = workspace.root / "research" / "experiments"
+    experiment_recorder = StrategyBuilderExperimentRecorder(
+        experiment_root=experiment_root,
+        dataset_version=dataset_version,
+        code_version=_git_head(repository_root),
+    )
     base_url = f"http://{args.host}:{args.port}/"
     universe_url = f"{base_url}research/universe"
     edge_url = f"{base_url}research/edge"
@@ -74,6 +82,8 @@ def main() -> int:
     print(f"Single-stock Edge Explorer: {edge_url}")
     print(f"Risk & Stop Research: {risk_url}")
     print(f"Configurable Exit Policy Lab: {exit_url}")
+    print(f"Experiment records: {experiment_root}")
+    print(f"Experiment registry: {experiment_recorder.registry_path}")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     if args.open_browser:
@@ -84,10 +94,25 @@ def main() -> int:
             host=args.host,
             port=args.port,
             allow_remote=args.allow_remote,
+            experiment_recorder=experiment_recorder,
         )
     except KeyboardInterrupt:
         print("\nTrade Scout research workbench stopped.")
     return 0
+
+
+def _git_head(repository_root: Path) -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository_root,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    value = completed.stdout.strip()
+    if completed.returncode != 0 or not value:
+        raise SystemExit("cannot resolve repository HEAD for experiment provenance")
+    return value
 
 
 if __name__ == "__main__":
