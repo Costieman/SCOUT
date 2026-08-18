@@ -147,10 +147,7 @@ def build_research_brain_conditioning(view: ResearchBrainView) -> ResearchBrainC
         item.integrity_error is not None or item.experiment is None for item in view.experiments
     )
     sweeps = tuple(
-        sweep
-        for detail in readable
-        for sweep in (_sweep_evidence(detail),)
-        if sweep is not None
+        sweep for detail in readable for sweep in (_sweep_evidence(detail),) if sweep is not None
     )
     sample_counts = _sample_counts(readable)
     comparator_hits = _artifact_hits(readable, _COMPARATOR_TOKENS)
@@ -490,7 +487,9 @@ def _sweep_evidence(detail: ExperimentLibraryDetail) -> _SweepEvidence | None:
     for raw in raw_points:
         if not isinstance(raw, dict):
             continue
-        value = _number(raw.get("parameter_value") if "parameter_value" in raw else raw.get("value"))
+        value = _number(
+            raw.get("parameter_value") if "parameter_value" in raw else raw.get("value")
+        )
         expectancy = _number(raw.get("expectancy_return"))
         count = _integer(raw.get("complete_event_count"))
         if value is None or expectancy is None:
@@ -535,7 +534,9 @@ def _neighbor_description(sweep: _SweepEvidence) -> str:
     if left is not None:
         parts.append(f"left neighbor {_format_number(left.value)} at {_percent(left.expectancy)}")
     if right is not None:
-        parts.append(f"right neighbor {_format_number(right.value)} at {_percent(right.expectancy)}")
+        parts.append(
+            f"right neighbor {_format_number(right.value)} at {_percent(right.expectancy)}"
+        )
     best_n = best.complete_event_count
     if best_n is not None:
         parts.append(f"peak-cell N={best_n}")
@@ -605,7 +606,11 @@ def _has_evidence_value(value: JSONValue) -> bool:
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
-        return bool(value.strip()) and value.strip().upper() not in {"NOT_RUN", "NOT_TESTED", "NONE"}
+        return bool(value.strip()) and value.strip().upper() not in {
+            "NOT_RUN",
+            "NOT_TESTED",
+            "NONE",
+        }
     if isinstance(value, list | dict):
         return bool(value)
     return True
