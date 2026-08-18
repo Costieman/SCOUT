@@ -204,7 +204,9 @@ def test_entry_sweep_persists_declared_search_space_and_point_results(tmp_path: 
     )
 
     persisted = FileManifestStore(tmp_path).read_manifest(recorded.manifest.experiment_id)
-    variable = cast(dict[str, object], persisted.definition.resolved_configuration["research_variable"])
+    variable = cast(
+        dict[str, object], persisted.definition.resolved_configuration["research_variable"]
+    )
     assert variable["declared_values"] == [10.0, 20.0, 30.0]
     assert variable["entry_populations_are_separate"] is True
     artifact = FileManifestStore(tmp_path).read_stage_output(
@@ -212,9 +214,10 @@ def test_entry_sweep_persists_declared_search_space_and_point_results(tmp_path: 
     )
     assert artifact["declared_values"] == [10.0, 20.0, 30.0]
     assert len(cast(list[object], artifact["points"])) == 3
-    assert DuckDBExperimentRegistry(recorder.registry_path).get(
-        recorded.manifest.experiment_id
-    ).status is ExperimentStatus.SUCCEEDED
+    assert (
+        DuckDBExperimentRegistry(recorder.registry_path).get(recorded.manifest.experiment_id).status
+        is ExperimentStatus.SUCCEEDED
+    )
 
 
 def test_failed_strategy_run_is_retained_in_registry(tmp_path: Path) -> None:
@@ -250,9 +253,7 @@ def test_saved_experiment_card_exposes_identity_without_claiming_validation(tmp_
         ),
     )
 
-    html = attach_experiment_record_html(
-        "<html><body><div></div></body></html>", recorded.manifest
-    )
+    html = attach_experiment_record_html("<html><body><div></div></body></html>", recorded.manifest)
 
     assert recorded.manifest.experiment_id in html
     assert "Automatically saved" in html
