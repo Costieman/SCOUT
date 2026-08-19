@@ -108,9 +108,7 @@ class RiskResearchService:
         for bars in series.values():
             dataset_versions.add(str(bars[0].dataset_version))
             replay = replay_consolidation_pipeline(bars, config)
-            events = tuple(
-                item for item in replay.events if start <= item.signal_date <= latest
-            )
+            events = tuple(item for item in replay.events if start <= item.signal_date <= latest)
             contexts = _structural_contexts(events, replay.pattern_states)
             event_count += len(events)
             results.extend(
