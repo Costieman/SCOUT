@@ -13,6 +13,7 @@ from trade_scout.app.cached_windowed_canonical_source import (
 from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
+from trade_scout.app.research_station_runtime_identity import configure_runtime_identity
 from trade_scout.app.research_station_workflow_v7 import (
     configure_research_station_runtime,
     serve_research_workbench_console,
@@ -51,6 +52,8 @@ def main() -> int:
             "reviewed identity candidate is missing; build the Tiingo identity candidate first"
         )
 
+    commit_sha = _git_head(repository_root)
+    branch = _git_branch(repository_root)
     edge_source = CanonicalEdgeExplorerSource(
         canonical_root=workspace.canonical_root,
         dataset_version=dataset_version,
@@ -63,7 +66,7 @@ def main() -> int:
     )
     config = LocalConsoleConfig(
         sources=workspace.data_health_sources(repository_root=repository_root),
-        build_label=f"research-workbench:{workspace.manifest.workspace_id}",
+        build_label=f"research-workbench:{workspace.manifest.workspace_id}@{commit_sha[:8]}",
         refresh_seconds=15,
         edge_explorer_source=edge_source,
         universe_research_source=universe_source,
@@ -74,7 +77,7 @@ def main() -> int:
     experiment_recorder = StrategyBuilderExperimentRecorder(
         experiment_root=experiment_root,
         dataset_version=dataset_version,
-        code_version=_git_head(repository_root),
+        code_version=commit_sha,
     )
     base_url = f"http://{args.host}:{args.port}/"
     universe_url = f"{base_url}research/universe"
@@ -95,11 +98,13 @@ def main() -> int:
     print(f"Experiment records: {experiment_root}")
     print(f"Experiment registry: {experiment_recorder.registry_path}")
     print(f"Research brain records: {brain_root}")
+    print(f"SCOUT runtime: {branch} @ {commit_sha[:8]}")
     print("Research Station run path: validation-focus-v7")
     print("Canonical research read cache: enabled for iterative runs")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     configure_research_station_runtime()
+    configure_runtime_identity(commit_sha=commit_sha, branch=branch)
     if args.open_browser:
         webbrowser.open(strategy_url)
     try:
@@ -116,8 +121,24 @@ def main() -> int:
 
 
 def _git_head(repository_root: Path) -> str:
+    return _git_value(
+        repository_root, "rev-parse", "HEAD", failure="cannot resolve repository HEAD"
+    )
+
+
+def _git_branch(repository_root: Path) -> str:
+    return _git_value(
+        repository_root,
+        "rev-parse",
+        "--abbrev-ref",
+        "HEAD",
+        failure="cannot resolve repository branch",
+    )
+
+
+def _git_value(repository_root: Path, *args: str, failure: str) -> str:
     completed = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
+        ["git", *args],
         cwd=repository_root,
         capture_output=True,
         check=False,
@@ -125,7 +146,7 @@ def _git_head(repository_root: Path) -> str:
     )
     value = completed.stdout.strip()
     if completed.returncode != 0 or not value:
-        raise SystemExit("cannot resolve repository HEAD for experiment provenance")
+        raise SystemExit(failure)
     return value
 
 
