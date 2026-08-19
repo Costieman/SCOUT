@@ -93,7 +93,7 @@ def main() -> int:
     print(f"Experiment records: {experiment_root}")
     print(f"Experiment registry: {experiment_recorder.registry_path}")
     print(f"Research brain records: {brain_root}")
-    print("Research Station run path: native-v5-lifecycle-fix")
+    print("Research Station run path: native-v5-validation-fix")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     configure_research_station_runtime()

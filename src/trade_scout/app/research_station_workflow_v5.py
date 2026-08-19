@@ -1,10 +1,12 @@
 # ruff: noqa: E501
-"""Research Station run repair using native form submission.
+"""Research Station run repair with observable browser validation.
 
-The earlier run path failed because the persistent Run dock is created after the research-memory asset
-starts executing. The previous v5 implementation attempted to replace the Run button only once, before
-that dock existed, so the repair silently never attached. This version keeps the known-good suite and
-Research Brain integration intact and changes only the timing of native Run installation.
+The persistent Run dock is created after the research-memory asset starts executing, so Run installation
+must wait for that dock. In addition, browser constraint validation happens before a form ``submit``
+event. A native submit button can therefore remain stuck at "Validating configuration..." when an
+invalid control suppresses submission entirely. This layer preserves the suite/Brain integration chain,
+installs only after the persistent dock exists, validates explicitly, and then enters the normal submit
+pipeline with ``requestSubmit()``.
 """
 
 from __future__ import annotations
@@ -78,7 +80,7 @@ _RESEARCH_STATION_V5_JS = r"""
     runtime = document.createElement("div");
     runtime.id = "research-run-runtime";
     runtime.style.cssText = "font-size:11px;color:#7fc8ff;margin-left:auto;white-space:nowrap";
-    runtime.textContent = "Run path: native-v5-lifecycle-fix";
+    runtime.textContent = "Run path: native-v5-validation-fix";
   }
 
   const installNativeRun = () => {
@@ -88,7 +90,7 @@ _RESEARCH_STATION_V5_JS = r"""
     if (oldRun.dataset.nativeRun === "1") return true;
 
     const run = oldRun.cloneNode(true);
-    run.type = "submit";
+    run.type = "button";
     run.dataset.nativeRun = "1";
     run.disabled = false;
     run.textContent = "Run research";
@@ -103,15 +105,33 @@ _RESEARCH_STATION_V5_JS = r"""
     }
     if (!runtime.isConnected) dock.insertBefore(runtime, status);
 
-    run.addEventListener("click", () => {
+    run.addEventListener("click", (event) => {
+      event.preventDefault();
       status.textContent = "Validating configuration…";
+      if (!form.reportValidity()) {
+        status.textContent = "Research blocked by invalid browser input.";
+        showFailure(
+          failureReason(),
+          "Browser validation blocked the request before a submit event could occur. Correct the highlighted field and press Run research again. Nothing was sent to the backend."
+        );
+        return;
+      }
+      try {
+        form.requestSubmit();
+      } catch (error) {
+        status.textContent = "Research could not be submitted.";
+        showFailure(
+          `Could not submit the research form: ${error instanceof Error ? error.message : String(error)}`,
+          "The Run action was received and browser validation passed, but requestSubmit() failed before backend execution."
+        );
+      }
     });
     return true;
   };
 
-  // The persistent run dock is created by the earlier v2 layer on DOMContentLoaded. v5 used to
-  // run this once before the dock existed and then silently give up. Wait until the known-good
-  // dock exists, then replace only its Run button. No document-level click interception is used.
+  // The persistent run dock is created by the earlier v2 layer on DOMContentLoaded. Wait until the
+  // known-good dock exists, then replace only its Run button. No document-level click interception
+  // and no suite/Brain control mutation is used here.
   const scheduleNativeRunInstall = () => {
     let attempts = 0;
     const attempt = () => {
@@ -127,8 +147,9 @@ _RESEARCH_STATION_V5_JS = r"""
   };
   scheduleNativeRunInstall();
 
-  // Capture phase runs before the existing composer/sweep submit handlers. We then inspect the
-  // same Event on the next task, after those handlers have had the opportunity to preventDefault().
+  // Capture phase runs before the existing composer/sweep submit handlers. Once explicit browser
+  // validation passes, requestSubmit() enters this normal pipeline. We then inspect the same Event
+  // after later handlers have had the opportunity to preventDefault().
   form.addEventListener("submit", (event) => {
     let marker = form.querySelector('input[name="execute_run"]');
     if (!marker) {
@@ -148,7 +169,7 @@ _RESEARCH_STATION_V5_JS = r"""
       if (status) status.textContent = "Research was blocked before backend execution.";
       showFailure(
         failureReason(),
-        "The browser received your Run command, but a client-side validation rule stopped submission. Nothing was sent to the research backend."
+        "The browser received your Run command, but a client-side Strategy Builder validation rule stopped submission. Nothing was sent to the research backend."
       );
     }, 0);
   }, true);
@@ -166,7 +187,7 @@ _RESEARCH_STATION_V5_JS = r"""
 
 
 def configure_research_station_runtime() -> None:
-    """Install prior workflow repairs and attach native Run after the persistent dock exists."""
+    """Install prior workflow repairs and attach observable Run after the persistent dock exists."""
 
     global _CONFIGURED
     if _CONFIGURED:
@@ -175,7 +196,7 @@ def configure_research_station_runtime() -> None:
     asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
     namespace = vars(_console)
     asset = cast(str, namespace[asset_name])
-    if "Run path: native-v5-lifecycle-fix" not in asset:
+    if "Run path: native-v5-validation-fix" not in asset:
         namespace[asset_name] = asset + "\n" + _RESEARCH_STATION_V5_JS
     _CONFIGURED = True
 
