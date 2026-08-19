@@ -7,6 +7,9 @@ import subprocess
 import webbrowser
 from pathlib import Path
 
+from trade_scout.app.cached_windowed_canonical_source import (
+    CachedWindowedCanonicalUniverseResearchSource,
+)
 from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
@@ -15,7 +18,6 @@ from trade_scout.app.research_station_workflow_v7 import (
     serve_research_workbench_console,
 )
 from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
-from trade_scout.app.windowed_canonical_source import WindowedCanonicalUniverseResearchSource
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -54,7 +56,7 @@ def main() -> int:
         dataset_version=dataset_version,
         identity_candidate_path=identity_candidate,
     )
-    universe_source = WindowedCanonicalUniverseResearchSource(
+    universe_source = CachedWindowedCanonicalUniverseResearchSource(
         canonical_root=workspace.canonical_root,
         dataset_version=dataset_version,
         identity_candidate_path=identity_candidate,
@@ -94,6 +96,7 @@ def main() -> int:
     print(f"Experiment registry: {experiment_recorder.registry_path}")
     print(f"Research brain records: {brain_root}")
     print("Research Station run path: validation-focus-v7")
+    print("Canonical research read cache: enabled for iterative runs")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
     configure_research_station_runtime()
