@@ -87,14 +87,12 @@ def validate_suite_launch_plan(plan: SuiteLaunchPlan) -> tuple[SuiteContractIssu
                         f"No Builder threshold contract exists for {condition.feature_name!r}.",
                     )
                 elif not value_matches_threshold_contract(condition.value, contract):
-                    issue(
-                        f"entry_condition_{index}",
-                        "invalid_threshold",
-                        (
-                            f"{condition.feature_name} value {condition.value:g} is outside or off-step; "
-                            f"expected {contract.minimum:g}..{contract.maximum:g} step {contract.step:g}."
-                        ),
+                    detail = (
+                        f"{condition.feature_name} value {condition.value:g} is outside or "
+                        f"off-step; expected {contract.minimum:g}..{contract.maximum:g} "
+                        f"step {contract.step:g}."
                     )
+                    issue(f"entry_condition_{index}", "invalid_threshold", detail)
         rank_feature = str(p.get("rank_feature", ""))
         if not _supported_feature(rank_feature):
             issue(
