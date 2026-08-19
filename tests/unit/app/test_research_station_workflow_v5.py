@@ -14,6 +14,12 @@ def test_v5_validates_explicitly_before_request_submit() -> None:
     assert "Research did not start" in source
 
 
+def test_v5_distinguishes_v4_handoff_from_validation_cancellation() -> None:
+    source = workflow._RESEARCH_STATION_V5_JS
+    assert 'statusText.startsWith("Request accepted")' in source
+    assert "intentional handoff is success" in source
+
+
 def test_v5_waits_for_persistent_run_dock_before_installing() -> None:
     source = workflow._RESEARCH_STATION_V5_JS
     assert "scheduleNativeRunInstall" in source
