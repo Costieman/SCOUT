@@ -1,8 +1,9 @@
 # ruff: noqa: E501
 """Visible runtime identity for the local Research Station.
 
-The badge is intentionally presentation-only. It makes the exact running checkout obvious to the
-operator without changing research configuration, analytical services, or persisted experiment data.
+The badge makes the exact running checkout obvious to the operator. Runtime configuration also
+installs small presentation-contract stability shims without changing analytical services or
+persisted experiment data.
 """
 
 from __future__ import annotations
@@ -11,13 +12,15 @@ import json
 from typing import cast
 
 from trade_scout.app import research_workbench_console as _console
+from trade_scout.app.strategy_builder_threshold_contract_ui import configure_threshold_contract_ui
 
 _CONFIGURED_IDENTITIES: set[str] = set()
 
 
 def configure_runtime_identity(*, commit_sha: str, branch: str) -> None:
-    """Append a fixed bottom-right runtime badge to the Strategy Builder asset."""
+    """Append a fixed bottom-right runtime badge and browser contract guards."""
 
+    configure_threshold_contract_ui()
     short_sha = commit_sha.strip()[:8]
     clean_branch = branch.strip() or "detached"
     identity = f"SCOUT {clean_branch} @ {short_sha}"
