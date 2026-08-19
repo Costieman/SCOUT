@@ -50,7 +50,7 @@ def _config(*, min_volume_ratio: float | None = None) -> ConsolidationBreakoutCo
 
 
 def test_projection_reports_canonical_breakout() -> None:
-    bars = tuple(_bar(index) for index in range(5)) + (_bar(5, close=103.0, high=104.0, low=101.0),)
+    bars = (*(_bar(index) for index in range(5)), _bar(5, close=103.0, high=104.0, low=101.0))
 
     projection = project_latest_consolidation_state(bars, _config())
 
@@ -61,7 +61,8 @@ def test_projection_reports_canonical_breakout() -> None:
 
 
 def test_projection_reports_volume_gate_failure_without_inventing_event() -> None:
-    bars = tuple(_bar(index) for index in range(5)) + (
+    bars = (
+        *(_bar(index) for index in range(5)),
         _bar(5, close=103.0, high=104.0, low=101.0, volume=150.0),
     )
 
@@ -74,9 +75,7 @@ def test_projection_reports_volume_gate_failure_without_inventing_event() -> Non
 
 
 def test_projection_reports_quality_invalidation() -> None:
-    bars = tuple(_bar(index) for index in range(5)) + (
-        _bar(5, quality_status=QualityStatus.REJECT),
-    )
+    bars = (*(_bar(index) for index in range(5)), _bar(5, quality_status=QualityStatus.REJECT))
 
     projection = project_latest_consolidation_state(bars, _config())
 
@@ -85,10 +84,8 @@ def test_projection_reports_quality_invalidation() -> None:
 
 
 def test_projection_is_prefix_invariant_to_future_bars() -> None:
-    prefix = tuple(_bar(index) for index in range(5)) + (
-        _bar(5, close=103.0, high=104.0, low=101.0),
-    )
-    extended = prefix + (_bar(6, close=80.0, high=81.0, low=79.0),)
+    prefix = (*(_bar(index) for index in range(5)), _bar(5, close=103.0, high=104.0, low=101.0))
+    extended = (*prefix, _bar(6, close=80.0, high=81.0, low=79.0))
 
     prefix_projection = project_latest_consolidation_state(prefix, _config())
     repeated_prefix_projection = project_latest_consolidation_state(extended[:6], _config())
