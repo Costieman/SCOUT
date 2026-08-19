@@ -12,9 +12,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
+from typing import Any
 
 from trade_scout.data.contracts import PriceRepresentation, QualityStatus, ResearchBar
-from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutEvent
 
 
 class PatternTimeframe(StrEnum):
@@ -91,12 +91,17 @@ def build_pattern_frames(
 
 
 def remap_breakout_events_to_daily(
-    events: tuple[ConsolidationBreakoutEvent, ...],
+    events: tuple[Any, ...],
     frame: PatternSeriesFrame,
-) -> tuple[ConsolidationBreakoutEvent, ...]:
-    """Map pattern-bar signal indices to underlying daily indices for outcome measurement."""
+) -> tuple[Any, ...]:
+    """Map dataclass event signal indices to underlying daily indices for outcome measurement.
 
-    remapped: list[ConsolidationBreakoutEvent] = []
+    The pattern layer intentionally does not depend on a concrete downstream event family. Any
+    immutable dataclass event with ``signal_index``, ``event_id`` and
+    ``event_definition_version`` fields can be remapped here.
+    """
+
+    remapped: list[Any] = []
     for event in events:
         if event.signal_index < 0 or event.signal_index >= len(frame.source_end_indices):
             raise ValueError("pattern event signal index is outside the source mapping")

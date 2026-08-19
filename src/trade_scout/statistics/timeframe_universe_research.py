@@ -8,6 +8,8 @@ from datetime import date
 from statistics import median
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
+from trade_scout.events.consolidation_breakout import ConsolidationBreakoutEvent
+from trade_scout.events.consolidation_pipeline import detect_consolidation_events
 from trade_scout.outcomes.forward_returns import (
     ForwardOutcome,
     HorizonSummary,
@@ -16,9 +18,7 @@ from trade_scout.outcomes.forward_returns import (
 )
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
-    ConsolidationBreakoutEvent,
     TrendFilter,
-    detect_consolidation_breakouts,
     trend_qualified_indices,
 )
 from trade_scout.patterns.timeframes import (
@@ -68,7 +68,8 @@ def build_timeframe_universe_research_report(
         )
         return replace(
             report,
-            strategy_version="consolidation-breakout-research-v0.3:daily",
+            strategy_version="consolidation-breakout-research-v0.4:daily",
+            event_definition_version="consolidation-close-breakout-v0.3",
             comparator_definition=(
                 "same-instrument daily trend-context bars sampled every 5 pattern bars; "
                 "outcomes measured in daily trading sessions"
@@ -96,7 +97,7 @@ def build_timeframe_universe_research_report(
             events_by_symbol[symbol] = ()
             outcomes_by_symbol[symbol] = ()
             continue
-        pattern_events = detect_consolidation_breakouts(frame.bars, config)
+        pattern_events = detect_consolidation_events(frame.bars, config)
         daily_events = _events_in_window(
             remap_breakout_events_to_daily(pattern_events, frame),
             start=analysis_start,
@@ -187,8 +188,8 @@ def build_timeframe_universe_research_report(
         ),
         parameter_surface=parameter_surface,
         warnings=warnings,
-        strategy_version=f"consolidation-breakout-research-v0.3:{pattern_timeframe.value}",
-        event_definition_version="consolidation-close-breakout-timeframe-v0.1",
+        strategy_version=f"consolidation-breakout-research-v0.4:{pattern_timeframe.value}",
+        event_definition_version="consolidation-close-breakout-timeframe-v0.2",
         comparator_definition=(
             f"same-instrument {pattern_timeframe.value} trend-context bars sampled every 5 "
             "pattern bars; outcomes measured in daily trading sessions"
@@ -235,7 +236,7 @@ def _parameter_surface(
                 frame = frames[symbol]
                 if not frame.bars:
                     continue
-                detected = detect_consolidation_breakouts(frame.bars, config)
+                detected = detect_consolidation_events(frame.bars, config)
                 daily_events = _events_in_window(
                     remap_breakout_events_to_daily(detected, frame),
                     start=analysis_start,
