@@ -35,7 +35,9 @@ from trade_scout.statistics.strategy_research import available_strategy_features
 RecordedPageBuilder = Callable[
     [str, LocalConsoleConfig, StrategyBuilderExperimentRecorder], tuple[HTTPStatus, str]
 ]
-_ORIGINAL_RECORDED_PAGE = cast(RecordedPageBuilder, getattr(_console, "build_recorded_strategy_page"))
+_ORIGINAL_RECORDED_PAGE = cast(
+    RecordedPageBuilder, getattr(_console, "build_recorded_strategy_page")
+)
 _CONFIGURED = False
 
 
@@ -113,8 +115,7 @@ def _configuration_only_page(query: str, config: LocalConsoleConfig) -> tuple[HT
                 parameters,
                 "expression",
                 default=(
-                    "return_20 >= 0.05 and relative_volume_20 >= 1.5 "
-                    "and distance_sma_200_pct > 0"
+                    "return_20 >= 0.05 and relative_volume_20 >= 1.5 and distance_sma_200_pct > 0"
                 ),
             ),
             rank_feature=_one(parameters, "rank_feature", default="return_20"),
