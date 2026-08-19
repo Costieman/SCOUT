@@ -97,7 +97,11 @@ def validate_suite_launch_plan(plan: SuiteLaunchPlan) -> tuple[SuiteContractIssu
                     )
         rank_feature = str(p.get("rank_feature", ""))
         if not _supported_feature(rank_feature):
-            issue("rank_feature", "unsupported_rank_feature", f"Unknown rank feature {rank_feature!r}.")
+            issue(
+                "rank_feature",
+                "unsupported_rank_feature",
+                f"Unknown rank feature {rank_feature!r}.",
+            )
         if p.get("rank_direction") not in {"asc", "desc"}:
             issue("rank_direction", "invalid_rank_direction", "Rank direction must be asc or desc.")
         _validate_integer_range(plan, "per_session_limit", 1, 500, issues)
@@ -114,7 +118,9 @@ def validate_suite_launch_plan(plan: SuiteLaunchPlan) -> tuple[SuiteContractIssu
                 if float(volume_ratio) <= 0:
                     raise ValueError
             except ValueError:
-                issue("volume_ratio", "invalid_volume_ratio", "Volume ratio must be none or positive.")
+                issue(
+                    "volume_ratio", "invalid_volume_ratio", "Volume ratio must be none or positive."
+                )
 
     return tuple(issues)
 
@@ -203,7 +209,9 @@ def _validate_integer_choice(
         value = -1
     if value not in allowed:
         issues.append(
-            SuiteContractIssue(plan.suite_id, field, "invalid_choice", f"{field} must be one of {sorted(allowed)}.")
+            SuiteContractIssue(
+                plan.suite_id, field, "invalid_choice", f"{field} must be one of {sorted(allowed)}."
+            )
         )
 
 
