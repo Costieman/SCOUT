@@ -1,8 +1,9 @@
 # ruff: noqa: E501
-"""Research Station validation diagnostics that identify and focus the invalid control.
+"""Research Station validation diagnostics that identify and focus invalid controls.
 
-This layer deliberately leaves the v5 Run, Strategy Suite, and Research Brain behavior unchanged. It
-only improves browser-side validation feedback after v5 has identified an invalid form control.
+This layer leaves the v5 Run, Strategy Suite, and Research Brain behavior unchanged. It improves both
+native browser validation feedback and custom Strategy Builder validator feedback so a cancelled run
+always tells the operator what failed and where to fix it.
 """
 
 from __future__ import annotations
@@ -83,6 +84,7 @@ _RESEARCH_STATION_V7_JS = r"""
 
   const clearHighlight = () => {
     form.querySelectorAll(".research-invalid-focus").forEach((node) => node.classList.remove("research-invalid-focus"));
+    form.querySelectorAll(".research-invalid-focus-label").forEach((node) => node.classList.remove("research-invalid-focus-label"));
   };
 
   const ensureStyle = () => {
@@ -108,20 +110,72 @@ _RESEARCH_STATION_V7_JS = r"""
     window.setTimeout(() => node.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }), 80);
   };
 
-  const enhanceModal = (node) => {
+  const modalParts = () => {
     const modal = document.getElementById("research-run-diagnostic-modal");
-    if (!modal || modal.hidden || !node) return;
+    if (!modal || modal.hidden) return null;
+    return {
+      modal,
+      reason: modal.querySelector(".diagnostic-reason"),
+      detail: modal.querySelector(".diagnostic-detail"),
+    };
+  };
+
+  const enhanceModal = (node) => {
+    const parts = modalParts();
+    if (!parts || !node) return;
     const field = fieldName(node);
     const section = sectionText(node);
-    const reason = modal.querySelector(".diagnostic-reason");
-    const detail = modal.querySelector(".diagnostic-detail");
     const browserReason = node.validationMessage || "Invalid value.";
-    if (reason) {
-      reason.textContent = `${section ? section + " → " : ""}${field}\nCurrent value: ${formatValue(node)}\nProblem: ${browserReason}\nExpected: ${expectedText(node)}`;
+    if (parts.reason) {
+      parts.reason.textContent = `${section ? section + " → " : ""}${field}\nCurrent value: ${formatValue(node)}\nProblem: ${browserReason}\nExpected: ${expectedText(node)}`;
     }
-    if (detail) {
-      detail.textContent = "Close this message and SCOUT will take you to the invalid parameter, which is highlighted in red. Correct it, then press Run research again. Nothing was sent to the backend.";
+    if (parts.detail) {
+      parts.detail.textContent = "Close this message and SCOUT will take you to the invalid parameter, which is highlighted in red. Correct it, then press Run research again. Nothing was sent to the backend.";
     }
+  };
+
+  const customValidationSource = () => {
+    const composer = document.getElementById("composer-error");
+    const composerText = composer && !composer.hidden ? cleanText(composer.textContent) : "";
+    if (composerText) return { source: "Strategy Builder", message: composerText, target: inferTarget(composerText) };
+
+    const sweep = document.getElementById("sweep-preview");
+    const sweepText = cleanText(sweep?.textContent);
+    if (sweepText.startsWith("Fix entry sweep:") || sweepText.startsWith("Fix sweep:")) {
+      return { source: "Research variable", message: sweepText, target: document.getElementById("sweep-from") || document.getElementById("sweep-variable") };
+    }
+    if (sweepText.includes("interactive safety limit") || sweepText.includes("temporarily capped")) {
+      return { source: "Research variable", message: sweepText, target: document.getElementById("sweep-step") || document.getElementById("sweep-variable") };
+    }
+    return null;
+  };
+
+  function inferTarget(message) {
+    const text = message.toLowerCase();
+    if (text.includes("profit target")) return form.querySelector(".exit-target-value");
+    if (text.includes("protective stop") || text.includes("stop value")) return form.querySelector(".exit-stop-value");
+    if (text.includes("advanced expression")) return document.getElementById("advanced-expression");
+    if (text.includes("entry condition") || text.includes("numeric condition")) return form.querySelector(".rule-value");
+    if (text.includes("entry sweep")) return document.getElementById("sweep-from") || document.getElementById("sweep-variable");
+    return null;
+  }
+
+  const enhanceCustomCancellation = () => {
+    const parts = modalParts();
+    if (!parts) return;
+    const generic = cleanText(parts.reason?.textContent);
+    if (!generic.includes("validation rule cancelled the run") && !generic.includes("cancelled before reaching the backend")) return;
+    const diagnostic = customValidationSource();
+    if (!diagnostic) {
+      if (parts.reason) parts.reason.textContent = "A client-side validator cancelled this run, but it did not publish a diagnostic message. This is a SCOUT validation-path bug, not an actionable user error.";
+      if (parts.detail) parts.detail.textContent = "Nothing was sent to the backend. Please report this exact popup; SCOUT should never ask you to guess which parameter failed.";
+      return;
+    }
+    if (parts.reason) parts.reason.textContent = `${diagnostic.source} validation failed\n${diagnostic.message}`;
+    if (parts.detail) parts.detail.textContent = diagnostic.target
+      ? "Close this message and SCOUT will move to the most likely offending control and highlight it in red. Nothing was sent to the backend."
+      : "Nothing was sent to the backend. The validator supplied the reason above, but did not identify a single editable control.";
+    if (diagnostic.target) focusInvalid(diagnostic.target);
   };
 
   form.addEventListener("invalid", (event) => {
@@ -142,21 +196,21 @@ _RESEARCH_STATION_V7_JS = r"""
     }
   }, true);
 
-  // If v5 has already opened the modal, improve it using the exact invalid control captured above.
   document.addEventListener("click", (event) => {
     const run = event.target?.closest?.("#strategy-run-dock button.primary");
     if (!run) return;
     lastInvalid = null;
     window.setTimeout(() => {
       if (lastInvalid) enhanceModal(lastInvalid);
-    }, 10);
+      else enhanceCustomCancellation();
+    }, 30);
   }, true);
 })();
 """
 
 
 def configure_research_station_runtime() -> None:
-    """Install v5 and append focused validation diagnostics without changing research behavior."""
+    """Install v5 and append specific validation diagnostics without changing research behavior."""
 
     global _CONFIGURED
     if _CONFIGURED:
@@ -165,7 +219,7 @@ def configure_research_station_runtime() -> None:
     asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
     namespace = vars(_console)
     asset = cast(str, namespace[asset_name])
-    if "research-validation-focus-style" not in asset:
+    if "customValidationSource" not in asset:
         namespace[asset_name] = asset + "\n" + _RESEARCH_STATION_V7_JS
     _CONFIGURED = True
 
