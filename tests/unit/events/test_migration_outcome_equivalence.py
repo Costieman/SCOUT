@@ -10,7 +10,7 @@ from trade_scout.data.contracts import (
     ResearchBar,
 )
 from trade_scout.events import detect_consolidation_events
-from trade_scout.outcomes.forward_returns import measure_forward_outcomes
+from trade_scout.outcomes.forward_returns import ForwardOutcome, measure_forward_outcomes
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
     TrendFilter,
@@ -49,7 +49,7 @@ def _bars() -> tuple[ResearchBar, ...]:
     return (*base, signal, *future)
 
 
-def _outcome_identity(outcome: object) -> tuple[object, ...]:
+def _outcome_identity(outcome: ForwardOutcome) -> tuple[object, ...]:
     return (
         outcome.instrument_id,
         outcome.horizon,
