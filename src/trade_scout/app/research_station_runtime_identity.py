@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Visible runtime identity for the local Research Station.
 
 The badge is intentionally presentation-only. It makes the exact running checkout obvious to the
