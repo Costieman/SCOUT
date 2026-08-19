@@ -114,7 +114,7 @@ def remap_breakout_events_to_daily(
                 event,
                 signal_index=daily_index,
                 event_id=f"{event.event_id}:pattern_timeframe={frame.timeframe.value}",
-                event_definition_version="consolidation-close-breakout-timeframe-v0.2",
+                event_definition_version="consolidation-close-breakout-timeframe-v0.1",
             )
         )
     return tuple(remapped)
