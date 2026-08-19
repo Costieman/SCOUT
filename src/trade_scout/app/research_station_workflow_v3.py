@@ -138,10 +138,14 @@ def configure_research_station_runtime() -> None:
     if _CONFIGURED:
         return
     _v2.configure_research_station_runtime()
-    _console.build_recorded_strategy_page = _recorded_page_with_explicit_execute
-    asset = _console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS
+    _console.build_recorded_strategy_page = (  # type: ignore[attr-defined]
+        _recorded_page_with_explicit_execute
+    )
+    asset = _console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS  # type: ignore[attr-defined]
     if "execute_run" not in asset:
-        _console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS = asset + "\n" + _RESEARCH_STATION_V3_JS
+        _console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS = (  # type: ignore[attr-defined]
+            asset + "\n" + _RESEARCH_STATION_V3_JS
+        )
     _CONFIGURED = True
 
 
