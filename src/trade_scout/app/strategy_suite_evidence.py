@@ -168,12 +168,16 @@ def evaluate_promotion(evidence: PromotionEvidence) -> PromotionDecision:
         if not evidence.comparator_included:
             blockers.append("required comparator evidence is missing")
 
-    if next_state in {
-        StrategyLifecycle.VALIDATION,
-        StrategyLifecycle.VALIDATED,
-        StrategyLifecycle.PRODUCTION_ELIGIBLE,
-        StrategyLifecycle.SCANNER,
-    } and not evidence.validation_plan_frozen:
+    if (
+        next_state
+        in {
+            StrategyLifecycle.VALIDATION,
+            StrategyLifecycle.VALIDATED,
+            StrategyLifecycle.PRODUCTION_ELIGIBLE,
+            StrategyLifecycle.SCANNER,
+        }
+        and not evidence.validation_plan_frozen
+    ):
         blockers.append("validation plan is not frozen")
 
     if next_state in {
