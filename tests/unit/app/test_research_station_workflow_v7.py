@@ -21,7 +21,7 @@ def test_v7_surfaces_custom_validator_reason_and_target() -> None:
     assert "enhanceCustomCancellation" in source
     assert 'document.getElementById("composer-error")' in source
     assert 'document.getElementById("sweep-preview")' in source
-    assert "Strategy Builder validation failed" in source
+    assert "validation failed\\n" in source
     assert "SCOUT should never ask you to guess which parameter failed" in source
     assert "inferTarget" in source
     assert "profit target" in source
