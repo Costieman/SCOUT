@@ -110,6 +110,13 @@ def _render_report(report: EdgeExplorerReport) -> str:
         if report.recent_event_dates
         else "No qualifying events"
     )
+    trend_state = (
+        "UNKNOWN"
+        if report.current_state.trend_qualified is None
+        else "YES"
+        if report.current_state.trend_qualified
+        else "NO"
+    )
     return f"""
 <div class="grid" style="margin-top:14px">
   <div class="card s3"><div class="metric-label">Evidence state</div><div class="metric {_state_class(report.evidence_state.value)}">{escape(report.evidence_state.value.replace("_", " "))}</div><div class="subtle">Never implies validation.</div></div>
@@ -117,7 +124,7 @@ def _render_report(report: EdgeExplorerReport) -> str:
   <div class="card s3"><div class="metric-label">Mean event return</div><div class="metric {_value_class(selected.mean_return)}">{_pct(selected.mean_return)}</div><div class="subtle">Median {_pct(selected.median_return)} · positive {_pct(selected.positive_fraction)}</div></div>
   <div class="card s3"><div class="metric-label">Excess vs simple baseline</div><div class="metric {excess_class}">{_pct(report.excess_mean_return)}</div><div class="subtle">Baseline {_pct(report.baseline_mean_return)} · n={report.baseline_sample_size}</div></div>
 
-  <div class="card s5"><h2>Current setup</h2><div class="metric-label">As of {report.current_state.as_of_date.isoformat()}</div><div class="metric">{escape(report.current_state.state.replace("_", " "))}</div><p>{escape(report.current_state.message)}</p><table><tr><th>Boundary</th><td>{_num(report.current_state.boundary)}</td></tr><tr><th>Base range</th><td>{_pct(report.current_state.base_range_pct)}</td></tr><tr><th>Distance to boundary</th><td>{_pct(report.current_state.distance_to_boundary_pct)}</td></tr><tr><th>Trend qualified</th><td>{"YES" if report.current_state.trend_qualified else "NO"}</td></tr></table></div>
+  <div class="card s5"><h2>Current setup</h2><div class="metric-label">As of {report.current_state.as_of_date.isoformat()}</div><div class="metric">{escape(report.current_state.status.replace("_", " "))}</div><p>{escape(report.current_state.message)}</p><table><tr><th>Trigger boundary</th><td>{_num(report.current_state.trigger_boundary)}</td></tr><tr><th>Distance to trigger</th><td>{_pct(report.current_state.distance_to_trigger_pct)}</td></tr><tr><th>Trend qualified</th><td>{trend_state}</td></tr><tr><th>Volume ratio</th><td>{_num(report.current_state.breakout_volume_ratio)}</td></tr><tr><th>Pattern instance</th><td><code>{escape(report.current_state.pattern_instance_id or "—")}</code></td></tr></table></div>
   <div class="card s7"><h2>Selected configuration</h2><table><tr><th>Strategy</th><td>Consolidation breakout</td></tr><tr><th>Signal</th><td>Daily close &gt; highest high in prior qualified window</td></tr><tr><th>Entry</th><td>Next-session open</td></tr><tr><th>Duration</th><td>{report.selected_config.duration} sessions</td></tr><tr><th>Maximum base range</th><td>{report.selected_config.max_range_pct * 100:.1f}%</td></tr><tr><th>Trend filter</th><td>{escape(report.selected_config.trend_filter.value)}</td></tr><tr><th>Cooldown</th><td>{report.selected_config.cooldown_sessions} sessions</td></tr></table></div>
 
   <div class="card s12"><h2>Forward outcome profile</h2><div class="subtle">Returns are measured from next-session open. MFE/MAE are path measurements, not stop recommendations.</div><table><thead><tr><th>Horizon</th><th>n</th><th>Mean</th><th>Median</th><th>P(return&gt;0)</th><th>P25</th><th>P75</th><th>Median MFE</th><th>Median MAE</th></tr></thead><tbody>{horizon_rows}</tbody></table></div>
