@@ -74,9 +74,6 @@ _RESEARCH_STATION_V4_JS = r"""
     return "";
   };
 
-  // This listener is deliberately installed after all pre-existing deferred Strategy Builder assets.
-  // It therefore observes the final defaultPrevented state after composer, exit-sweep and entry-sweep
-  // validation have had a chance to build their hidden request fields or reject the run.
   setTimeout(() => {
     if (form.dataset.diagnosticSubmitWired === "1") return;
     form.dataset.diagnosticSubmitWired = "1";
@@ -87,9 +84,6 @@ _RESEARCH_STATION_V4_JS = r"""
         return;
       }
 
-      // Take ownership of the final navigation so the submitted request is deterministic and
-      // inspectable. All earlier submit handlers have already materialized expression/rule/exit
-      // hidden inputs by this point.
       event.preventDefault();
       const data = new FormData(form);
       data.delete("load_only");
@@ -105,8 +99,6 @@ _RESEARCH_STATION_V4_JS = r"""
     }, false);
   }, 0);
 
-  // If the backend parsed the request but rejected it, the normal renderer includes a .error box.
-  // Surface that reason immediately rather than requiring the operator to search the page.
   const query = new URLSearchParams(window.location.search);
   const backendError = document.querySelector(".error");
   if (query.get("run_attempt") && backendError?.textContent?.trim()) {
@@ -115,9 +107,6 @@ _RESEARCH_STATION_V4_JS = r"""
       "The request reached the backend, but SCOUT rejected the configuration before completing research."
     );
   }
-
-  // A plain-text 500 cannot host this script, so the run-attempt marker also makes terminal requests
-  // identifiable. Normal handled configuration failures remain HTML and are shown above.
 })();
 """
 
@@ -130,9 +119,10 @@ def configure_research_station_runtime() -> None:
         return
     _v3.configure_research_station_runtime()
     asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
-    asset = cast(str, getattr(_console, asset_name))
+    namespace = vars(_console)
+    asset = cast(str, namespace[asset_name])
     if "research-run-diagnostic-modal" not in asset:
-        setattr(_console, asset_name, asset + "\n" + _RESEARCH_STATION_V4_JS)
+        namespace[asset_name] = asset + "\n" + _RESEARCH_STATION_V4_JS
     _CONFIGURED = True
 
 
