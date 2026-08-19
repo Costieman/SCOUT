@@ -118,4 +118,4 @@ def test_non_daily_event_maps_to_final_underlying_daily_session() -> None:
     assert remapped.signal_index == 3
     assert remapped.signal_date == bars[3].trade_date
     assert remapped.event_id.endswith("pattern_timeframe=2_session")
-    assert remapped.event_definition_version == "consolidation-close-breakout-timeframe-v0.1"
+    assert remapped.event_definition_version == "consolidation-close-breakout-timeframe-v0.2"
