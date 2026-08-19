@@ -12,11 +12,11 @@ from statistics import fmean, median, stdev
 from typing import cast
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
+from trade_scout.events import detect_consolidation_events
+from trade_scout.events.consolidation_breakout import ConsolidationBreakoutEvent
 from trade_scout.outcomes.forward_returns import measure_forward_outcomes
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
-    ConsolidationBreakoutEvent,
-    detect_consolidation_breakouts,
     trend_qualified_indices,
 )
 from trade_scout.patterns.timeframes import (
@@ -140,7 +140,7 @@ class ReadableEdgeReport:
     out_of_sample_status: str = "NOT_RUN"
     multiple_testing_status: str = "NOT_CORRECTED"
     portfolio_status: str = "NOT_RUN"
-    report_definition_version: str = "readable-edge-v0.1"
+    report_definition_version: str = "readable-edge-v0.2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -323,10 +323,10 @@ def _events(
     end: date,
 ) -> tuple[ConsolidationBreakoutEvent, ...]:
     if frame is None:
-        detected = detect_consolidation_breakouts(bars, config)
+        detected = detect_consolidation_events(bars, config)
     elif frame.bars:
         detected = remap_breakout_events_to_daily(
-            detect_consolidation_breakouts(frame.bars, config),
+            detect_consolidation_events(frame.bars, config),
             frame,
         )
     else:
