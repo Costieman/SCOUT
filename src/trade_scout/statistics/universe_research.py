@@ -13,6 +13,8 @@ from datetime import date
 from statistics import median
 
 from trade_scout.data.contracts import QualityStatus, ResearchBar
+from trade_scout.events.consolidation_breakout import ConsolidationBreakoutEvent
+from trade_scout.events.consolidation_pipeline import detect_consolidation_events
 from trade_scout.outcomes.forward_returns import (
     ForwardOutcome,
     HorizonSummary,
@@ -21,9 +23,7 @@ from trade_scout.outcomes.forward_returns import (
 )
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
-    ConsolidationBreakoutEvent,
     TrendFilter,
-    detect_consolidation_breakouts,
     trend_qualified_indices,
 )
 
@@ -96,8 +96,8 @@ class UniverseResearchReport:
     warnings: tuple[str, ...]
     research_state: str = "EXPLORATORY"
     strategy_id: str = "consolidation_breakout"
-    strategy_version: str = "consolidation-breakout-research-v0.2"
-    event_definition_version: str = "consolidation-close-breakout-v0.2"
+    strategy_version: str = "consolidation-breakout-research-v0.3"
+    event_definition_version: str = "consolidation-close-breakout-v0.3"
     outcome_definition_version: str = "next-open-forward-path-v0.1"
     comparator_definition: str = "same-instrument trend-context dates sampled every 5 sessions"
 
@@ -133,7 +133,7 @@ def build_universe_research_report(
 
     for symbol, bars in normalized.items():
         events = _events_in_window(
-            detect_consolidation_breakouts(bars, config),
+            detect_consolidation_events(bars, config),
             start=analysis_start,
             end=analysis_end,
         )
@@ -265,7 +265,7 @@ def _parameter_surface(
             contributing: set[str] = set()
             for symbol, bars in series_by_symbol.items():
                 selected_events = _events_in_window(
-                    detect_consolidation_breakouts(bars, config),
+                    detect_consolidation_events(bars, config),
                     start=analysis_start,
                     end=analysis_end,
                 )
