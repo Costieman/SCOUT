@@ -34,11 +34,11 @@ def test_phase8_adds_one_dimension_iteration_workflow() -> None:
     assert "Change one declared suite dimension" in asset
     assert "all other settings remain frozen" in asset
     assert "Prepare one-change run" in asset
-    assert 'target.searchParams.set(parameter, next)' in asset
+    assert "target.searchParams.set(parameter, next)" in asset
 
 
 def test_phase8_rejects_identical_or_unresolved_iteration() -> None:
     asset = STRATEGY_BUILDER_RESEARCH_MEMORY_JS
     assert "An identical configuration is not a new iteration" in asset
     assert "That dimension is not yet machine-resolved" in asset
-    assert 'option.disabled = !parameter' in asset
+    assert "option.disabled = !parameter" in asset
