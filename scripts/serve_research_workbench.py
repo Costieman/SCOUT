@@ -10,7 +10,7 @@ from pathlib import Path
 from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
-from trade_scout.app.research_station_workflow_v2 import (
+from trade_scout.app.research_station_workflow_v3 import (
     configure_research_station_runtime,
     serve_research_workbench_console,
 )
