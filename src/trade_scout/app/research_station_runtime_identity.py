@@ -23,7 +23,7 @@ def configure_runtime_identity(*, commit_sha: str, branch: str) -> None:
     if identity in _CONFIGURED_IDENTITIES:
         return
     payload = json.dumps(identity)
-    source = f'''\n(() => {{
+    source = f"""\n(() => {{
   "use strict";
   if (window.location.pathname !== "/research/strategy") return;
   const identity = {payload};
@@ -40,7 +40,7 @@ def configure_runtime_identity(*, commit_sha: str, branch: str) -> None:
   }};
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, {{ once:true }});
   else install();
-}})();\n'''
+}})();\n"""
     namespace = vars(_console)
     asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
     asset = cast(str, namespace[asset_name])
