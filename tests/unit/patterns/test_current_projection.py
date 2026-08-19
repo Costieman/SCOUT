@@ -9,8 +9,8 @@ from trade_scout.data.contracts import (
     QualityStatus,
     ResearchBar,
 )
+from trade_scout.events.current_projection import project_latest_consolidation_state
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
-from trade_scout.patterns.current_projection import project_latest_consolidation_state
 
 
 def _bar(
@@ -75,7 +75,10 @@ def test_projection_reports_volume_gate_failure_without_inventing_event() -> Non
 
 
 def test_projection_reports_quality_invalidation() -> None:
-    bars = (*(_bar(index) for index in range(5)), _bar(5, quality_status=QualityStatus.REJECT))
+    bars = (
+        *(_bar(index) for index in range(6)),
+        _bar(6, quality_status=QualityStatus.REJECT),
+    )
 
     projection = project_latest_consolidation_state(bars, _config())
 
