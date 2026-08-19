@@ -68,7 +68,8 @@ def project_latest_consolidation_state(
             structural_state=PatternLifecycleState.CONSUMED,
             pattern_instance_id=event.pattern_instance_id,
             trigger_boundary=event.trigger_boundary,
-            distance_to_trigger_pct=(event.trigger_boundary - latest.close) / event.trigger_boundary,
+            distance_to_trigger_pct=(event.trigger_boundary - latest.close)
+            / event.trigger_boundary,
             trend_qualified=True,
             breakout_volume_ratio=volume_ratio,
             latest_event_id=event.event_id,
@@ -98,15 +99,19 @@ def project_latest_consolidation_state(
     if state.state is PatternLifecycleState.INVALIDATED:
         if reason == "data_quality_or_eligibility":
             status = "QUALITY_BLOCKED"
-            message = "Latest session invalidated the pattern because quality or eligibility failed."
+            message = (
+                "Latest session invalidated the pattern because quality or eligibility failed."
+            )
         elif reason == "trend_context_failed":
             status = "TREND_FILTER_FAIL"
             message = "Latest session invalidated the pattern because the trend context failed."
         else:
             status = "INVALIDATED"
             message = f"Latest session invalidated the pattern: {reason or 'unspecified reason'}."
-    elif boundary is not None and latest.close > boundary and not _volume_confirmed(
-        volume_ratio, event_config.min_breakout_volume_ratio
+    elif (
+        boundary is not None
+        and latest.close > boundary
+        and not _volume_confirmed(volume_ratio, event_config.min_breakout_volume_ratio)
     ):
         status = "VOLUME_FILTER_FAIL"
         message = "Price crossed resistance, but the configured breakout-volume gate was not met."
