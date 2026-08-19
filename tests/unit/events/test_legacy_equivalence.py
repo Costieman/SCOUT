@@ -160,9 +160,9 @@ def test_new_pipeline_matches_legacy_across_supported_trend_filters(
     ("index", "eligibility", "quality_status"),
     [
         (2, False, QualityStatus.PASS),
-        (2, True, QualityStatus.FAIL),
+        (2, True, QualityStatus.REJECT),
         (5, False, QualityStatus.PASS),
-        (5, True, QualityStatus.FAIL),
+        (5, True, QualityStatus.REJECT),
     ],
 )
 def test_new_pipeline_matches_legacy_quality_and_eligibility_rejection(
