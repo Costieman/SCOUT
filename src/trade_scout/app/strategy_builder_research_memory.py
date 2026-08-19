@@ -97,6 +97,12 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
     const style = document.createElement("style");
     style.id = "ts-research-memory-print-style";
     style.textContent = `@media print {
+      #experiment-record,
+      #experiment-record table,
+      #experiment-record tr {
+        break-inside: avoid-page !important;
+        page-break-inside: avoid !important;
+      }
       #experiment-record .memory-actions,
       #research-brain-session-card,
       #strategy-suite-card,
