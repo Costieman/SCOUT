@@ -168,7 +168,7 @@ def _symbol_summary(report: EdgeExplorerReport) -> BatchSymbolSummary:
         baseline_mean_return=report.baseline_mean_return,
         excess_mean_return=report.excess_mean_return,
         evidence_state=str(report.evidence_state),
-        current_state=report.current_state.state,
+        current_state=report.current_state.status,
     )
 
 
