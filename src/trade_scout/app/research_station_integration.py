@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Runtime integration fixes for Strategy Builder suites and Research Brains.
 
 This layer keeps suite selection configuration-only, enables same-origin Brain discovery under the
