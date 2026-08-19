@@ -192,9 +192,11 @@ def evaluate_promotion(evidence: PromotionEvidence) -> PromotionDecision:
         if not evidence.costs_included:
             blockers.append("transaction costs are not included")
 
-    if next_state in {StrategyLifecycle.PRODUCTION_ELIGIBLE, StrategyLifecycle.SCANNER}:
-        if snapshot.validation_stability < 0.60:
-            blockers.append("validation stability is below the production threshold")
+    if (
+        next_state in {StrategyLifecycle.PRODUCTION_ELIGIBLE, StrategyLifecycle.SCANNER}
+        and snapshot.validation_stability < 0.60
+    ):
+        blockers.append("validation stability is below the production threshold")
 
     if next_state is StrategyLifecycle.SCANNER:
         if not evidence.replay_parity_passed:
