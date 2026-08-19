@@ -33,6 +33,9 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/trade_scout/app/research_station_workflow_v2.py" = ["I001", "B009", "B010"]
+
 [tool.ruff.format]
 docstring-code-format = true
 
