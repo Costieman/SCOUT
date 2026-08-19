@@ -50,9 +50,7 @@ def _config(*, min_volume_ratio: float | None = None) -> ConsolidationBreakoutCo
 
 
 def test_projection_reports_canonical_breakout() -> None:
-    bars = tuple(_bar(index) for index in range(5)) + (
-        _bar(5, close=103.0, high=104.0, low=101.0),
-    )
+    bars = tuple(_bar(index) for index in range(5)) + (_bar(5, close=103.0, high=104.0, low=101.0),)
 
     projection = project_latest_consolidation_state(bars, _config())
 
