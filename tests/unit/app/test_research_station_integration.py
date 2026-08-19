@@ -35,3 +35,22 @@ def test_completed_run_is_automatically_associated_with_active_brain() -> None:
     assert 'action: "add"' in asset
     assert 'actor: "research-station"' in asset
     assert "Automatically associated by the active Research Station Brain context." in asset
+
+
+def test_duplicate_detection_uses_complete_editable_research_form() -> None:
+    configure_research_station_runtime()
+    asset = console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS
+    assert "completeFormFingerprint" in asset
+    assert "new FormData(form).entries()" in asset
+    assert "last_run_form_fingerprint" in asset
+    assert "including horizons, stops, targets, filters, and added research variables" in asset
+    assert 'form.addEventListener("input", refreshAccurateDuplicateNotice)' in asset
+    assert 'form.addEventListener("change", refreshAccurateDuplicateNotice)' in asset
+
+
+def test_duplicate_warning_can_be_explicitly_ignored() -> None:
+    configure_research_station_runtime()
+    asset = console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS
+    assert "Ignore warning — continue anyway" in asset
+    assert "duplicateDismissalKey" in asset
+    assert 'sessionStorage.setItem(duplicateDismissalKey(brain, fingerprint), "1")' in asset

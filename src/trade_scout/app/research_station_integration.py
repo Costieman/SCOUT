@@ -2,8 +2,9 @@
 """Runtime integration fixes for Strategy Builder suites and Research Brains.
 
 This layer keeps suite selection configuration-only, enables same-origin Brain discovery under the
-workbench CSP, supports inline Brain creation, and automatically associates completed experiments
-with the active Brain. It deliberately does not change analytical definitions.
+workbench CSP, supports inline Brain creation, automatically associates completed experiments with
+the active Brain, and makes duplicate detection sensitive to the complete editable research form.
+It deliberately does not change analytical definitions.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ _RESEARCH_STATION_FIX_JS = r"""
   "use strict";
   const SUITE_PARAMETERS = __SUITE_PARAMETERS__;
   const ACTIVE_BRAIN_KEY = "trade-scout:research-brain:active";
+  const brainStateKey = (brainId) => `trade-scout:research-brain:${brainId}:session`;
 
   const setControl = (form, name, value) => {
     const control = form.elements.namedItem(name);
@@ -147,6 +149,89 @@ _RESEARCH_STATION_FIX_JS = r"""
     });
   };
 
+  const readBrainState = (brainId) => {
+    if (!brainId) return null;
+    try { return JSON.parse(localStorage.getItem(brainStateKey(brainId)) || "null"); }
+    catch (_) { return null; }
+  };
+
+  const writeBrainState = (brainId, patch) => {
+    if (!brainId) return;
+    const prior = readBrainState(brainId) || {};
+    localStorage.setItem(
+      brainStateKey(brainId),
+      JSON.stringify({ ...prior, ...patch, updated_at: new Date().toISOString() })
+    );
+  };
+
+  const completeFormFingerprint = () => {
+    const form = document.getElementById("strategy-form");
+    if (!form) return "";
+    const pairs = [];
+    for (const [name, value] of new FormData(form).entries()) {
+      pairs.push([String(name), String(value)]);
+    }
+    const suite = document.getElementById("strategy-suite-select")?.value || "";
+    if (suite) pairs.push(["__suite__", suite]);
+    pairs.sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
+    return JSON.stringify(pairs);
+  };
+
+  const duplicateDismissalKey = (brain, fingerprint) =>
+    `trade-scout:duplicate-dismissed:${brain}:${fingerprint}`;
+
+  const refreshAccurateDuplicateNotice = () => {
+    const brain = localStorage.getItem(ACTIVE_BRAIN_KEY) || "";
+    const host = document.getElementById("research-brain-session-card");
+    if (!host) return;
+    for (const oldNotice of host.querySelectorAll(".brain-duplicate-notice")) {
+      oldNotice.hidden = true;
+    }
+    let notice = host.querySelector(".brain-duplicate-notice-complete");
+    if (!notice) {
+      notice = document.createElement("div");
+      notice.className = "section-note brain-duplicate-notice-complete";
+      notice.style.marginTop = "10px";
+      host.appendChild(notice);
+    }
+    const fingerprint = completeFormFingerprint();
+    const state = readBrainState(brain);
+    const exact = Boolean(
+      brain &&
+      fingerprint &&
+      state?.last_run_form_fingerprint &&
+      state.last_run_form_fingerprint === fingerprint
+    );
+    if (!exact || sessionStorage.getItem(duplicateDismissalKey(brain, fingerprint))) {
+      notice.hidden = true;
+      return;
+    }
+    notice.hidden = false;
+    notice.innerHTML = "";
+    const message = document.createElement("span");
+    message.innerHTML = "<strong>This exact complete configuration has already been run in this brain.</strong> Every named Research Station control, including horizons, stops, targets, filters, and added research variables, matches the most recent run.";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Ignore warning — continue anyway";
+    button.style.marginLeft = "10px";
+    button.addEventListener("click", () => {
+      sessionStorage.setItem(duplicateDismissalKey(brain, fingerprint), "1");
+      notice.hidden = true;
+    });
+    notice.append(message, button);
+  };
+
+  const installAccurateDuplicateDetection = () => {
+    const form = document.getElementById("strategy-form");
+    const brainSelect = document.getElementById("research-brain-session-select");
+    if (!form || form.dataset.completeDuplicateDetection === "1") return;
+    form.dataset.completeDuplicateDetection = "1";
+    form.addEventListener("input", refreshAccurateDuplicateNotice);
+    form.addEventListener("change", refreshAccurateDuplicateNotice);
+    brainSelect?.addEventListener("change", () => setTimeout(refreshAccurateDuplicateNotice, 0));
+    refreshAccurateDuplicateNotice();
+  };
+
   const experimentId = () => {
     const card = document.getElementById("experiment-record");
     if (!card) return "";
@@ -156,6 +241,17 @@ _RESEARCH_STATION_FIX_JS = r"""
       }
     }
     return "";
+  };
+
+  const rememberCompletedRunFingerprint = () => {
+    const brain = localStorage.getItem(ACTIVE_BRAIN_KEY) || "";
+    const experiment = experimentId();
+    const fingerprint = completeFormFingerprint();
+    if (!brain || !experiment || !fingerprint) return;
+    writeBrainState(brain, {
+      last_experiment_id: experiment,
+      last_run_form_fingerprint: fingerprint,
+    });
   };
 
   const autoAssociateRun = async () => {
@@ -183,6 +279,8 @@ _RESEARCH_STATION_FIX_JS = r"""
   const install = () => {
     installSafeSuiteLoader();
     installBrainControls();
+    rememberCompletedRunFingerprint();
+    installAccurateDuplicateDetection();
     autoAssociateRun();
   };
   if (document.readyState === "loading") {
