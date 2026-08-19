@@ -1,11 +1,10 @@
 # ruff: noqa: E501
-"""Fifth-pass Research Station run repair using native form submission.
+"""Research Station run repair using native form submission.
 
-The prior run path wrapped the real form submit button in additional JavaScript and then attempted to
-observe cancellation from later handlers. That made the final action dependent on listener ordering.
-This layer removes that dependency: it replaces the persistent Run button with a clean native submit
-control and installs a capture-phase observer that always sees a submit attempt before composer/sweep
-handlers can cancel it. The observer reports cancellation after those handlers finish.
+The earlier run path failed because the persistent Run dock is created after the research-memory asset
+starts executing. The previous v5 implementation attempted to replace the Run button only once, before
+that dock existed, so the repair silently never attached. This version keeps the known-good suite and
+Research Brain integration intact and changes only the timing of native Run installation.
 """
 
 from __future__ import annotations
@@ -74,20 +73,19 @@ _RESEARCH_STATION_V5_JS = r"""
     return "A Strategy Builder validation rule cancelled the run before it reached the backend.";
   };
 
-  // Make the active runtime visible. This is deliberately operator-facing so stale/incorrect
-  // browser-server combinations can be identified without opening developer tools.
   let runtime = document.getElementById("research-run-runtime");
   if (!runtime) {
     runtime = document.createElement("div");
     runtime.id = "research-run-runtime";
     runtime.style.cssText = "font-size:11px;color:#7fc8ff;margin-left:auto;white-space:nowrap";
-    runtime.textContent = "Run path: native-v5";
+    runtime.textContent = "Run path: native-v5-lifecycle-fix";
   }
 
   const installNativeRun = () => {
     const dock = document.getElementById("strategy-run-dock");
     const oldRun = dock?.querySelector("button.primary");
-    if (!dock || !oldRun || oldRun.dataset.nativeRun === "1") return;
+    if (!dock || !oldRun) return false;
+    if (oldRun.dataset.nativeRun === "1") return true;
 
     const run = oldRun.cloneNode(true);
     run.type = "submit";
@@ -103,14 +101,31 @@ _RESEARCH_STATION_V5_JS = r"""
       status.style.cssText = "font-size:12px;color:#98a6b8;min-width:150px;text-align:right";
       dock.insertBefore(status, run);
     }
-    dock.insertBefore(runtime, status);
+    if (!runtime.isConnected) dock.insertBefore(runtime, status);
 
     run.addEventListener("click", () => {
       status.textContent = "Validating configuration…";
     });
+    return true;
   };
 
-  installNativeRun();
+  // The persistent run dock is created by the earlier v2 layer on DOMContentLoaded. v5 used to
+  // run this once before the dock existed and then silently give up. Wait until the known-good
+  // dock exists, then replace only its Run button. No document-level click interception is used.
+  const scheduleNativeRunInstall = () => {
+    let attempts = 0;
+    const attempt = () => {
+      if (installNativeRun()) return;
+      attempts += 1;
+      if (attempts < 80) window.setTimeout(attempt, 25);
+    };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => window.setTimeout(attempt, 0), { once: true });
+    } else {
+      window.setTimeout(attempt, 0);
+    }
+  };
+  scheduleNativeRunInstall();
 
   // Capture phase runs before the existing composer/sweep submit handlers. We then inspect the
   // same Event on the next task, after those handlers have had the opportunity to preventDefault().
@@ -138,7 +153,6 @@ _RESEARCH_STATION_V5_JS = r"""
     }, 0);
   }, true);
 
-  // If a request made it to the backend and returned a handled configuration error, surface it.
   const query = new URLSearchParams(window.location.search);
   const backendError = document.querySelector(".error");
   if (query.get("execute_run") === "1" && backendError?.textContent?.trim()) {
@@ -152,7 +166,7 @@ _RESEARCH_STATION_V5_JS = r"""
 
 
 def configure_research_station_runtime() -> None:
-    """Install prior workflow repairs and replace the Run action with native form submission."""
+    """Install prior workflow repairs and attach native Run after the persistent dock exists."""
 
     global _CONFIGURED
     if _CONFIGURED:
@@ -161,7 +175,7 @@ def configure_research_station_runtime() -> None:
     asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
     namespace = vars(_console)
     asset = cast(str, namespace[asset_name])
-    if "Run path: native-v5" not in asset:
+    if "Run path: native-v5-lifecycle-fix" not in asset:
         namespace[asset_name] = asset + "\n" + _RESEARCH_STATION_V5_JS
     _CONFIGURED = True
 
