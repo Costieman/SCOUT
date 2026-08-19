@@ -40,7 +40,9 @@ def test_research_series_is_loaded_once_and_returned_as_a_copy(tmp_path, monkeyp
     assert first is not second
 
 
-def test_strategy_window_cache_reuses_identical_window_and_is_bounded(tmp_path, monkeypatch) -> None:
+def test_strategy_window_cache_reuses_identical_window_and_is_bounded(
+    tmp_path, monkeypatch
+) -> None:
     calls: list[tuple[date, date, int]] = []
 
     def fake_window(self, universe_id, *, signal_start, signal_end, warmup_observations):
