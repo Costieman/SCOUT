@@ -206,8 +206,10 @@ def configure_research_station_runtime() -> None:
         return value + "; connect-src 'self'"
 
     _console._csp_value = csp_with_same_origin_fetch
-    if "Suite loaded — not run." not in _console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS:
-        _console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS += "\n" + _RESEARCH_STATION_FIX_JS
+    asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
+    asset = getattr(_console, asset_name)
+    if "Suite loaded — not run." not in asset:
+        setattr(_console, asset_name, asset + "\n" + _RESEARCH_STATION_FIX_JS)
 
 
 serve_research_workbench_console = _console.serve_research_workbench_console
