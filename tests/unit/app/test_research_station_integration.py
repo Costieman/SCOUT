@@ -53,4 +53,4 @@ def test_duplicate_warning_can_be_explicitly_ignored() -> None:
     asset = console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS
     assert "Ignore warning — continue anyway" in asset
     assert "duplicateDismissalKey" in asset
-    assert "sessionStorage.setItem(duplicateDismissalKey(brain, fingerprint), \"1\")" in asset
+    assert 'sessionStorage.setItem(duplicateDismissalKey(brain, fingerprint), "1")' in asset
