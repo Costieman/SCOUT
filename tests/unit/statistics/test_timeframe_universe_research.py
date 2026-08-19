@@ -66,7 +66,7 @@ def test_two_session_pattern_timeframe_keeps_daily_outcome_horizon_identity() ->
     )
 
     assert report.strategy_version.endswith(":2_session")
-    assert report.event_definition_version == "consolidation-close-breakout-timeframe-v0.1"
+    assert report.event_definition_version == "consolidation-close-breakout-timeframe-v0.2"
     assert report.selected_horizon == 5
     assert "outcomes measured in daily trading sessions" in report.comparator_definition
     assert any(
