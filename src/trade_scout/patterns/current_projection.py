@@ -40,7 +40,7 @@ def project_latest_consolidation_state(
         raise ValueError("at least one research bar is required")
 
     # Lazy import avoids making the patterns package depend on events during package import.
-    from trade_scout.events.consolidation_pipeline import (  # noqa: PLC0415
+    from trade_scout.events.consolidation_pipeline import (
         ConsolidationEventConfig,
         IncrementalConsolidationPipeline,
     )
