@@ -25,4 +25,4 @@ def test_runtime_identity_is_idempotent_for_same_checkout(monkeypatch) -> None:
     once = console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS
     identity.configure_runtime_identity(commit_sha="abcdef123456", branch="main")
 
-    assert console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS == once
+    assert once == console.STRATEGY_BUILDER_RESEARCH_MEMORY_JS
