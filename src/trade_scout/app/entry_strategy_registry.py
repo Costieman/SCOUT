@@ -37,10 +37,10 @@ _OPTIONS = (
         family=EntryFamily.CONSOLIDATION_BREAKOUT,
         label="Consolidation breakout",
         description=(
-            "Close-confirmed breakout from a bounded prior range using the existing deterministic "
-            "consolidation detector and optional trend/volume filters."
+            "Close-confirmed breakout from a bounded prior range using the canonical typed "
+            "consolidation lifecycle/event engine and optional trend/volume filters."
         ),
-        definition_version="consolidation-close-breakout-v0.2",
+        definition_version="consolidation-close-breakout-v0.3",
     ),
 )
 
