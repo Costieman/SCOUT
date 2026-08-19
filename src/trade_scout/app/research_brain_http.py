@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode
 
@@ -28,6 +29,23 @@ def build_research_brains_page(
 
     service = _service(recorder)
     parameters = parse_qs(query, keep_blank_values=True)
+    if _one(parameters, "format", default="").strip() == "json":
+        brains = service.list_brains()
+        return HTTPStatus.OK, json.dumps(
+            {
+                "brains": [
+                    {
+                        "brain_id": item.definition.brain_id,
+                        "name": item.definition.name,
+                        "research_question": item.definition.research_question,
+                        "experiment_count": item.membership_count,
+                    }
+                    for item in brains
+                ]
+            },
+            sort_keys=True,
+        )
+
     brain_id = _one(parameters, "brain", default="").strip()
     prefill = _one(parameters, "experiment", default="").strip()
     message = _one(parameters, "message", default="").strip() or None
