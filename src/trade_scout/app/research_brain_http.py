@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlencode
 
@@ -9,6 +10,7 @@ from trade_scout.app.research_brain_checkpoints import ResearchBrainCheckpointEr
 from trade_scout.app.research_brain_followup_execution import ResearchBrainFollowUpExecutionError
 from trade_scout.app.research_brain_followups import ResearchBrainFollowUpError
 from trade_scout.app.research_brain_service import (
+    ResearchBrainListItem,
     ResearchBrainWorkbenchService,
     parse_focus_rules,
 )
@@ -31,15 +33,16 @@ def build_research_brains_page(
     brain_id = _one(parameters, "brain", default="").strip()
     prefill = _one(parameters, "experiment", default="").strip()
     message = _one(parameters, "message", default="").strip() or None
+    brains = service.list_brains()
     try:
         detail = service.detail(brain_id) if brain_id else None
         html = render_research_brains_html(
-            brains=service.list_brains(),
+            brains=brains,
             detail=detail,
             prefill_experiment_id=prefill,
             message=message,
         )
-        return HTTPStatus.OK, html
+        return HTTPStatus.OK, _inject_brain_discovery_selector(html, brains)
     except (
         KeyError,
         OSError,
@@ -50,11 +53,11 @@ def build_research_brains_page(
         ResearchBrainFollowUpExecutionError,
     ) as exc:
         html = render_research_brains_html(
-            brains=service.list_brains(),
+            brains=brains,
             prefill_experiment_id=prefill,
             error=str(exc),
         )
-        return HTTPStatus.BAD_REQUEST, html
+        return HTTPStatus.BAD_REQUEST, _inject_brain_discovery_selector(html, brains)
 
 
 def handle_research_brain_post(
@@ -192,10 +195,12 @@ def render_research_brain_post_error(
     """Render one mutation error without losing the current brain inventory."""
 
     service = _service(recorder)
-    return render_research_brains_html(
-        brains=service.list_brains(),
+    brains = service.list_brains()
+    html = render_research_brains_html(
+        brains=brains,
         error=str(error),
     )
+    return _inject_brain_discovery_selector(html, brains)
 
 
 def _service(recorder: StrategyBuilderExperimentRecorder) -> ResearchBrainWorkbenchService:
@@ -203,6 +208,28 @@ def _service(recorder: StrategyBuilderExperimentRecorder) -> ResearchBrainWorkbe
         experiment_root=recorder.experiment_root,
         brain_root=recorder.experiment_root.parent / "brains",
     )
+
+
+def _inject_brain_discovery_selector(
+    html: str,
+    brains: tuple[ResearchBrainListItem, ...],
+) -> str:
+    """Expose a stable machine-readable selector without changing the visible Brain page."""
+
+    options = "".join(
+        f'<option value="{escape(item.definition.brain_id, quote=True)}">'
+        f"{escape(item.definition.name)}</option>"
+        for item in brains
+    )
+    selector = (
+        '<select name="brain_id" id="research-brain-discovery-index" '
+        'aria-hidden="true" tabindex="-1" style="display:none">'
+        f"{options}</select>"
+    )
+    marker = "</body>"
+    if marker in html:
+        return html.replace(marker, selector + marker, 1)
+    return html + selector
 
 
 def _membership_message(alignment: str, experiment_id: str) -> str:
