@@ -121,7 +121,9 @@ def main() -> int:
 
 
 def _git_head(repository_root: Path) -> str:
-    return _git_value(repository_root, "rev-parse", "HEAD", failure="cannot resolve repository HEAD")
+    return _git_value(
+        repository_root, "rev-parse", "HEAD", failure="cannot resolve repository HEAD"
+    )
 
 
 def _git_branch(repository_root: Path) -> str:
