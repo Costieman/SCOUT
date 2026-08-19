@@ -149,7 +149,9 @@ _RESEARCH_STATION_V5_JS = r"""
 
   // Capture phase runs before the existing composer/sweep submit handlers. Once explicit browser
   // validation passes, requestSubmit() enters this normal pipeline. We then inspect the same Event
-  // after later handlers have had the opportunity to preventDefault().
+  // after later handlers have had the opportunity to preventDefault(). The v4 handoff deliberately
+  // prevents the native submit after serializing the validated form and sets the dock status to
+  // "Request accepted" before navigating. That intentional handoff is success, not validation failure.
   form.addEventListener("submit", (event) => {
     let marker = form.querySelector('input[name="execute_run"]');
     if (!marker) {
@@ -166,6 +168,8 @@ _RESEARCH_STATION_V5_JS = r"""
 
     window.setTimeout(() => {
       if (!event.defaultPrevented) return;
+      const statusText = status?.textContent?.trim() || "";
+      if (statusText.startsWith("Request accepted")) return;
       if (status) status.textContent = "Research was blocked before backend execution.";
       showFailure(
         failureReason(),
