@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Presentation asset linking Strategy Builder runs to durable research-brain session memory."""
 
 STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
@@ -120,23 +119,29 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
     card.appendChild(actions);
   };
 
+  const decodeHtml = (value) => {
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = value;
+    return textarea.value;
+  };
+
   const fetchBrainOptions = async () => {
     try {
-      const response = await fetch("/research/brains", { credentials: "same-origin", cache: "no-store" });
+      const response = await fetch("/research/brains", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
       if (!response.ok) return [];
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
       const byId = new Map();
 
-      // Prefer the explicit assignment selector when present.
       for (const option of doc.querySelectorAll('select[name="brain_id"] option')) {
         const id = option.value.trim();
         const name = option.textContent.trim();
         if (id && name) byId.set(id, { id, name });
       }
 
-      // Fall back to the brain inventory links. This is intentionally redundant because
-      // the Strategy Builder must remain connected even if the assignment form changes.
       for (const link of doc.querySelectorAll('a[href^="/research/brains?brain="]')) {
         const href = link.getAttribute("href") || "";
         const url = new URL(href, window.location.origin);
@@ -144,6 +149,23 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
         const name = link.querySelector("strong")?.textContent?.trim() || link.textContent.trim();
         if (id && name && !byId.has(id)) byId.set(id, { id, name });
       }
+
+      // Raw-HTML fallback. The brain page is server-rendered, so if a browser/parser quirk
+      // prevents DOM discovery we can still recover the authoritative brain IDs and names.
+      const optionPattern = /<option\s+value="([^"]+)"[^>]*>([^<]+)<\/option>/gi;
+      for (const match of html.matchAll(optionPattern)) {
+        const id = decodeHtml(match[1]).trim();
+        const name = decodeHtml(match[2]).trim();
+        if (id && name && !byId.has(id)) byId.set(id, { id, name });
+      }
+
+      const linkPattern = /href="\/research\/brains\?brain=([^"&]+)[^"]*"[^>]*>\s*<strong>([^<]+)<\/strong>/gi;
+      for (const match of html.matchAll(linkPattern)) {
+        const id = decodeURIComponent(decodeHtml(match[1])).trim();
+        const name = decodeHtml(match[2]).trim();
+        if (id && name && !byId.has(id)) byId.set(id, { id, name });
+      }
+
       return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
     } catch (_) {
       return [];
@@ -164,7 +186,10 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
     }
     notice.hidden = false;
     const experiment = state.last_experiment_id || "a previous run";
-    notice.innerHTML = `<strong>This exact configuration has already been run in this brain.</strong> ${experiment === "a previous run" ? experiment : `<a href="/research/experiments?experiment=${encodeURIComponent(experiment)}">Open ${experiment}</a>`}. Change one declared parameter if you want new evidence; for example, move one neighboring stop/target value or test one unresolved dimension rather than changing several settings at once.`;
+    const prior = experiment === "a previous run"
+      ? experiment
+      : `<a href="/research/experiments?experiment=${encodeURIComponent(experiment)}">Open ${experiment}</a>`;
+    notice.innerHTML = `<strong>This exact configuration has already been run in this brain.</strong> ${prior}. Change one declared parameter if you want new evidence; for example, move one neighboring stop/target value or test one unresolved dimension rather than changing several settings at once.`;
   };
 
   const installBrainSessionCard = async () => {
@@ -179,12 +204,26 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
     card.className = "card";
     card.innerHTML = `
       <h2>Research brain — working session</h2>
-      <div class="section-note"><strong>Choose the research thread before you iterate.</strong> SCOUT remembers the most recent Strategy Builder configuration for that brain so you can change one thing at a time without reconstructing the previous run from memory.</div>
-      <div class="top-grid">
-        <label>Research brain<select id="research-brain-session-select"><option value="">No brain selected — standalone research</option></select></label>
-        <div style="align-self:end;display:flex;gap:8px;flex-wrap:wrap"><a id="research-brain-open" class="run-link" href="/research/brains" style="padding:9px 10px;border:1px solid #6d5b24;border-radius:8px">Open brain</a><button id="research-brain-resume" type="button" hidden>Resume last session</button></div>
+      <div class="section-note">
+        <strong>Choose the research thread before you iterate.</strong>
+        SCOUT remembers the most recent Strategy Builder configuration for that brain so you can
+        change one thing at a time without reconstructing the previous run from memory.
       </div>
-      <div id="research-brain-session-status" class="subtle" style="margin-top:8px">Loading research brains…</div>`;
+      <div class="top-grid">
+        <label>Research brain
+          <select id="research-brain-session-select">
+            <option value="">No brain selected — standalone research</option>
+          </select>
+        </label>
+        <div style="align-self:end;display:flex;gap:8px;flex-wrap:wrap">
+          <a id="research-brain-open" class="run-link" href="/research/brains"
+             style="padding:9px 10px;border:1px solid #6d5b24;border-radius:8px">Open brain</a>
+          <button id="research-brain-resume" type="button" hidden>Resume last session</button>
+        </div>
+      </div>
+      <div id="research-brain-session-status" class="subtle" style="margin-top:8px">
+        Loading research brains…
+      </div>`;
     firstCard.insertAdjacentElement("beforebegin", card);
 
     const select = card.querySelector("#research-brain-session-select");
@@ -229,7 +268,8 @@ STRATEGY_BUILDER_RESEARCH_MEMORY_JS = r"""
       refresh();
       const state = readState(brainId);
       if (brainId && state?.last_url && state.last_url !== cleanStrategyUrl()) {
-        status.innerHTML = `<strong>Previous session found.</strong> Use “Resume last session” to restore the exact prior parameters before changing the next variable.`;
+        status.innerHTML = "<strong>Previous session found.</strong> Use “Resume last session” to " +
+          "restore the exact prior parameters before changing the next variable.";
       }
     });
 
