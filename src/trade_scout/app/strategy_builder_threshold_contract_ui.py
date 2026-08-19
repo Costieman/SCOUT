@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Browser stability shim that keeps recovered fixed metrics on their catalog threshold contract."""
 
 from __future__ import annotations
