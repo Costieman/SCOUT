@@ -15,4 +15,4 @@ def test_v4_asset_serializes_final_form_after_other_submit_handlers() -> None:
     assert "new FormData(form)" in source
     assert 'data.delete("load_only")' in source
     assert 'data.set("execute_run", "1")' in source
-    assert 'window.location.assign(destination)' in source
+    assert "window.location.assign(destination)" in source
