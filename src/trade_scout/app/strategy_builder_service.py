@@ -27,6 +27,7 @@ from trade_scout.data.contracts import (
     ResearchBar,
     to_research_bar,
 )
+from trade_scout.events import detect_consolidation_events
 from trade_scout.events.contracts import EventRecord
 from trade_scout.features.parameterized_expression import extract_parameterized_specs
 from trade_scout.features.parameterized_indicators import (
@@ -36,7 +37,6 @@ from trade_scout.features.parameterized_indicators import (
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
     TrendFilter,
-    detect_consolidation_breakouts,
 )
 from trade_scout.risk.exit_policies import (
     DEFAULT_ATR_GRID,
@@ -223,7 +223,7 @@ class StrategyBuilderReport:
     performance: StrategyBuilderPerformance
     provider_calls_made: bool = False
     research_state: str = "EXPLORATORY"
-    application_version: str = "strategy-builder-v0.7"
+    application_version: str = "strategy-builder-v0.8"
 
 
 @dataclass(frozen=True, slots=True)
@@ -383,9 +383,7 @@ class StrategyBuilderService:
                 for series_bars in series.values():
                     detected_events = tuple(
                         event
-                        for event in detect_consolidation_breakouts(
-                            series_bars, consolidation_config
-                        )
+                        for event in detect_consolidation_events(series_bars, consolidation_config)
                         if start <= event.signal_date <= latest
                     )
                     entry_count += len(detected_events)

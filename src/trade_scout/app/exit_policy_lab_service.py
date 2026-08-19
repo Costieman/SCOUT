@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from datetime import date
 
 from trade_scout.app.universe_research_service import UniverseResearchSource
+from trade_scout.events import detect_consolidation_events
 from trade_scout.patterns.consolidation_breakout import (
     ConsolidationBreakoutConfig,
     TrendFilter,
-    detect_consolidation_breakouts,
 )
 from trade_scout.risk.exit_policies import (
     DEFAULT_ATR_GRID,
@@ -105,7 +105,8 @@ class ExitPolicyLabReport:
     policies: tuple[ExitPolicy, ...]
     comparison: ExitResearchComparison
     research_state: str = "EXPLORATORY"
-    application_version: str = "exit-policy-lab-v0.1"
+    application_version: str = "exit-policy-lab-v0.2"
+    event_definition_version: str = "consolidation-close-breakout-v0.3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,7 +150,7 @@ class ExitPolicyLabService:
             dataset_versions.add(str(bars[0].dataset_version))
             events = tuple(
                 event
-                for event in detect_consolidation_breakouts(bars, config)
+                for event in detect_consolidation_events(bars, config)
                 if start <= event.signal_date <= latest
             )
             event_count += len(events)
