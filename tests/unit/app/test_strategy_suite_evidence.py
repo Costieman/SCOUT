@@ -53,7 +53,9 @@ def test_phase9_reports_tradeoffs_instead_of_forcing_one_winner() -> None:
 
 
 def test_phase9_identifies_pareto_dominance_only_when_no_metric_is_worse() -> None:
-    strong = _snapshot(fingerprint="strong", cost_expectancy=1.2, drawdown=5.0, sample=180, stability=0.9)
+    strong = _snapshot(
+        fingerprint="strong", cost_expectancy=1.2, drawdown=5.0, sample=180, stability=0.9
+    )
     weak = _snapshot(
         suite_id="TS-S15-MA-CROSSOVER",
         fingerprint="weak",
