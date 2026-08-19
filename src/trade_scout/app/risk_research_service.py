@@ -6,16 +6,17 @@ from dataclasses import dataclass
 from datetime import date
 
 from trade_scout.app.universe_research_service import UniverseResearchSource
-from trade_scout.patterns.consolidation_breakout import (
-    ConsolidationBreakoutConfig,
-    TrendFilter,
-    detect_consolidation_breakouts,
-)
+from trade_scout.events.consolidation_breakout import ConsolidationBreakoutEvent
+from trade_scout.events.consolidation_pipeline import replay_consolidation_pipeline
+from trade_scout.patterns import PatternState
+from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig, TrendFilter
 from trade_scout.risk.initial_stops import (
     CostModel,
     RiskPolicyResult,
+    StructuralStopContext,
     evaluate_stop_policy_grid,
     initial_stop_policy_grid,
+    structural_stop_context_from_pattern_state,
 )
 from trade_scout.statistics.stop_research import (
     StopResearchComparison,
@@ -70,7 +71,8 @@ class RiskResearchReport:
     selected_config: ConsolidationBreakoutConfig
     comparison: StopResearchComparison
     research_state: str = "EXPLORATORY"
-    risk_program_version: str = "consolidation-stop-research-v0.1"
+    risk_program_version: str = "consolidation-stop-research-v0.2"
+    event_definition_version: str = "consolidation-close-breakout-v0.3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,11 +107,9 @@ class RiskResearchService:
         dataset_versions: set[str] = set()
         for bars in series.values():
             dataset_versions.add(str(bars[0].dataset_version))
-            events = tuple(
-                item
-                for item in detect_consolidation_breakouts(bars, config)
-                if start <= item.signal_date <= latest
-            )
+            replay = replay_consolidation_pipeline(bars, config)
+            events = tuple(item for item in replay.events if start <= item.signal_date <= latest)
+            contexts = _structural_contexts(events, replay.pattern_states)
             event_count += len(events)
             results.extend(
                 evaluate_stop_policy_grid(
@@ -118,6 +118,7 @@ class RiskResearchService:
                     horizon=request.horizon,
                     policies=policies,
                     cost_model=cost_model,
+                    structural_contexts=contexts,
                 )
             )
         if len(dataset_versions) != 1:
@@ -139,6 +140,34 @@ class RiskResearchService:
             selected_config=config,
             comparison=comparison,
         )
+
+
+def _structural_contexts(
+    events: tuple[ConsolidationBreakoutEvent, ...],
+    states: tuple[PatternState, ...],
+) -> dict[str, StructuralStopContext]:
+    """Resolve each typed event to the latest pre-signal state for its pattern instance."""
+
+    by_pattern: dict[str, list[PatternState]] = {}
+    for state in states:
+        by_pattern.setdefault(state.pattern_instance_id, []).append(state)
+
+    contexts: dict[str, StructuralStopContext] = {}
+    for event in events:
+        candidates = tuple(
+            state
+            for state in by_pattern.get(event.pattern_instance_id, ())
+            if state.formation_end < event.signal_date
+            and "support" in state.structural_boundaries
+            and "resistance" in state.structural_boundaries
+        )
+        if not candidates:
+            raise RiskResearchError(
+                f"typed event {event.event_id} has no pre-signal structural pattern state"
+            )
+        pattern = max(candidates, key=lambda item: (item.formation_end, item.formation_start))
+        contexts[event.event_id] = structural_stop_context_from_pattern_state(event, pattern)
+    return contexts
 
 
 def _subtract_years(value: date, years: int) -> date:
