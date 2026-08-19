@@ -46,10 +46,7 @@ def _bar(
 def _bars(
     *, breakout_close: float = 103.0, breakout_volume: float = 100.0
 ) -> tuple[ResearchBar, ...]:
-    base = tuple(
-        _bar(index, close=100.0, high=102.0, low=98.0, volume=100.0)
-        for index in range(5)
-    )
+    base = tuple(_bar(index, close=100.0, high=102.0, low=98.0, volume=100.0) for index in range(5))
     return (
         *base,
         _bar(
@@ -226,7 +223,9 @@ def test_legacy_and_new_pipeline_preserve_prefix_events_when_future_bars_are_app
     legacy_prefix = detect_consolidation_breakouts(prefix, config)
     migrated_prefix = detect_consolidation_events(prefix, config)
     legacy_extended_prefix = tuple(
-        event for event in detect_consolidation_breakouts(extended, config) if event.signal_index < 6
+        event
+        for event in detect_consolidation_breakouts(extended, config)
+        if event.signal_index < 6
     )
     migrated_extended_prefix = tuple(
         event for event in detect_consolidation_events(extended, config) if event.signal_index < 6
