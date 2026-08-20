@@ -27,13 +27,14 @@ def guide_research_sequence(
             stage="ENTRY_EFFICACY",
             headline="Establish the entry before optimizing trade management.",
             rationale=(
-                "This run contains exit-policy evidence, but SCOUT has not yet established that the "
-                "entry itself creates a useful historical population. Optimizing stops or targets "
-                "before testing entry efficacy can polish noise rather than improve a real signal."
+                "This run contains exit-policy evidence, but SCOUT has not yet established "
+                "that the entry itself creates a useful historical population. Optimizing "
+                "stops or targets before testing entry efficacy can polish noise rather than "
+                "improve a real signal."
             ),
             next_dimension=(
-                "First test the entry condition and its Section 5 indicator parameter against the "
-                "hold outcome. Then check whether the result survives neighboring parameter values."
+                "First test the entry condition and its Section 5 indicator parameter against "
+                "the hold outcome. Then check whether the result survives neighboring values."
             ),
         )
 
@@ -41,12 +42,12 @@ def guide_research_sequence(
         stage="ENTRY_ROBUSTNESS",
         headline="Entry evidence exists; test robustness before complex exits.",
         rationale=(
-            "The next useful question is whether the entry effect survives nearby parameter values "
-            "and sensible holding horizons rather than depending on one historical cell."
+            "The next useful question is whether the entry effect survives nearby parameter "
+            "values and sensible holding horizons rather than depending on one historical cell."
         ),
         next_dimension=(
-            "Resolve the entry neighborhood, then test holding horizon. Move into stops, targets and "
-            "execution sensitivity only after the signal remains useful across those checks."
+            "Resolve the entry neighborhood, then test holding horizon. Move into stops, "
+            "targets and execution sensitivity only after the signal survives those checks."
         ),
     )
 
