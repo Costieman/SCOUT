@@ -85,14 +85,14 @@ def configure_research_station_runtime() -> None:
     _v9.configure_research_station_runtime()
     _v8._render_next_steps = cast(Callable[[StrategyBuilderReport], str], _render_next_steps_v10)
 
-    asset_name = 'STRATEGY_BUILDER_RESEARCH_MEMORY_JS'
+    asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
     namespace = vars(_console)
     asset = cast(str, namespace[asset_name])
-    if 'strategic-run-next' not in asset:
-        namespace[asset_name] = asset + '\n' + _ITERATIVE_NEXT_STEP_JS
+    if "strategic-run-next" not in asset:
+        namespace[asset_name] = asset + "\n" + _ITERATIVE_NEXT_STEP_JS
     _CONFIGURED = True
 
 
 serve_research_workbench_console = _console.serve_research_workbench_console
 
-__all__ = ['configure_research_station_runtime', 'serve_research_workbench_console']
+__all__ = ["configure_research_station_runtime", "serve_research_workbench_console"]
