@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from html import escape
 
+from trade_scout.app.strategic_followup import build_entry_followup
 from trade_scout.app.strategic_next_step_surface import render_strategic_next_step_html
 from trade_scout.app.strategy_builder_entry_sweep import (
     EntrySweepPoint,
@@ -39,7 +40,8 @@ def attach_entry_sweep_html(html: str, report: StrategyBuilderEntrySweepReport) 
             for item in report.points
         ),
     )
-    addition = _render_entry_sweep(report) + render_strategic_next_step_html(analysis)
+    followup = build_entry_followup(report, analysis)
+    addition = _render_entry_sweep(report) + render_strategic_next_step_html(analysis, followup)
     return html.replace(marker, addition + marker, 1)
 
 
