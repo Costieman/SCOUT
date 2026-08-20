@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Deterministic, evidence-grounded next-experiment suggestions for Strategy Builder runs.
 
 This module does not predict profitability or select a trading strategy. It reads already-computed
@@ -8,6 +9,7 @@ hypotheses and bounded next experiments.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import pairwise
 
 from trade_scout.risk.exit_policies import ExitFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary, ExitResearchComparison
@@ -226,7 +228,7 @@ def _shape(points: tuple[ExitPolicySummary, ...]) -> str:
     if any(value is None for value in expectations):
         return "mixed"
     values = tuple(float(value) for value in expectations if value is not None)
-    diffs = tuple(right - left for left, right in zip(values, values[1:], strict=True))
+    diffs = tuple(right - left for left, right in pairwise(values))
     tolerance = 1e-12
     rising = sum(diff >= -tolerance for diff in diffs)
     falling = sum(diff <= tolerance for diff in diffs)
