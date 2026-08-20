@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from html import escape
 from typing import Protocol
+
+from trade_scout.app.strategic_followup import StrategicFollowupPlan
 
 
 class StrategicOptionLike(Protocol):
@@ -39,10 +40,13 @@ class StrategicAnalysisLike(Protocol):
     def caution(self) -> str: ...
 
     @property
-    def options(self) -> Sequence[StrategicOptionLike]: ...
+    def options(self) -> tuple[StrategicOptionLike, ...]: ...
 
 
-def render_strategic_next_step_html(analysis: StrategicAnalysisLike) -> str:
+def render_strategic_next_step_html(
+    analysis: StrategicAnalysisLike,
+    followup: StrategicFollowupPlan | None = None,
+) -> str:
     """Render the same operator-controlled analysis popup for exit and entry sweeps."""
 
     options = "".join(
@@ -62,6 +66,7 @@ def render_strategic_next_step_html(analysis: StrategicAnalysisLike) -> str:
         if analysis.robustness
         else "No separate robustness statement is available for this result."
     )
+    followup_html = _render_followup(followup)
     return f"""
 <style id="strategic-next-step-style">
 body.strategic-next-step-modal-open {{ overflow:hidden; }}
@@ -74,11 +79,14 @@ body.strategic-next-step-modal-open {{ overflow:hidden; }}
 .strategic-next-step-head button {{ flex:0 0 auto; }}
 .strategic-next-step-observation {{ border-left:3px solid #7fc8ff; background:#10151d; padding:12px 14px; margin:14px 0; }}
 .strategic-next-step-robustness {{ border-left:3px solid #63d39a; background:#10151d; padding:12px 14px; margin:14px 0; }}
+.strategic-followup {{ border-left:3px solid #f1c84b; background:#17170f; padding:12px 14px; margin:14px 0; }}
+.strategic-followup.terminal {{ border-left-color:#ef7b7b; background:#1c1314; }}
 .strategic-next-step-options {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; }}
 .strategic-option {{ border:1px solid #374252; background:#171d27; border-radius:10px; padding:14px; }}
 .strategic-option h3 {{ color:#f1c84b; margin-bottom:10px; }}
 .strategic-option p {{ margin:7px 0; }}
 .strategic-next-step-caution {{ margin-top:14px; color:#f0c783; font-size:12px; }}
+#strategic-run-next {{ padding:12px 18px; font-size:15px; }}
 @media(max-width:800px) {{ .strategic-next-step-options {{ grid-template-columns:1fr; }} }}
 @media print {{ .strategic-next-step-overlay,.strategic-next-step-summary .toolbar {{ display:none !important; }} }}
 </style>
@@ -93,12 +101,38 @@ body.strategic-next-step-modal-open {{ overflow:hidden; }}
     <div class="strategic-next-step-head"><div><div class="eyebrow">SCOUT research analysis</div><h2 id="strategic-next-step-title">Strategic next-step options</h2><p><strong>{escape(analysis.headline)}</strong></p></div><button type="button" id="strategic-next-step-close">Close</button></div>
     <div class="strategic-next-step-observation"><strong>What this run is showing:</strong><br>{escape(analysis.observation)}</div>
     <div class="strategic-next-step-robustness"><strong>Robustness read:</strong><br>{robustness}</div>
+    {followup_html}
     <div class="strategic-next-step-options">{options}</div>
     <div class="strategic-next-step-caution">{escape(analysis.caution)}</div>
     <div class="toolbar"><button type="button" id="strategic-next-step-dismiss">Keep researching manually</button></div>
   </section>
 </div>
 """
+
+
+def _render_followup(followup: StrategicFollowupPlan | None) -> str:
+    if followup is None:
+        return ""
+    css_class = "strategic-followup" + (" terminal" if not followup.can_run else "")
+    heading = "Iteration decision" if followup.can_run else "SCOUT would stop honing this variable here"
+    button = ""
+    if followup.can_run:
+        assert followup.sweep_variable is not None
+        assert followup.from_value is not None
+        assert followup.to_value is not None
+        assert followup.step_value is not None
+        button = (
+            '<div class="toolbar">'
+            f'<button type="button" id="strategic-run-next" data-sweep-variable="{escape(followup.sweep_variable)}" '
+            f'data-sweep-from="{followup.from_value:g}" data-sweep-to="{followup.to_value:g}" '
+            f'data-sweep-step="{followup.step_value:g}">{escape(followup.button_label)}</button>'
+            '<span class="subtle">This explicit click updates only Section 5 and then starts the next run.</span>'
+            "</div>"
+        )
+    return (
+        f'<div class="{css_class}"><strong>{escape(heading)}:</strong><br>'
+        f'{escape(followup.message)}{button}</div>'
+    )
 
 
 __all__ = ["render_strategic_next_step_html"]
