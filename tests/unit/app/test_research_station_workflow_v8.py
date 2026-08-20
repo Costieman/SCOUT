@@ -26,7 +26,9 @@ def test_v8_render_contains_direction_range_rationale_and_falsifier() -> None:
     # Guard the four-part scientific recommendation contract in the renderer implementation.
     names = source.__code__.co_names
     assert "analyze_strategic_next_steps" in names
-    constants = " ".join(str(value) for value in source.__code__.co_consts if isinstance(value, str))
+    constants = " ".join(
+        str(value) for value in source.__code__.co_consts if isinstance(value, str)
+    )
     assert "Direction:" in constants
     assert "Suggested next range:" in constants
     assert "Why:" in constants
