@@ -22,8 +22,8 @@ def _render_next_steps_v11(report: StrategyBuilderReport) -> str:
     sequence = guide_research_sequence(report.comparison)
     guidance = (
         '<div class="strategic-next-step-observation" style="border-left-color:#b99cff">'
-        '<strong>Recommended research order:</strong><br>'
-        f'<strong>{escape(sequence.headline)}</strong> {escape(sequence.rationale)} '
+        "<strong>Recommended research order:</strong><br>"
+        f"<strong>{escape(sequence.headline)}</strong> {escape(sequence.rationale)} "
         f'<br><span class="subtle">Next dimension: {escape(sequence.next_dimension)}</span></div>'
     )
     rendered = render_strategic_next_step_html(analysis, followup)
