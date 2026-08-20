@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import socket
 import subprocess
+import time
 import webbrowser
 from pathlib import Path
+from threading import Thread
 
 from trade_scout.app.cached_windowed_canonical_source import (
     CachedWindowedCanonicalUniverseResearchSource,
@@ -94,7 +97,11 @@ def main() -> int:
     configure_research_station_runtime(experiment_root=experiment_root, brain_root=brain_root)
     configure_runtime_identity(commit_sha=commit_sha, branch=branch)
     if args.open_browser:
-        webbrowser.open(strategy_url)
+        Thread(
+            target=_open_browser_when_ready,
+            args=(args.host, args.port, strategy_url),
+            daemon=True,
+        ).start()
     try:
         serve_research_workbench_console(
             config,
@@ -106,6 +113,20 @@ def main() -> int:
     except KeyboardInterrupt:
         print("\nTrade Scout research workbench stopped.")
     return 0
+
+
+def _open_browser_when_ready(host: str, port: int, url: str) -> None:
+    """Open the browser only after the HTTP listener accepts connections."""
+
+    connect_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+    for _ in range(100):
+        try:
+            with socket.create_connection((connect_host, port), timeout=0.1):
+                webbrowser.open(url)
+                return
+        except OSError:
+            time.sleep(0.05)
+    print(f"Browser was not opened because the research server never became ready: {url}")
 
 
 def _git_head(repository_root: Path) -> str:
