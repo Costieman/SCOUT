@@ -74,7 +74,9 @@ def build_entry_followup(
     sweep = _Sweep(
         variable=f"entry::{report.target_feature_name}::{report.parameter.value}",
         values=tuple(item.value for item in ordered),
-        expectancies=tuple(float(item.expectancy) for item in ordered if item.expectancy is not None),
+        expectancies=tuple(
+            float(item.expectancy) for item in ordered if item.expectancy is not None
+        ),
         control_expectancy=None,
     )
     return _plan(
@@ -299,9 +301,15 @@ def _shape(expectancies: tuple[float, ...]) -> str:
     spread = max(expectancies) - min(expectancies)
     tolerance = max(1e-12, spread * 0.08)
     threshold = max(1, (4 * len(diffs) + 4) // 5)
-    if sum(diff >= -tolerance for diff in diffs) >= threshold and expectancies[-1] > expectancies[0] + tolerance:
+    if (
+        sum(diff >= -tolerance for diff in diffs) >= threshold
+        and expectancies[-1] > expectancies[0] + tolerance
+    ):
         return "increasing"
-    if sum(diff <= tolerance for diff in diffs) >= threshold and expectancies[-1] < expectancies[0] - tolerance:
+    if (
+        sum(diff <= tolerance for diff in diffs) >= threshold
+        and expectancies[-1] < expectancies[0] - tolerance
+    ):
         return "decreasing"
     return "mixed"
 
