@@ -70,8 +70,8 @@ def guide_research_sequence_from_evidence(
             headline="Establish the entry before optimizing trade management.",
             rationale=(
                 "The preserved research history does not yet establish a completed entry-efficacy "
-                "experiment. Optimizing later dimensions first can polish noise rather than improve "
-                "a reproducible signal."
+                "experiment. Optimizing stops or targets before establishing the entry can polish "
+                "noise rather than improve a reproducible signal."
             ),
             next_dimension="Test the entry against the hold outcome before changing exits or costs.",
             evidence_source=evidence_source,
