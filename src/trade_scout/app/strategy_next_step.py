@@ -1,17 +1,16 @@
 # ruff: noqa: E501
-"""Deterministic, evidence-grounded next-experiment suggestions for Strategy Builder runs.
-
-This module does not predict profitability or select a trading strategy. It reads already-computed
-exit-policy summaries and translates visible parameter-shape evidence into explicit research
-hypotheses and bounded next experiments.
-"""
+"""Evidence-grounded next-experiment suggestions for Strategy Builder exit comparisons."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import pairwise
 
-from trade_scout.risk.exit_policies import ExitFamily
+from trade_scout.app.strategy_parameter_analysis import (
+    ParameterEvidencePoint,
+    ParameterSurfaceAnalysis,
+    analyze_parameter_surface,
+)
+from trade_scout.risk.exit_policies import ExitFamily, TargetFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary, ExitResearchComparison
 
 
@@ -34,13 +33,22 @@ class StrategicNextStepAnalysis:
     observation: str
     caution: str
     options: tuple[StrategicExperimentOption, ...]
-    version: str = "strategy-next-step-v0.1"
+    robustness: str = ""
+    version: str = "strategy-next-step-v0.2"
+
+
+@dataclass(frozen=True, slots=True)
+class _ExitSweep:
+    label: str
+    unit: str
+    points: tuple[ParameterEvidencePoint, ...]
+    fixed_stop_special: bool = False
 
 
 def analyze_strategic_next_steps(
     comparison: ExitResearchComparison,
 ) -> StrategicNextStepAnalysis:
-    """Infer directional research options without treating exploratory evidence as advice."""
+    """Infer a directional experiment for any clean one-variable exit sweep."""
 
     hold = next(
         (
@@ -63,14 +71,20 @@ def analyze_strategic_next_steps(
             options=(),
         )
 
-    family, points = _largest_sweep_family(managed)
-    if family is not None and len(points) >= 3:
-        shape = _shape(points)
-        if family is ExitFamily.FIXED_PERCENT_STOP:
-            return _fixed_stop_analysis(comparison, hold, points, shape)
+    sweep = _largest_exit_sweep(managed)
+    if sweep is not None and len(sweep.points) >= 3:
+        surface = analyze_parameter_surface(
+            parameter_label=sweep.label,
+            unit_label=sweep.unit,
+            points=sweep.points,
+            control_expectancy=None if hold is None else hold.expectancy,
+            special_ultra_tight_stop_branch=sweep.fixed_stop_special,
+        )
+        return _from_surface(surface, fixed_stop_special=sweep.fixed_stop_special)
 
     best = max(
-        managed, key=lambda item: item.expectancy if item.expectancy is not None else float("-inf")
+        managed,
+        key=lambda item: item.expectancy if item.expectancy is not None else float("-inf"),
     )
     hold_text = (
         "The hold control remains the higher-expectancy reference."
@@ -84,180 +98,164 @@ def analyze_strategic_next_steps(
         headline="The current grid does not expose a clean one-dimensional direction.",
         observation=(
             f"The strongest managed row is {best.family.value.replace('_', ' ')} at "
-            f"{_pct(best.expectancy)}, but the available rows do not form a sufficiently clean "
-            f"single-family sweep. {hold_text}"
+            f"{_pct(best.expectancy)}, but the available rows do not isolate one parameter while "
+            f"holding its partner components fixed. {hold_text}"
         ),
         caution=_caution(comparison),
         options=(
             StrategicExperimentOption(
                 title="Run a cleaner local sweep",
                 direction="Hold the entry population and every partner exit parameter fixed.",
-                proposed_range="Choose one exit dimension and test at least 5 ordered values around the current best row.",
-                rationale="A single-variable shape is easier to interpret than a mixed policy grid.",
+                proposed_range="Choose one Section 5 exit dimension and test at least five ordered values around the current best row.",
+                rationale="A single-variable response surface is more interpretable than a mixed policy grid.",
                 falsifier="If neighboring values do not reproduce the apparent advantage, treat the current best row as unstable.",
             ),
         ),
     )
 
 
-def _fixed_stop_analysis(
-    comparison: ExitResearchComparison,
-    hold: ExitPolicySummary | None,
-    points: tuple[ExitPolicySummary, ...],
-    shape: str,
-) -> StrategicNextStepAnalysis:
-    ordered = tuple(sorted(points, key=lambda item: item.resolved_parameters["distance_pct"]))
-    first = ordered[0]
-    last = ordered[-1]
-    min_pct = first.resolved_parameters["distance_pct"] * 100.0
-    max_pct = last.resolved_parameters["distance_pct"] * 100.0
-    best = max(
-        ordered, key=lambda item: item.expectancy if item.expectancy is not None else float("-inf")
-    )
-    hold_gap = (
-        None
-        if hold is None or hold.expectancy is None or best.expectancy is None
-        else best.expectancy - hold.expectancy
-    )
+def _largest_exit_sweep(managed: tuple[ExitPolicySummary, ...]) -> _ExitSweep | None:
+    candidates: list[_ExitSweep] = []
 
-    if shape == "increasing" and best is last:
-        wider_high = min(95.0, max(50.0, max_pct * 2.0))
-        observation = (
-            f"Expectancy rises across the tested fixed-stop range from {_pct(first.expectancy)} at "
-            f"{min_pct:g}% to {_pct(last.expectancy)} at {max_pct:g}%, while stop-outs fall from "
-            f"{_prob(first.stop_out_rate)} to {_prob(last.stop_out_rate)}. The best tested value is "
-            "the upper boundary, so the present sweep is boundary-limited rather than showing an interior optimum."
-        )
-        if hold_gap is not None and hold_gap < 0:
-            observation += (
-                f" Even the best managed row remains {_pp(abs(hold_gap))} below the hold control."
-            )
-        return StrategicNextStepAnalysis(
-            headline="Wider stops are the strongest next direction; also test a separate ultra-tight regime.",
-            observation=observation,
-            caution=_caution(comparison),
-            options=(
-                StrategicExperimentOption(
-                    title="Extend the wide-stop branch",
-                    direction="Move outward in the same direction as the observed expectancy gradient.",
-                    proposed_range=f"Test approximately {max_pct:g}% to {wider_high:g}% fixed stops; start with 5-point steps, then tighten around any plateau or reversal.",
-                    rationale="The current best value sits at the edge of the tested range, so the experiment has not yet located the turning point.",
-                    falsifier="Stop extending once expectancy plateaus or falls across adjacent values, or downside/tail metrics deteriorate enough to erase the risk-control benefit.",
-                ),
-                StrategicExperimentOption(
-                    title="Probe the cut-losers-immediately branch",
-                    direction="Test the opposite regime rather than assuming the current monotonic shape continues below the tested minimum.",
-                    proposed_range=f"Test 1% to {min(5.0, min_pct):g}% fixed stops in 1-point steps.",
-                    rationale="A very tight stop may behave discontinuously by rejecting weak entries quickly while allowing a small runner population to survive; the current grid cannot test that hypothesis if it starts at 5% or wider.",
-                    falsifier="Reject this branch if very tight stops collapse expectancy, materially worsen gap/slippage sensitivity, or fail to produce a distinct runner distribution.",
-                ),
-            ),
-        )
-
-    if shape == "decreasing" and best is first:
-        low = max(0.5, min_pct / 4.0)
-        return StrategicNextStepAnalysis(
-            headline="Tighter stops are the strongest next direction.",
-            observation=(
-                f"Expectancy declines as the fixed stop widens from {min_pct:g}% to {max_pct:g}%, "
-                f"with the best tested row at the lower boundary ({_pct(first.expectancy)})."
-            ),
-            caution=_caution(comparison),
-            options=(
-                StrategicExperimentOption(
-                    title="Extend below the current minimum",
-                    direction="Move toward faster loss rejection.",
-                    proposed_range=f"Test approximately {low:g}% to {min_pct:g}% fixed stops with finer spacing near the current boundary.",
-                    rationale="The optimum, if real, may lie below the tested range because the current best value is boundary-limited.",
-                    falsifier="Reject the tighter-stop branch if expectancy reverses downward or gap/slippage sensitivity becomes dominant.",
-                ),
-            ),
-        )
-
-    best_pct = best.resolved_parameters["distance_pct"] * 100.0
-    radius = max(1.0, best_pct * 0.2)
-    return StrategicNextStepAnalysis(
-        headline="The sweep shows an interior or non-monotonic region worth resolving locally.",
-        observation=(
-            f"The strongest fixed-stop row is around {best_pct:g}% at {_pct(best.expectancy)} rather than a clean boundary optimum."
-        ),
-        caution=_caution(comparison),
-        options=(
-            StrategicExperimentOption(
-                title="Resolve the local optimum",
-                direction="Increase parameter resolution around the strongest neighborhood.",
-                proposed_range=f"Test roughly {max(0.5, best_pct - radius):g}% to {min(95.0, best_pct + radius):g}% with smaller steps.",
-                rationale="Broad sweeps locate regions; a local sweep tests whether the apparent peak is stable across neighboring values.",
-                falsifier="Treat the peak as unstable if adjacent values do not retain similar expectancy and downside characteristics.",
-            ),
-        ),
-    )
-
-
-def _largest_sweep_family(
-    managed: tuple[ExitPolicySummary, ...],
-) -> tuple[ExitFamily | None, tuple[ExitPolicySummary, ...]]:
-    groups: dict[ExitFamily, list[ExitPolicySummary]] = {}
+    stop_groups: dict[tuple[object, ...], list[ExitPolicySummary]] = {}
     for item in managed:
-        if item.target_family is not None:
+        stop = _stop_dimension(item)
+        if stop is None:
             continue
-        parameter = _primary_parameter(item)
-        if parameter is None:
+        key = (
+            item.family,
+            stop[0],
+            item.target_family,
+            tuple(sorted(item.target_parameters.items())),
+        )
+        stop_groups.setdefault(key, []).append(item)
+    for rows in stop_groups.values():
+        dimension = _stop_dimension(rows[0])
+        assert dimension is not None
+        parameter_name, label, unit, multiplier = dimension
+        values = [item.resolved_parameters.get(parameter_name) for item in rows]
+        if None in values or len(set(values)) < 3:
             continue
-        groups.setdefault(item.family, []).append(item)
-    if not groups:
-        return None, ()
-    family = max(groups, key=lambda value: len(groups[value]))
-    points = tuple(groups[family])
-    if len({_primary_parameter(item) for item in points}) != len(points):
-        return None, ()
-    return family, points
+        points = tuple(
+            _evidence_point(item, value=float(item.resolved_parameters[parameter_name]) * multiplier)
+            for item in rows
+        )
+        candidates.append(
+            _ExitSweep(
+                label=label,
+                unit=unit,
+                points=points,
+                fixed_stop_special=(
+                    rows[0].family is ExitFamily.FIXED_PERCENT_STOP
+                    and rows[0].target_family is None
+                ),
+            )
+        )
+
+    target_groups: dict[tuple[object, ...], list[ExitPolicySummary]] = {}
+    for item in managed:
+        target = _target_dimension(item)
+        if target is None:
+            continue
+        key = (
+            item.family,
+            tuple(sorted(item.resolved_parameters.items())),
+            item.target_family,
+            target[0],
+        )
+        target_groups.setdefault(key, []).append(item)
+    for rows in target_groups.values():
+        dimension = _target_dimension(rows[0])
+        assert dimension is not None
+        parameter_name, label, unit, multiplier = dimension
+        values = [item.target_parameters.get(parameter_name) for item in rows]
+        if None in values or len(set(values)) < 3:
+            continue
+        points = tuple(
+            _evidence_point(item, value=float(item.target_parameters[parameter_name]) * multiplier)
+            for item in rows
+        )
+        candidates.append(_ExitSweep(label=label, unit=unit, points=points))
+
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: len(item.points))
 
 
-def _primary_parameter(item: ExitPolicySummary) -> float | None:
-    if item.family in {ExitFamily.FIXED_PERCENT_STOP, ExitFamily.TRAILING_PERCENT_STOP}:
-        return item.resolved_parameters.get("distance_pct")
-    if item.family in {ExitFamily.ATR_STOP, ExitFamily.TRAILING_ATR_STOP}:
-        return item.resolved_parameters.get("atr_multiple")
+def _stop_dimension(item: ExitPolicySummary) -> tuple[str, str, str, float] | None:
+    if item.family is ExitFamily.FIXED_PERCENT_STOP:
+        return "distance_pct", "Fixed stop distance", "%", 100.0
+    if item.family is ExitFamily.TRAILING_PERCENT_STOP:
+        return "distance_pct", "Trailing stop distance", "%", 100.0
+    if item.family is ExitFamily.ATR_STOP:
+        return "atr_multiple", "ATR stop multiple", "x ATR", 1.0
+    if item.family is ExitFamily.TRAILING_ATR_STOP:
+        return "atr_multiple", "Trailing ATR stop multiple", "x ATR", 1.0
     return None
 
 
-def _shape(points: tuple[ExitPolicySummary, ...]) -> str:
-    ordered = tuple(sorted(points, key=lambda item: _primary_parameter(item) or 0.0))
-    expectations = tuple(item.expectancy for item in ordered)
-    if any(value is None for value in expectations):
-        return "mixed"
-    values = tuple(float(value) for value in expectations if value is not None)
-    diffs = tuple(right - left for left, right in pairwise(values))
-    tolerance = 1e-12
-    rising = sum(diff >= -tolerance for diff in diffs)
-    falling = sum(diff <= tolerance for diff in diffs)
-    threshold = max(1, int(0.8 * len(diffs) + 0.999999))
-    if rising >= threshold and values[-1] > values[0]:
-        return "increasing"
-    if falling >= threshold and values[-1] < values[0]:
-        return "decreasing"
-    return "mixed"
+def _target_dimension(item: ExitPolicySummary) -> tuple[str, str, str, float] | None:
+    if item.target_family is TargetFamily.FIXED_PERCENT:
+        return "gain_pct", "Fixed profit target", "%", 100.0
+    if item.target_family is TargetFamily.ATR_MULTIPLE:
+        return "atr_multiple", "ATR profit target", "x ATR", 1.0
+    if item.target_family is TargetFamily.R_MULTIPLE:
+        return "r_multiple", "Risk-multiple profit target", "R", 1.0
+    return None
+
+
+def _evidence_point(item: ExitPolicySummary, *, value: float) -> ParameterEvidencePoint:
+    return ParameterEvidencePoint(
+        value=value,
+        sample_size=item.sample_size,
+        expectancy=item.expectancy,
+        win_probability=item.win_probability,
+        profit_factor=item.profit_factor,
+        tail_loss_p05=item.tail_loss_p05,
+        average_holding_period_sessions=item.average_holding_period_sessions,
+        stop_out_rate=item.stop_out_rate,
+        target_hit_rate=item.target_hit_rate,
+    )
+
+
+def _from_surface(
+    surface: ParameterSurfaceAnalysis,
+    *,
+    fixed_stop_special: bool,
+) -> StrategicNextStepAnalysis:
+    headline = surface.headline
+    if fixed_stop_special and surface.shape == "increasing":
+        headline = "Wider stops are the strongest next direction; also test a separate ultra-tight regime."
+    elif fixed_stop_special and surface.shape == "decreasing":
+        headline = "Tighter stops are the strongest next direction."
+    options = tuple(
+        StrategicExperimentOption(
+            title=item.title,
+            direction=item.direction,
+            proposed_range=item.proposed_range,
+            rationale=item.rationale,
+            falsifier=item.falsifier,
+        )
+        for item in surface.options
+    )
+    return StrategicNextStepAnalysis(
+        headline=headline,
+        observation=surface.observation,
+        robustness=surface.robustness,
+        caution=surface.caution,
+        options=options,
+    )
 
 
 def _caution(comparison: ExitResearchComparison) -> str:
     return (
-        f"Exploratory only: {comparison.complete_event_count} complete events on one frozen historical "
-        "population. A directional next experiment is a hypothesis, not a validated trading recommendation; "
-        "out-of-sample testing, multiplicity control, execution sensitivity, and portfolio constraints still matter."
+        f"Exploratory only: {comparison.complete_event_count} complete events on one frozen historical population. "
+        "A directional next experiment is a hypothesis, not a validated trading recommendation; out-of-sample testing, multiplicity control, execution sensitivity and portfolio constraints still matter."
     )
 
 
 def _pct(value: float | None) -> str:
     return "n/a" if value is None else f"{value * 100:+.2f}%"
-
-
-def _prob(value: float | None) -> str:
-    return "n/a" if value is None else f"{value * 100:.1f}%"
-
-
-def _pp(value: float) -> str:
-    return f"{value * 100:.2f} percentage points"
 
 
 __all__ = [
