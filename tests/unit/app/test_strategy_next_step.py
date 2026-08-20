@@ -99,4 +99,4 @@ def test_interior_peak_proposes_local_resolution_not_boundary_extension() -> Non
 
     assert "interior" in analysis.headline.lower()
     assert len(analysis.options) == 1
-    assert "Resolve the local optimum" == analysis.options[0].title
+    assert analysis.options[0].title == "Resolve the local optimum"
