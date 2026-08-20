@@ -250,9 +250,7 @@ def _control_note(best: ParameterEvidencePoint, control_expectancy: float | None
     return f"It is {abs(gap) * 100:.2f} percentage points {relation} the hold control."
 
 
-def _outward_range(
-    points: tuple[ParameterEvidencePoint, ...], *, upper: bool, unit: str
-) -> str:
+def _outward_range(points: tuple[ParameterEvidencePoint, ...], *, upper: bool, unit: str) -> str:
     ordered = tuple(sorted(points, key=lambda item: item.value))
     steps = [
         right.value - left.value for left, right in pairwise(ordered) if right.value > left.value
