@@ -291,7 +291,7 @@ def _unit_suffix(unit_label: str) -> str:
     if "%" in lower or "percent" in lower:
         return "%"
     if "standard deviation" in lower:
-        return "σ"
+        return " SD"
     if "atr" in lower:
         return "x ATR"
     if lower.strip() == "r" or "risk" in lower:
