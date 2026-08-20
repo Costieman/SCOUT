@@ -137,7 +137,9 @@ def _largest_exit_sweep(managed: tuple[ExitPolicySummary, ...]) -> _ExitSweep | 
         if None in values or len(set(values)) < 3:
             continue
         points = tuple(
-            _evidence_point(item, value=float(item.resolved_parameters[parameter_name]) * multiplier)
+            _evidence_point(
+                item, value=float(item.resolved_parameters[parameter_name]) * multiplier
+            )
             for item in rows
         )
         candidates.append(
@@ -225,7 +227,9 @@ def _from_surface(
 ) -> StrategicNextStepAnalysis:
     headline = surface.headline
     if fixed_stop_special and surface.shape == "increasing":
-        headline = "Wider stops are the strongest next direction; also test a separate ultra-tight regime."
+        headline = (
+            "Wider stops are the strongest next direction; also test a separate ultra-tight regime."
+        )
     elif fixed_stop_special and surface.shape == "decreasing":
         headline = "Tighter stops are the strongest next direction."
     options = tuple(
