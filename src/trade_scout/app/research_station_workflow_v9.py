@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import cast
-
 from trade_scout.app import research_station_workflow_v8 as _v8
 from trade_scout.app import research_workbench_console as _console
 from trade_scout.app.strategic_next_step_surface import render_strategic_next_step_html
@@ -24,7 +21,7 @@ def configure_research_station_runtime() -> None:
     global _CONFIGURED
     if _CONFIGURED:
         return
-    _v8._render_next_steps = cast(Callable[[StrategyBuilderReport], str], _render_next_steps_v9)
+    setattr(_v8, "_render_next_steps", _render_next_steps_v9)
     _v8.configure_research_station_runtime()
     _CONFIGURED = True
 
