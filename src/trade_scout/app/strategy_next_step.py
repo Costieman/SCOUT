@@ -67,7 +67,9 @@ def analyze_strategic_next_steps(
         if family is ExitFamily.FIXED_PERCENT_STOP:
             return _fixed_stop_analysis(comparison, hold, points, shape)
 
-    best = max(managed, key=lambda item: item.expectancy if item.expectancy is not None else float("-inf"))
+    best = max(
+        managed, key=lambda item: item.expectancy if item.expectancy is not None else float("-inf")
+    )
     hold_text = (
         "The hold control remains the higher-expectancy reference."
         if hold is not None
@@ -107,7 +109,9 @@ def _fixed_stop_analysis(
     last = ordered[-1]
     min_pct = first.resolved_parameters["distance_pct"] * 100.0
     max_pct = last.resolved_parameters["distance_pct"] * 100.0
-    best = max(ordered, key=lambda item: item.expectancy if item.expectancy is not None else float("-inf"))
+    best = max(
+        ordered, key=lambda item: item.expectancy if item.expectancy is not None else float("-inf")
+    )
     hold_gap = (
         None
         if hold is None or hold.expectancy is None or best.expectancy is None
@@ -123,7 +127,9 @@ def _fixed_stop_analysis(
             "the upper boundary, so the present sweep is boundary-limited rather than showing an interior optimum."
         )
         if hold_gap is not None and hold_gap < 0:
-            observation += f" Even the best managed row remains {_pp(abs(hold_gap))} below the hold control."
+            observation += (
+                f" Even the best managed row remains {_pp(abs(hold_gap))} below the hold control."
+            )
         return StrategicNextStepAnalysis(
             headline="Wider stops are the strongest next direction; also test a separate ultra-tight regime.",
             observation=observation,
