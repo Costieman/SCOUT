@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from html import escape
 from pathlib import Path
 
 from trade_scout.app import research_station_workflow_v8 as _v8
@@ -27,7 +26,7 @@ def _render_next_steps_v12(report: StrategyBuilderReport) -> str:
     guidance = (
         '<div id="research-sequence-guidance" class="strategic-next-step-observation" '
         'style="border-left-color:#b99cff">'
-        '<strong>Recommended research order:</strong><br>'
+        "<strong>Recommended research order:</strong><br>"
         '<strong id="research-sequence-headline">Use the active Research Brain to choose the next stage.</strong> '
         '<span id="research-sequence-rationale">SCOUT will compare this run with preserved Brain history.</span>'
         '<br><span class="subtle">Next dimension: '
@@ -76,7 +75,7 @@ def _install_brain_guidance_asset(guidance: dict[str, dict[str, str]]) -> None:
 
 
 def _brain_guidance_js(payload: str) -> str:
-    return f'''\n(() => {{
+    return f"""\n(() => {{
   "use strict";
   // trade-scout:brain-aware-research-sequence-v12
   if (window.location.pathname !== "/research/strategy") return;
@@ -105,7 +104,7 @@ def _brain_guidance_js(payload: str) -> str:
   rationale.textContent = item.rationale;
   next.textContent = item.next_dimension;
   host.dataset.researchStage = item.stage;
-}})();\n'''
+}})();\n"""
 
 
 serve_research_workbench_console = _console.serve_research_workbench_console
