@@ -86,7 +86,13 @@ def test_interior_peak_proposes_local_resolution_not_boundary_extension() -> Non
     hold = _summary(ExitFamily.HOLD_TO_HORIZON, expectancy=0.10)
     rows = tuple(
         _summary(ExitFamily.FIXED_PERCENT_STOP, expectancy=value, distance_pct=distance)
-        for distance, value in ((0.05, 0.03), (0.10, 0.06), (0.15, 0.08), (0.20, 0.06), (0.25, 0.04))
+        for distance, value in (
+            (0.05, 0.03),
+            (0.10, 0.06),
+            (0.15, 0.08),
+            (0.20, 0.06),
+            (0.25, 0.04),
+        )
     )
 
     analysis = analyze_strategic_next_steps(_comparison(hold, *rows))
