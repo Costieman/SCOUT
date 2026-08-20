@@ -65,12 +65,7 @@ def build_exit_followup(comparison: ExitResearchComparison) -> StrategicFollowup
                 ),
             )
 
-    return _plan(
-        sweep=sweep,
-        shape=_shape(sweep.expectancies),
-        integer_step=False,
-        allow_zero=False,
-    )
+    return _plan(sweep=sweep, shape=_shape(sweep.expectancies), integer_step=False, allow_zero=False)
 
 
 def build_entry_followup(
@@ -225,13 +220,13 @@ def _largest_exit_sweep(comparison: ExitResearchComparison) -> _Sweep | None:
         ("atr", ExitFamily.ATR_STOP, "atr_multiple", 1.0),
         ("trailing_atr", ExitFamily.TRAILING_ATR_STOP, "atr_multiple", 1.0),
     ):
-        groups: dict[tuple[object, ...], list[ExitPolicySummary]] = {}
+        stop_groups: dict[tuple[object, ...], list[ExitPolicySummary]] = {}
         for item in managed:
             if item.family is not family or parameter not in item.resolved_parameters:
                 continue
-            key = (item.target_family, tuple(sorted(item.target_parameters.items())))
-            groups.setdefault(key, []).append(item)
-        for rows in groups.values():
+            stop_key = (item.target_family, tuple(sorted(item.target_parameters.items())))
+            stop_groups.setdefault(stop_key, []).append(item)
+        for rows in stop_groups.values():
             candidate = _sweep_from_rows(
                 rows,
                 variable=variable,
@@ -248,13 +243,13 @@ def _largest_exit_sweep(comparison: ExitResearchComparison) -> _Sweep | None:
         ("target_atr", TargetFamily.ATR_MULTIPLE, "atr_multiple", 1.0),
         ("target_r", TargetFamily.R_MULTIPLE, "r_multiple", 1.0),
     ):
-        groups = {}
+        target_groups: dict[tuple[object, ...], list[ExitPolicySummary]] = {}
         for item in managed:
             if item.target_family is not target_family or parameter not in item.target_parameters:
                 continue
-            key = (item.family, tuple(sorted(item.resolved_parameters.items())))
-            groups.setdefault(key, []).append(item)
-        for rows in groups.values():
+            target_key = (item.family, tuple(sorted(item.resolved_parameters.items())))
+            target_groups.setdefault(target_key, []).append(item)
+        for rows in target_groups.values():
             candidate = _sweep_from_rows(
                 rows,
                 variable=variable,
