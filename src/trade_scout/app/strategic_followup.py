@@ -108,11 +108,12 @@ def _plan(
             return StrategicFollowupPlan(
                 status="control_dominated_flat",
                 message=(
-                    "Stop honing this variable on expectancy: the tested surface is flat and every "
-                    "managed value remains materially below the hold control. The next useful question "
-                    "is whether the sacrificed return buys enough downside improvement (P05, profit "
-                    "factor, holding time, stop/target behavior) to justify the exit. If not, switch the "
-                    "Section 5 variable rather than repeatedly optimizing the least-bad cell."
+                    "Stop honing this variable on expectancy: the tested surface is flat and "
+                    "every managed value remains materially below the hold control. The next "
+                    "useful question is whether the sacrificed return buys enough downside "
+                    "improvement (P05, profit factor, holding time, stop/target behavior) to "
+                    "justify the exit. If not, switch the Section 5 variable rather than "
+                    "repeatedly optimizing the least-bad cell."
                 ),
             )
 
@@ -120,9 +121,10 @@ def _plan(
         return StrategicFollowupPlan(
             status="flat_converged",
             message=(
-                "This variable is effectively flat at the current resolution. Further narrowing is "
-                "unlikely to add useful information; preserve the broad region and move to another "
-                "research variable unless a secondary risk metric gives a specific reason to continue."
+                "This variable is effectively flat at the current resolution. Further "
+                "narrowing is unlikely to add useful information; preserve the broad region "
+                "and move to another research variable unless a secondary risk metric gives "
+                "a specific reason to continue."
             ),
         )
 
@@ -137,7 +139,10 @@ def _plan(
             next_step,
             integer_step=integer_step,
             allow_zero=allow_zero,
-            message="The best cell is still on the upper boundary, so extend the same variable before narrowing it.",
+            message=(
+                "The best cell is still on the upper boundary, so extend the same variable "
+                "before narrowing it."
+            ),
         )
 
     if shape == "decreasing" and best_index == 0:
@@ -151,7 +156,10 @@ def _plan(
             next_step,
             integer_step=integer_step,
             allow_zero=allow_zero,
-            message="The best cell is still on the lower boundary, so extend the same variable downward before narrowing it.",
+            message=(
+                "The best cell is still on the lower boundary, so extend the same variable "
+                "downward before narrowing it."
+            ),
         )
 
     next_step = max(step / 2.0, 1.0) if integer_step else max(step / 2.0, 0.01)
