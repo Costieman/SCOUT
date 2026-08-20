@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from html import escape
 
-from trade_scout.app import research_station_workflow_v10 as _v10
 from trade_scout.app import research_station_workflow_v8 as _v8
+from trade_scout.app import research_station_workflow_v10 as _v10
 from trade_scout.app import research_workbench_console as _console
 from trade_scout.app.research_sequence_guidance import guide_research_sequence
 from trade_scout.app.strategic_followup import build_exit_followup
