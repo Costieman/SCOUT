@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Research Station v12: use active Research Brain history to guide the next research stage."""
 
 from __future__ import annotations
