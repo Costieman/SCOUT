@@ -62,7 +62,12 @@ def analyze_parameter_surface(
 ) -> ParameterSurfaceAnalysis:
     """Interpret a one-variable surface without promoting a historical winner as an optimum."""
 
-    usable = tuple(sorted((item for item in points if item.expectancy is not None), key=lambda item: item.value))
+    usable = tuple(
+        sorted(
+            (item for item in points if item.expectancy is not None),
+            key=lambda item: item.value,
+        )
+    )
     if len(usable) < 3:
         return ParameterSurfaceAnalysis(
             headline=f"Not enough {parameter_label} values for directional analysis.",
@@ -226,7 +231,9 @@ def _robustness_text(
     return base
 
 
-def _sample_size_note(points: tuple[ParameterEvidencePoint, ...], best: ParameterEvidencePoint) -> str:
+def _sample_size_note(
+    points: tuple[ParameterEvidencePoint, ...], best: ParameterEvidencePoint
+) -> str:
     counts = [item.sample_size for item in points if item.sample_size > 0]
     if not counts:
         return "Sample size is unavailable."
@@ -243,9 +250,13 @@ def _control_note(best: ParameterEvidencePoint, control_expectancy: float | None
     return f"It is {abs(gap) * 100:.2f} percentage points {relation} the hold control."
 
 
-def _outward_range(points: tuple[ParameterEvidencePoint, ...], *, upper: bool, unit: str) -> str:
+def _outward_range(
+    points: tuple[ParameterEvidencePoint, ...], *, upper: bool, unit: str
+) -> str:
     ordered = tuple(sorted(points, key=lambda item: item.value))
-    steps = [right.value - left.value for left, right in pairwise(ordered) if right.value > left.value]
+    steps = [
+        right.value - left.value for left, right in pairwise(ordered) if right.value > left.value
+    ]
     step = median(steps) if steps else max(abs(ordered[-1].value) * 0.1, 1.0)
     span = max(ordered[-1].value - ordered[0].value, step * 4)
     if upper:
@@ -257,7 +268,9 @@ def _outward_range(points: tuple[ParameterEvidencePoint, ...], *, upper: bool, u
     return f"Test approximately {_value(low, unit)} to {_value(high, unit)}, initially using steps near {_value(step, unit)} and then tighten around any plateau or reversal."
 
 
-def _local_range(points: tuple[ParameterEvidencePoint, ...], best: ParameterEvidencePoint) -> tuple[float, float]:
+def _local_range(
+    points: tuple[ParameterEvidencePoint, ...], best: ParameterEvidencePoint
+) -> tuple[float, float]:
     index = points.index(best)
     left = points[max(0, index - 1)].value
     right = points[min(len(points) - 1, index + 1)].value
