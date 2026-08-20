@@ -14,7 +14,7 @@ from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
 from trade_scout.app.research_station_runtime_identity import configure_runtime_identity
-from trade_scout.app.research_station_workflow_v10 import (
+from trade_scout.app.research_station_workflow_v11 import (
     configure_research_station_runtime,
     serve_research_workbench_console,
 )
@@ -80,26 +80,14 @@ def main() -> int:
         code_version=commit_sha,
     )
     base_url = f"http://{args.host}:{args.port}/"
-    universe_url = f"{base_url}research/universe"
-    edge_url = f"{base_url}research/edge"
-    risk_url = f"{base_url}research/risk"
-    exit_url = f"{base_url}research/exits"
     strategy_url = f"{base_url}research/strategy"
-    experiment_library_url = f"{base_url}research/experiments"
-    brain_url = f"{base_url}research/brains"
     print(f"Trade Scout research console: {base_url}")
     print(f"Visual Strategy Builder: {strategy_url}")
-    print(f"Experiment Library: {experiment_library_url}")
-    print(f"Research Brains: {brain_url}")
-    print(f"Universe Research Analyzer: {universe_url}")
-    print(f"Single-stock Edge Explorer: {edge_url}")
-    print(f"Risk & Stop Research: {risk_url}")
-    print(f"Configurable Exit Policy Lab: {exit_url}")
     print(f"Experiment records: {experiment_root}")
     print(f"Experiment registry: {experiment_recorder.registry_path}")
     print(f"Research brain records: {brain_root}")
     print(f"SCOUT runtime: {branch} @ {commit_sha[:8]}")
-    print("Research Station run path: iterative-strategic-research-v10")
+    print("Research Station run path: guided-research-sequence-v11")
     print("Canonical research read cache: enabled for iterative runs")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
@@ -138,11 +126,7 @@ def _git_branch(repository_root: Path) -> str:
 
 def _git_value(repository_root: Path, *args: str, failure: str) -> str:
     completed = subprocess.run(
-        ["git", *args],
-        cwd=repository_root,
-        capture_output=True,
-        check=False,
-        text=True,
+        ["git", *args], cwd=repository_root, capture_output=True, check=False, text=True
     )
     value = completed.stdout.strip()
     if completed.returncode != 0 or not value:
