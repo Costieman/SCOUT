@@ -8,8 +8,9 @@ they do not alter the configuration or automatically launch another experiment.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from html import escape
-from typing import Callable, cast
+from typing import cast
 
 from trade_scout.app import research_station_workflow_v7 as _v7
 from trade_scout.app import research_workbench_console as _console
