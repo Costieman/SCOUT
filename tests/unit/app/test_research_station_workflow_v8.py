@@ -24,9 +24,7 @@ def test_v8_preserves_v7_runtime_and_adds_strategic_analysis_asset() -> None:
 
 
 def test_v8_render_contains_direction_range_rationale_and_falsifier() -> None:
-    source = Path("src/trade_scout/app/research_station_workflow_v8.py").read_text(
-        encoding="utf-8"
-    )
+    source = Path("src/trade_scout/app/research_station_workflow_v8.py").read_text(encoding="utf-8")
     assert "analyze_strategic_next_steps" in source
     assert "Direction:" in source
     assert "Suggested next range:" in source
