@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from html import escape
 
+from trade_scout.app.strategic_followup import build_entry_followup
 from trade_scout.app.strategic_next_step_surface import render_strategic_next_step_html
 from trade_scout.app.strategy_builder_entry_sweep import (
     EntrySweepPoint,
@@ -39,7 +40,8 @@ def attach_entry_sweep_html(html: str, report: StrategyBuilderEntrySweepReport) 
             for item in report.points
         ),
     )
-    addition = _render_entry_sweep(report) + render_strategic_next_step_html(analysis)
+    followup = build_entry_followup(report, analysis)
+    addition = _render_entry_sweep(report) + render_strategic_next_step_html(analysis, followup)
     return html.replace(marker, addition + marker, 1)
 
 
@@ -109,9 +111,7 @@ def _plain_english_summary(report: StrategyBuilderEntrySweepReport) -> str:
     elif max(expectancy_values) < 0:
         sign_note = "Every tested cell had negative historical hold expectancy in this sample."
     else:
-        sign_note = (
-            "The tested range contains both positive and negative historical hold expectancy."
-        )
+        sign_note = "The tested range contains both positive and negative historical hold expectancy."
     complete_counts = tuple(item.complete_event_count for item in available)
     count_note = f"Complete-event N ranged from {min(complete_counts):,} to {max(complete_counts):,}, which is expected because changing an entry parameter can change the event population."
     return (
