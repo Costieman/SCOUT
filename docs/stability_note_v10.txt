@@ -1,0 +1,1 @@
+v10 safety invariant: the strategic follow-up button must never call a research backend directly. It may only update the existing Section 5 controls and submit the normal Strategy Builder form, preserving all established validation, Brain, experiment-recording, duplicate-run, and diagnostic behavior.
