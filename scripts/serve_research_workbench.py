@@ -14,7 +14,7 @@ from trade_scout.app.edge_explorer_service import CanonicalEdgeExplorerSource
 from trade_scout.app.local_console import LocalConsoleConfig
 from trade_scout.app.operator_workspace import load_operator_workspace, validate_workspace_location
 from trade_scout.app.research_station_runtime_identity import configure_runtime_identity
-from trade_scout.app.research_station_workflow_v11 import (
+from trade_scout.app.research_station_workflow_v12 import (
     configure_research_station_runtime,
     serve_research_workbench_console,
 )
@@ -87,11 +87,11 @@ def main() -> int:
     print(f"Experiment registry: {experiment_recorder.registry_path}")
     print(f"Research brain records: {brain_root}")
     print(f"SCOUT runtime: {branch} @ {commit_sha[:8]}")
-    print("Research Station run path: guided-research-sequence-v11")
+    print("Research Station run path: brain-aware-research-sequence-v12")
     print("Canonical research read cache: enabled for iterative runs")
     print("Uses selected immutable canonical data only; no provider calls are made by the app.")
     print("Press Ctrl+C to stop.")
-    configure_research_station_runtime()
+    configure_research_station_runtime(experiment_root=experiment_root, brain_root=brain_root)
     configure_runtime_identity(commit_sha=commit_sha, branch=branch)
     if args.open_browser:
         webbrowser.open(strategy_url)
