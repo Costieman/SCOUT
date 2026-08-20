@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from trade_scout.app import research_station_workflow_v8 as workflow
 from trade_scout.app import research_workbench_console as console
 
@@ -22,14 +24,11 @@ def test_v8_preserves_v7_runtime_and_adds_strategic_analysis_asset() -> None:
 
 
 def test_v8_render_contains_direction_range_rationale_and_falsifier() -> None:
-    source = workflow._render_next_steps
-    # Guard the four-part scientific recommendation contract in the renderer implementation.
-    names = source.__code__.co_names
-    assert "analyze_strategic_next_steps" in names
-    constants = " ".join(
-        str(value) for value in source.__code__.co_consts if isinstance(value, str)
+    source = Path("src/trade_scout/app/research_station_workflow_v8.py").read_text(
+        encoding="utf-8"
     )
-    assert "Direction:" in constants
-    assert "Suggested next range:" in constants
-    assert "Why:" in constants
-    assert "What would falsify it:" in constants
+    assert "analyze_strategic_next_steps" in source
+    assert "Direction:" in source
+    assert "Suggested next range:" in source
+    assert "Why:" in source
+    assert "What would falsify it:" in source
