@@ -235,8 +235,8 @@ def _largest_exit_sweep(comparison: ExitResearchComparison) -> _Sweep | None:
         for item in managed:
             if item.family is not family or parameter not in item.resolved_parameters:
                 continue
-            key = (item.target_family, tuple(sorted(item.target_parameters.items())))
-            stop_groups.setdefault(key, []).append(item)
+            stop_key = (item.target_family, tuple(sorted(item.target_parameters.items())))
+            stop_groups.setdefault(stop_key, []).append(item)
         for rows in stop_groups.values():
             candidate = _sweep_from_rows(
                 rows,
@@ -258,8 +258,8 @@ def _largest_exit_sweep(comparison: ExitResearchComparison) -> _Sweep | None:
         for item in managed:
             if item.target_family is not target_family or parameter not in item.target_parameters:
                 continue
-            key = (item.family, tuple(sorted(item.resolved_parameters.items())))
-            target_groups.setdefault(key, []).append(item)
+            target_key = (item.family, tuple(sorted(item.resolved_parameters.items())))
+            target_groups.setdefault(target_key, []).append(item)
         for rows in target_groups.values():
             candidate = _sweep_from_rows(
                 rows,
