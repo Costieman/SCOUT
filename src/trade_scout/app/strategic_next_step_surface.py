@@ -117,9 +117,7 @@ def _render_followup(followup: StrategicFollowupPlan | None) -> str:
         return ""
     css_class = "strategic-followup" + (" terminal" if not followup.can_run else "")
     heading = (
-        "Iteration decision"
-        if followup.can_run
-        else "SCOUT would stop honing this variable here"
+        "Iteration decision" if followup.can_run else "SCOUT would stop honing this variable here"
     )
     button = ""
     if followup.can_run:
