@@ -3,24 +3,43 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from html import escape
 from typing import Protocol
 
 
 class StrategicOptionLike(Protocol):
-    title: str
-    direction: str
-    proposed_range: str
-    rationale: str
-    falsifier: str
+    @property
+    def title(self) -> str: ...
+
+    @property
+    def direction(self) -> str: ...
+
+    @property
+    def proposed_range(self) -> str: ...
+
+    @property
+    def rationale(self) -> str: ...
+
+    @property
+    def falsifier(self) -> str: ...
 
 
 class StrategicAnalysisLike(Protocol):
-    headline: str
-    observation: str
-    robustness: str
-    caution: str
-    options: tuple[StrategicOptionLike, ...]
+    @property
+    def headline(self) -> str: ...
+
+    @property
+    def observation(self) -> str: ...
+
+    @property
+    def robustness(self) -> str: ...
+
+    @property
+    def caution(self) -> str: ...
+
+    @property
+    def options(self) -> Sequence[StrategicOptionLike]: ...
 
 
 def render_strategic_next_step_html(analysis: StrategicAnalysisLike) -> str:
