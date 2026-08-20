@@ -119,7 +119,9 @@ def configure_research_station_runtime() -> None:
     _v7.configure_research_station_runtime()
 
     if _ORIGINAL_RENDER_REPORT is None:
-        _ORIGINAL_RENDER_REPORT = cast(Callable[[StrategyBuilderReport], str], _surface._render_report)
+        _ORIGINAL_RENDER_REPORT = cast(
+            Callable[[StrategyBuilderReport], str], _surface._render_report
+        )
         original = _ORIGINAL_RENDER_REPORT
 
         def render_report_with_next_steps(report: StrategyBuilderReport) -> str:
