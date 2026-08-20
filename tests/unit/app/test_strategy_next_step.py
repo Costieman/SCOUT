@@ -1,5 +1,5 @@
 from trade_scout.app.strategy_next_step import analyze_strategic_next_steps
-from trade_scout.risk.exit_policies import ExitFamily
+from trade_scout.risk.exit_policies import ExitFamily, TargetFamily
 from trade_scout.statistics.exit_research import ExitPolicySummary, ExitResearchComparison
 
 
@@ -8,21 +8,36 @@ def _summary(
     *,
     expectancy: float,
     distance_pct: float | None = None,
+    atr_multiple: float | None = None,
+    target_family: TargetFamily | None = None,
+    target_value: float | None = None,
     stop_out_rate: float = 0.0,
+    target_hit_rate: float = 0.0,
 ) -> ExitPolicySummary:
-    parameters = {} if distance_pct is None else {"distance_pct": distance_pct}
+    parameters: dict[str, float] = {}
+    if distance_pct is not None:
+        parameters["distance_pct"] = distance_pct
+    if atr_multiple is not None:
+        parameters["atr_multiple"] = atr_multiple
+    target_parameters: dict[str, float] = {}
+    if target_family is TargetFamily.FIXED_PERCENT and target_value is not None:
+        target_parameters["gain_pct"] = target_value
+    elif target_family is TargetFamily.ATR_MULTIPLE and target_value is not None:
+        target_parameters["atr_multiple"] = target_value
+    elif target_family is TargetFamily.R_MULTIPLE and target_value is not None:
+        target_parameters["r_multiple"] = target_value
     return ExitPolicySummary(
-        policy_id=f"{family.value}:{distance_pct}",
+        policy_id=f"{family.value}:{distance_pct}:{atr_multiple}:{target_family}:{target_value}",
         policy_version="test-v1",
         family=family,
         resolved_parameters=parameters,
-        target_family=None,
-        target_parameters={},
+        target_family=target_family,
+        target_parameters=target_parameters,
         sample_size=930,
         stop_out_count=int(stop_out_rate * 930),
         stop_out_rate=stop_out_rate,
-        target_hit_count=0,
-        target_hit_rate=0.0,
+        target_hit_count=int(target_hit_rate * 930),
+        target_hit_rate=target_hit_rate,
         same_bar_ambiguous_count=0,
         same_bar_ambiguous_rate=0.0,
         expectancy=expectancy,
@@ -76,10 +91,11 @@ def test_boundary_limited_wide_stop_sweep_proposes_wider_and_ultra_tight_branche
     analysis = analyze_strategic_next_steps(_comparison(hold, *rows))
 
     assert "Wider stops" in analysis.headline
-    assert "boundary-limited" in analysis.observation
+    assert "boundary-limited" in analysis.options[0].rationale
     assert "25% to 50%" in analysis.options[0].proposed_range
     assert "1% to 5%" in analysis.options[1].proposed_range
-    assert "hypothesis" in analysis.caution
+    assert "Exploratory" in analysis.caution
+    assert analysis.robustness
 
 
 def test_interior_peak_proposes_local_resolution_not_boundary_extension() -> None:
@@ -97,6 +113,33 @@ def test_interior_peak_proposes_local_resolution_not_boundary_extension() -> Non
 
     analysis = analyze_strategic_next_steps(_comparison(hold, *rows))
 
-    assert "interior" in analysis.headline.lower()
+    assert "interior" in analysis.headline.lower() or "robust region" in analysis.headline.lower()
     assert len(analysis.options) == 1
-    assert analysis.options[0].title == "Resolve the local optimum"
+    assert "Resolve" in analysis.options[0].title
+
+
+def test_fixed_profit_target_sweep_is_analyzed_as_its_own_dimension() -> None:
+    hold = _summary(ExitFamily.HOLD_TO_HORIZON, expectancy=0.11)
+    rows = tuple(
+        _summary(
+            ExitFamily.FIXED_PERCENT_STOP,
+            expectancy=expectancy,
+            distance_pct=0.10,
+            target_family=TargetFamily.FIXED_PERCENT,
+            target_value=target,
+            target_hit_rate=hit,
+        )
+        for target, expectancy, hit in (
+            (0.10, 0.05, 0.75),
+            (0.20, 0.07, 0.61),
+            (0.30, 0.09, 0.49),
+            (0.40, 0.105, 0.38),
+            (0.50, 0.12, 0.31),
+        )
+    )
+
+    analysis = analyze_strategic_next_steps(_comparison(hold, *rows))
+
+    assert "Fixed profit target" in analysis.headline
+    assert "50%" in analysis.options[0].proposed_range
+    assert "above the hold control" in analysis.observation
