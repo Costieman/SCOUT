@@ -10,6 +10,7 @@ def _summary(
     distance_pct: float | None = None,
     target_family: TargetFamily | None = None,
     target_value: float | None = None,
+    target_hit_rate: float = 0.0,
 ) -> ExitPolicySummary:
     resolved = {} if distance_pct is None else {"distance_pct": distance_pct}
     targets = {}
@@ -25,8 +26,8 @@ def _summary(
         sample_size=1000,
         stop_out_count=0,
         stop_out_rate=0.0,
-        target_hit_count=0,
-        target_hit_rate=0.0,
+        target_hit_count=int(target_hit_rate * 1000),
+        target_hit_rate=target_hit_rate,
         same_bar_ambiguous_count=0,
         same_bar_ambiguous_rate=0.0,
         expectancy=expectancy,
@@ -68,6 +69,7 @@ def test_flat_profit_target_surface_below_hold_stops_honing() -> None:
             distance_pct=0.05,
             target_family=TargetFamily.FIXED_PERCENT,
             target_value=target / 100.0,
+            target_hit_rate=0.20,
         )
         for target, expectancy in (
             (5, 0.0056),

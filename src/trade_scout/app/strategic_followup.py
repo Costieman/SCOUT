@@ -1,9 +1,4 @@
-"""Deterministic follow-up plans for one-variable Strategy Builder research.
-
-This module turns an already-computed one-dimensional response surface into a bounded next sweep.
-It deliberately stops the iteration when the surface is flat and materially dominated by the hold
-control rather than repeatedly optimizing the least-bad historical cell.
-"""
+"""Deterministic follow-up plans for one-variable Strategy Builder research."""
 
 from __future__ import annotations
 
@@ -31,11 +26,9 @@ class StrategicFollowupPlan:
 
     @property
     def can_run(self) -> bool:
-        return (
-            self.sweep_variable is not None
-            and self.from_value is not None
-            and self.to_value is not None
-            and self.step_value is not None
+        return all(
+            value is not None
+            for value in (self.sweep_variable, self.from_value, self.to_value, self.step_value)
         )
 
 
@@ -45,19 +38,35 @@ class _Sweep:
     values: tuple[float, ...]
     expectancies: tuple[float, ...]
     control_expectancy: float | None
+    trigger_rates: tuple[float, ...] = ()
 
 
 def build_exit_followup(comparison: ExitResearchComparison) -> StrategicFollowupPlan | None:
-    """Return the next bounded exit sweep, or stop when further expectancy honing is low value."""
+    """Return a bounded exit follow-up, including inactivity and convergence decisions."""
 
     sweep = _largest_exit_sweep(comparison)
     if sweep is None or len(sweep.values) < 3:
         return None
+
+    if sweep.variable.startswith("target_") and sweep.trigger_rates:
+        maximum_hit_rate = max(sweep.trigger_rates)
+        spread = max(sweep.expectancies) - min(sweep.expectancies)
+        if maximum_hit_rate < 0.05 and spread <= 0.0025:
+            return StrategicFollowupPlan(
+                status="inactive_target_range",
+                message=(
+                    "Stop refining this target range. The profit target is effectively inactive: "
+                    f"its highest observed hit rate is only {maximum_hit_rate * 100:.1f}%, and "
+                    "changing the target barely changes expectancy. Most trades are therefore "
+                    "being resolved by the stop or maximum holding horizon, not by this target. "
+                    "Do not optimize the least-bad target cell. If profit-taking is still a useful "
+                    "hypothesis, make one deliberate test at materially lower targets where hit "
+                    "frequency can become meaningful; otherwise move to a higher-priority variable."
+                ),
+            )
+
     return _plan(
-        sweep=sweep,
-        shape=_shape(sweep.expectancies),
-        integer_step=False,
-        allow_zero=False,
+        sweep=sweep, shape=_shape(sweep.expectancies), integer_step=False, allow_zero=False
     )
 
 
@@ -88,11 +97,7 @@ def build_entry_followup(
 
 
 def _plan(
-    *,
-    sweep: _Sweep,
-    shape: str,
-    integer_step: bool,
-    allow_zero: bool,
+    *, sweep: _Sweep, shape: str, integer_step: bool, allow_zero: bool
 ) -> StrategicFollowupPlan:
     values = sweep.values
     expectancies = sweep.expectancies
@@ -108,12 +113,10 @@ def _plan(
             return StrategicFollowupPlan(
                 status="control_dominated_flat",
                 message=(
-                    "Stop honing this variable on expectancy: the tested surface is flat and "
-                    "every managed value remains materially below the hold control. The next "
-                    "useful question is whether the sacrificed return buys enough downside "
-                    "improvement (P05, profit factor, holding time, stop/target behavior) to "
-                    "justify the exit. If not, switch the Section 5 variable rather than "
-                    "repeatedly optimizing the least-bad cell."
+                    "Stop honing this variable on expectancy: the surface is flat and every "
+                    "managed value remains materially below the hold control. Ask whether the "
+                    "sacrificed return buys enough downside improvement in P05, profit factor, "
+                    "holding time or exit behaviour. If not, move to another research variable."
                 ),
             )
 
@@ -121,45 +124,36 @@ def _plan(
         return StrategicFollowupPlan(
             status="flat_converged",
             message=(
-                "This variable is effectively flat at the current resolution. Further "
-                "narrowing is unlikely to add useful information; preserve the broad region "
-                "and move to another research variable unless a secondary risk metric gives "
-                "a specific reason to continue."
+                "This variable is effectively flat at the current resolution. Further narrowing "
+                "is unlikely to add useful information; preserve the broad region and move to "
+                "another variable unless a secondary risk metric gives a reason to continue."
             ),
         )
 
     if shape == "increasing" and best_index == len(values) - 1:
         next_from = values[-1]
         next_step = max(step, 1.0) if integer_step else step
-        next_to = next_from + next_step * 5
         return _action(
             sweep.variable,
             next_from,
-            next_to,
+            next_from + next_step * 5,
             next_step,
             integer_step=integer_step,
             allow_zero=allow_zero,
-            message=(
-                "The best cell is still on the upper boundary, so extend the same variable "
-                "before narrowing it."
-            ),
+            message="The best cell is on the upper boundary; extend before narrowing.",
         )
 
     if shape == "decreasing" and best_index == 0:
         next_step = max(step, 1.0) if integer_step else step
         next_to = values[0]
-        next_from = next_to - next_step * 5
         return _action(
             sweep.variable,
-            next_from,
+            next_to - next_step * 5,
             next_to,
             next_step,
             integer_step=integer_step,
             allow_zero=allow_zero,
-            message=(
-                "The best cell is still on the lower boundary, so extend the same variable "
-                "downward before narrowing it."
-            ),
+            message="The best cell is on the lower boundary; extend downward before narrowing.",
         )
 
     next_step = max(step / 2.0, 1.0) if integer_step else max(step / 2.0, 0.01)
@@ -175,10 +169,7 @@ def _plan(
         next_step,
         integer_step=integer_step,
         allow_zero=allow_zero,
-        message=(
-            "The response has an interior best region. Run a finer local sweep around that region; "
-            "repeat only while the new surface continues to resolve a stable direction."
-        ),
+        message="Run a finer local sweep around the interior best region.",
     )
 
 
@@ -203,9 +194,9 @@ def _action(
         status="run_next",
         message=message,
         sweep_variable=variable,
-        from_value=_round(start),
-        to_value=_round(end),
-        step_value=_round(step),
+        from_value=round(start, 8),
+        to_value=round(end, 8),
+        step_value=round(step, 8),
     )
 
 
@@ -284,21 +275,23 @@ def _sweep_from_rows(
     target: bool,
     control: float | None,
 ) -> _Sweep | None:
-    pairs: list[tuple[float, float]] = []
+    points: list[tuple[float, float, float]] = []
     for item in rows:
         mapping = item.target_parameters if target else item.resolved_parameters
         raw = mapping.get(parameter)
         if raw is None or item.expectancy is None:
             continue
-        pairs.append((float(raw) * multiplier, float(item.expectancy)))
-    pairs.sort(key=lambda item: item[0])
-    if len({value for value, _ in pairs}) < 3:
+        trigger_rate = item.target_hit_rate if target else item.stop_out_rate
+        points.append((float(raw) * multiplier, float(item.expectancy), trigger_rate))
+    points.sort(key=lambda item: item[0])
+    if len({value for value, _, _ in points}) < 3:
         return None
     return _Sweep(
         variable=variable,
-        values=tuple(value for value, _ in pairs),
-        expectancies=tuple(expectancy for _, expectancy in pairs),
+        values=tuple(value for value, _, _ in points),
+        expectancies=tuple(expectancy for _, expectancy, _ in points),
         control_expectancy=control,
+        trigger_rates=tuple(rate for _, _, rate in points),
     )
 
 
@@ -320,10 +313,6 @@ def _shape(expectancies: tuple[float, ...]) -> str:
     ):
         return "decreasing"
     return "mixed"
-
-
-def _round(value: float) -> float:
-    return round(value, 8)
 
 
 __all__ = ["StrategicFollowupPlan", "build_entry_followup", "build_exit_followup"]
