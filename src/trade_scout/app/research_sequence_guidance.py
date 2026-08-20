@@ -1,3 +1,4 @@
+# ruff: noqa: E501, SIM102
 """Plain-English research-order guidance for Strategy Builder experiments."""
 
 from __future__ import annotations
