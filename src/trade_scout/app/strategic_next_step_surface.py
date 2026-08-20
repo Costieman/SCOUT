@@ -38,7 +38,11 @@ def render_strategic_next_step_html(analysis: StrategicAnalysisLike) -> str:
     )
     if not options:
         options = '<p class="subtle">No directional parameter experiment can be inferred safely from this run yet.</p>'
-    robustness = escape(analysis.robustness) if analysis.robustness else "No separate robustness statement is available for this result."
+    robustness = (
+        escape(analysis.robustness)
+        if analysis.robustness
+        else "No separate robustness statement is available for this result."
+    )
     return f"""
 <style id="strategic-next-step-style">
 body.strategic-next-step-modal-open {{ overflow:hidden; }}
