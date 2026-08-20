@@ -21,7 +21,7 @@ def configure_research_station_runtime() -> None:
     global _CONFIGURED
     if _CONFIGURED:
         return
-    setattr(_v8, "_render_next_steps", _render_next_steps_v9)
+    _v8._render_next_steps = _render_next_steps_v9  # type: ignore[assignment]
     _v8.configure_research_station_runtime()
     _CONFIGURED = True
 
