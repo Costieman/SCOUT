@@ -40,7 +40,10 @@ _ITERATIVE_NEXT_STEP_JS = r"""
     const nextStep = runNext.dataset.sweepStep;
     const optionExists = [...variable.options].some((option) => option.value === nextVariable);
     if (!nextVariable || !nextFrom || !nextTo || !nextStep || !optionExists) {
-      window.alert('SCOUT could not map this suggestion back to the current Section 5 variable. Nothing was run.');
+      window.alert(
+        'SCOUT could not map this suggestion back to the current Section 5 variable. ' +
+        'Nothing was run.'
+      );
       return;
     }
 
@@ -49,9 +52,10 @@ _ITERATIVE_NEXT_STEP_JS = r"""
     variable.value = nextVariable;
     variable.dispatchEvent(new Event('change', {bubbles:true}));
 
-    // Entry-sweep controls rebuild and bind asynchronously after a variable change. Wait one short
-    // turn before applying the machine range, then use the normal form submission path so every
-    // existing validation, Brain association, experiment recorder and failure diagnostic still runs.
+    // Entry-sweep controls rebuild and bind asynchronously after a variable change.
+    // Wait one short turn before applying the machine range, then use the normal form
+    // submission path so validation, Brain association, experiment recording and
+    // failure diagnostics all remain active.
     window.setTimeout(() => {
       from.value = nextFrom;
       to.value = nextTo;
