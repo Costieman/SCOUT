@@ -38,7 +38,7 @@ def test_boundary_gradient_extends_range_without_calling_boundary_optimum() -> N
 
     assert analysis.shape == "increasing"
     assert "above the tested range" in analysis.headline
-    assert "3σ" in analysis.options[0].proposed_range
+    assert "3 SD" in analysis.options[0].proposed_range
     assert "boundary-limited" in analysis.options[0].rationale
 
 
