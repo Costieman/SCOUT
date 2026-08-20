@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from threading import Thread
 
 from trade_scout.app import research_station_workflow_v8 as _v8
 from trade_scout.app import research_station_workflow_v11 as _v11
@@ -38,12 +39,27 @@ def _render_next_steps_v12(report: StrategyBuilderReport) -> str:
 
 
 def configure_research_station_runtime(*, experiment_root: Path, brain_root: Path) -> None:
-    """Install v11, then add Brain-backed stage guidance for the active strategy session."""
+    """Install v11 immediately and index Brain guidance outside the startup critical path."""
 
-    global _CONFIGURED, _BRAIN_GUIDANCE
+    global _CONFIGURED
     if _CONFIGURED:
         return
     _v11.configure_research_station_runtime()
+    _v8._render_next_steps = _render_next_steps_v12
+    _install_brain_guidance_asset({})
+    Thread(
+        target=_build_brain_guidance_in_background,
+        args=(experiment_root, brain_root),
+        daemon=True,
+        name="trade-scout-brain-guidance-index",
+    ).start()
+    _CONFIGURED = True
+
+
+def _build_brain_guidance_in_background(experiment_root: Path, brain_root: Path) -> None:
+    """Build the potentially expensive Brain index without delaying the HTTP listener."""
+
+    global _BRAIN_GUIDANCE
     service = ResearchBrainWorkbenchService(experiment_root=experiment_root, brain_root=brain_root)
     guidance: dict[str, dict[str, str]] = {}
     for item in service.list_brains():
@@ -59,9 +75,7 @@ def configure_research_station_runtime(*, experiment_root: Path, brain_root: Pat
             "next_dimension": recommendation.next_dimension,
         }
     _BRAIN_GUIDANCE = guidance
-    _v8._render_next_steps = _render_next_steps_v12
-    _install_brain_guidance_asset(guidance)
-    _CONFIGURED = True
+    _replace_brain_guidance_asset(guidance)
 
 
 def _install_brain_guidance_asset(guidance: dict[str, dict[str, str]]) -> None:
@@ -73,6 +87,25 @@ def _install_brain_guidance_asset(guidance: dict[str, dict[str, str]]) -> None:
         return
     payload = json.dumps(guidance, sort_keys=True, separators=(",", ":"))
     namespace[asset_name] = current + "\n" + _brain_guidance_js(payload)
+
+
+def _replace_brain_guidance_asset(guidance: dict[str, dict[str, str]]) -> None:
+    """Replace only the v12 guidance suffix once background indexing is complete."""
+
+    asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
+    namespace = vars(_console)
+    current = str(namespace[asset_name])
+    marker = "// trade-scout:brain-aware-research-sequence-v12"
+    marker_index = current.find(marker)
+    if marker_index < 0:
+        _install_brain_guidance_asset(guidance)
+        return
+    script_start = current.rfind("(() => {", 0, marker_index)
+    if script_start < 0:
+        return
+    prefix = current[:script_start].rstrip()
+    payload = json.dumps(guidance, sort_keys=True, separators=(",", ":"))
+    namespace[asset_name] = prefix + "\n" + _brain_guidance_js(payload)
 
 
 def _brain_guidance_js(payload: str) -> str:
@@ -96,9 +129,9 @@ def _brain_guidance_js(payload: str) -> str:
     return;
   }}
   if (!item) {{
-    headline.textContent = "The active Research Brain has no readable preserved guidance yet.";
-    rationale.textContent = "SCOUT could not resolve its current experiment history at server start.";
-    next.textContent = "Open the Brain, verify its experiments, then restart the workbench.";
+    headline.textContent = "Brain guidance is still indexing or has no readable preserved history yet.";
+    rationale.textContent = "The Strategy Builder is available immediately while SCOUT builds Brain guidance in the background.";
+    next.textContent = "Continue working; refresh this page later if you need updated Brain-stage guidance.";
     return;
   }}
   headline.textContent = item.headline;
