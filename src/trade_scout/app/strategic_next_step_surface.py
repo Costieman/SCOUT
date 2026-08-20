@@ -59,7 +59,9 @@ def render_strategic_next_step_html(
         </article>"""
         for item in analysis.options
     )
-    if not options:
+    if followup is not None and not followup.can_run:
+        options = '<p class="subtle">No further expectancy-honing sweep is recommended for this variable.</p>'
+    elif not options:
         options = '<p class="subtle">No directional parameter experiment can be inferred safely from this run yet.</p>'
     robustness = (
         escape(analysis.robustness)
@@ -114,7 +116,11 @@ def _render_followup(followup: StrategicFollowupPlan | None) -> str:
     if followup is None:
         return ""
     css_class = "strategic-followup" + (" terminal" if not followup.can_run else "")
-    heading = "Iteration decision" if followup.can_run else "SCOUT would stop honing this variable here"
+    heading = (
+        "Iteration decision"
+        if followup.can_run
+        else "SCOUT would stop honing this variable here"
+    )
     button = ""
     if followup.can_run:
         assert followup.sweep_variable is not None
@@ -131,7 +137,7 @@ def _render_followup(followup: StrategicFollowupPlan | None) -> str:
         )
     return (
         f'<div class="{css_class}"><strong>{escape(heading)}:</strong><br>'
-        f'{escape(followup.message)}{button}</div>'
+        f"{escape(followup.message)}{button}</div>"
     )
 
 
