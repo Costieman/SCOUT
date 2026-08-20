@@ -86,7 +86,9 @@ def build_entry_followup(
     sweep = _Sweep(
         variable=f"entry::{report.target_feature_name}::{report.parameter.value}",
         values=tuple(item.value for item in ordered),
-        expectancies=tuple(float(item.expectancy) for item in ordered if item.expectancy is not None),
+        expectancies=tuple(
+            float(item.expectancy) for item in ordered if item.expectancy is not None
+        ),
         control_expectancy=None,
     )
     return _plan(
