@@ -5,19 +5,42 @@ from __future__ import annotations
 
 from html import escape
 
+from trade_scout.app.strategic_next_step_surface import render_strategic_next_step_html
 from trade_scout.app.strategy_builder_entry_sweep import (
     EntrySweepPoint,
     StrategyBuilderEntrySweepReport,
 )
 from trade_scout.app.strategy_builder_entry_sweep_chart import render_entry_sweep_chart
+from trade_scout.app.strategy_parameter_analysis import (
+    ParameterEvidencePoint,
+    analyze_parameter_surface,
+)
 
 
 def attach_entry_sweep_html(html: str, report: StrategyBuilderEntrySweepReport) -> str:
-    """Attach a complete entry-parameter response surface to Strategy Builder HTML."""
+    """Attach a complete entry-parameter response surface and strategic interpretation."""
+
     marker = "</div></body></html>"
     if marker not in html:
         raise RuntimeError("Strategy Builder renderer omitted its closing application marker")
-    return html.replace(marker, _render_entry_sweep(report) + marker, 1)
+    analysis = analyze_parameter_surface(
+        parameter_label=report.parameter_label,
+        unit_label=report.unit_label,
+        points=tuple(
+            ParameterEvidencePoint(
+                value=item.value,
+                sample_size=item.complete_event_count,
+                expectancy=item.expectancy,
+                win_probability=item.win_probability,
+                profit_factor=item.profit_factor,
+                tail_loss_p05=item.tail_loss_p05,
+                average_holding_period_sessions=item.average_holding_period_sessions,
+            )
+            for item in report.points
+        ),
+    )
+    addition = _render_entry_sweep(report) + render_strategic_next_step_html(analysis)
+    return html.replace(marker, addition + marker, 1)
 
 
 def _render_entry_sweep(report: StrategyBuilderEntrySweepReport) -> str:
@@ -86,9 +109,7 @@ def _plain_english_summary(report: StrategyBuilderEntrySweepReport) -> str:
     elif max(expectancy_values) < 0:
         sign_note = "Every tested cell had negative historical hold expectancy in this sample."
     else:
-        sign_note = (
-            "The tested range contains both positive and negative historical hold expectancy."
-        )
+        sign_note = "The tested range contains both positive and negative historical hold expectancy."
     complete_counts = tuple(item.complete_event_count for item in available)
     count_note = f"Complete-event N ranged from {min(complete_counts):,} to {max(complete_counts):,}, which is expected because changing an entry parameter can change the event population."
     return (
@@ -108,7 +129,6 @@ def _sample_size_caution(
 ) -> str:
     if best is None or not available:
         return ""
-    # Keep this a descriptive warning rather than inventing a scientific minimum-N threshold.
     largest_count = max(item.complete_event_count for item in available)
     if best.complete_event_count >= largest_count:
         return ""
