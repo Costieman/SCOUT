@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import cast
 
 from trade_scout.app import research_station_workflow_v8 as _v8
@@ -87,7 +86,7 @@ def configure_research_station_runtime() -> None:
     if _CONFIGURED:
         return
     _v9.configure_research_station_runtime()
-    _v8._render_next_steps = cast(Callable[[StrategyBuilderReport], str], _render_next_steps_v10)
+    _v8._render_next_steps = _render_next_steps_v10
 
     asset_name = "STRATEGY_BUILDER_RESEARCH_MEMORY_JS"
     namespace = vars(_console)
