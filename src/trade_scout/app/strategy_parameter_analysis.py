@@ -118,27 +118,27 @@ def analyze_parameter_surface(
             )
         headline = f"{parameter_label}: the strongest evidence points above the tested range."
     elif shape == "decreasing" and best is first:
-        options = (
+        options = [
             ParameterExperimentOption(
                 title=f"Extend the {parameter_label} range downward",
                 direction="Continue below the current lower boundary with a controlled local extension.",
                 proposed_range=_outward_range(usable, upper=False, unit=unit),
                 rationale="The strongest cell is the lower boundary and neighboring values generally weaken as the parameter rises.",
                 falsifier="Stop extending when expectancy reverses or when the apparent gain depends on a sharply smaller sample or materially worse secondary metrics.",
-            ),
-        )
+            )
+        ]
         headline = f"{parameter_label}: the strongest evidence points below the tested range."
     else:
         local_low, local_high = _local_range(usable, best)
-        options = (
+        options = [
             ParameterExperimentOption(
                 title=f"Resolve the {parameter_label} neighborhood",
                 direction="Increase resolution around the strongest contiguous region rather than selecting the single historical maximum.",
                 proposed_range=f"Test approximately {_value(local_low, unit)} to {_value(local_high, unit)} with a finer step than the current sweep.",
                 rationale="An interior peak or plateau is better tested by checking whether neighboring values retain similar expectancy and supporting metrics.",
                 falsifier="Treat the apparent optimum as unstable if the advantage disappears at finer resolution or is isolated to one cell while adjacent values revert materially.",
-            ),
-        )
+            )
+        ]
         headline = (
             f"{parameter_label}: a broad robust region is more defensible than the single best cell."
             if len(plateau) >= 3
