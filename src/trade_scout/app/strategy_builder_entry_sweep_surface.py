@@ -111,7 +111,9 @@ def _plain_english_summary(report: StrategyBuilderEntrySweepReport) -> str:
     elif max(expectancy_values) < 0:
         sign_note = "Every tested cell had negative historical hold expectancy in this sample."
     else:
-        sign_note = "The tested range contains both positive and negative historical hold expectancy."
+        sign_note = (
+            "The tested range contains both positive and negative historical hold expectancy."
+        )
     complete_counts = tuple(item.complete_event_count for item in available)
     count_note = f"Complete-event N ranged from {min(complete_counts):,} to {max(complete_counts):,}, which is expected because changing an entry parameter can change the event population."
     return (
