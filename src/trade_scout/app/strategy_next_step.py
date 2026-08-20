@@ -122,13 +122,13 @@ def _largest_exit_sweep(managed: tuple[ExitPolicySummary, ...]) -> _ExitSweep | 
         stop = _stop_dimension(item)
         if stop is None:
             continue
-        key = (
+        stop_key = (
             item.family,
             stop[0],
             item.target_family,
             tuple(sorted(item.target_parameters.items())),
         )
-        stop_groups.setdefault(key, []).append(item)
+        stop_groups.setdefault(stop_key, []).append(item)
     for rows in stop_groups.values():
         dimension = _stop_dimension(rows[0])
         assert dimension is not None
@@ -159,13 +159,13 @@ def _largest_exit_sweep(managed: tuple[ExitPolicySummary, ...]) -> _ExitSweep | 
         target = _target_dimension(item)
         if target is None:
             continue
-        key = (
+        target_key = (
             item.family,
             tuple(sorted(item.resolved_parameters.items())),
             item.target_family,
             target[0],
         )
-        target_groups.setdefault(key, []).append(item)
+        target_groups.setdefault(target_key, []).append(item)
     for rows in target_groups.values():
         dimension = _target_dimension(rows[0])
         assert dimension is not None
