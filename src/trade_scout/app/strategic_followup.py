@@ -65,7 +65,9 @@ def build_exit_followup(comparison: ExitResearchComparison) -> StrategicFollowup
                 ),
             )
 
-    return _plan(sweep=sweep, shape=_shape(sweep.expectancies), integer_step=False, allow_zero=False)
+    return _plan(
+        sweep=sweep, shape=_shape(sweep.expectancies), integer_step=False, allow_zero=False
+    )
 
 
 def build_entry_followup(
