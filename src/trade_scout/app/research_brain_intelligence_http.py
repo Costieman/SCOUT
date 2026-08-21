@@ -1,6 +1,6 @@
 """HTTP adapter for current Research Brain intelligence.
 
-This endpoint is deliberately read-only.  It recomputes derived intelligence from the Brain's
+This endpoint is deliberately read-only. It recomputes derived intelligence from the Brain's
 current persisted membership each time it is requested so the Research Station does not depend on
 a startup/background snapshot.
 """
@@ -11,6 +11,7 @@ import json
 from http import HTTPStatus
 from urllib.parse import parse_qs
 
+from trade_scout.app.research_brain_intelligence import synthesize_research_brain
 from trade_scout.app.research_brain_service import ResearchBrainWorkbenchService
 from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
 
@@ -33,7 +34,7 @@ def build_research_brain_intelligence_json(
         experiment_root=recorder.experiment_root,
         brain_root=recorder.experiment_root.parent / "brains",
     )
-    intelligence = service.intelligence(values[0].strip())
+    intelligence = synthesize_research_brain(service.detail(values[0].strip()))
     payload = {
         "brain_id": intelligence.brain_id,
         "evidence_revision": intelligence.evidence_revision,
