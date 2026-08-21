@@ -26,7 +26,8 @@ from trade_scout.experiments.research_brains import BrainExperimentMembership, F
 _CONFIGURED = False
 _GUIDANCE_PATH = "/research/brain-guidance"
 _GUIDANCE_CACHE: dict[str, tuple[str, dict[str, str]]] = {}
-_GUIDANCE_LOCK = Lock()
+_GUIDANCE_LOCKS: dict[str, Lock] = {}
+_GUIDANCE_LOCKS_GUARD = Lock()
 _BRAIN_SERVICE: ResearchBrainWorkbenchService | None = None
 _BRAIN_STORE: FileResearchBrainStore | None = None
 _ORIGINAL_BUILD_RESPONSE = _console.build_research_workbench_response
@@ -103,7 +104,7 @@ def _build_brain_guidance_response(request_target: str) -> _console.ConsoleRespo
         fingerprint = _membership_fingerprint(snapshot.memberships)
         analysis_duration_ms = 0.0
         cache_status = "MISS"
-        with _GUIDANCE_LOCK:
+        with _guidance_lock(brain_id):
             cached = _GUIDANCE_CACHE.get(brain_id)
             if cached is not None and cached[0] == fingerprint:
                 cache_status = "HIT"
@@ -148,6 +149,17 @@ def _build_brain_guidance_response(request_target: str) -> _console.ConsoleRespo
                 "request_duration_ms": f"{request_duration_ms:.1f}",
             },
         )
+
+
+def _guidance_lock(brain_id: str) -> Lock:
+    """Return one stable lock per Brain so unrelated Brains never serialize each other."""
+
+    with _GUIDANCE_LOCKS_GUARD:
+        lock = _GUIDANCE_LOCKS.get(brain_id)
+        if lock is None:
+            lock = Lock()
+            _GUIDANCE_LOCKS[brain_id] = lock
+        return lock
 
 
 def _with_guidance_telemetry(
