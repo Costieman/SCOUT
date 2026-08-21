@@ -8,6 +8,7 @@ from hashlib import sha256
 from http import HTTPStatus
 from pathlib import Path
 from threading import Lock
+from time import perf_counter
 from urllib.parse import parse_qs, urlsplit
 
 from trade_scout.app import research_station_workflow_v8 as _v8
@@ -84,6 +85,7 @@ def _build_research_workbench_response_v12(
 
 
 def _build_brain_guidance_response(request_target: str) -> _console.ConsoleResponse:
+    request_started = perf_counter()
     service = _BRAIN_SERVICE
     store = _BRAIN_STORE
     if service is None or store is None:
@@ -99,27 +101,70 @@ def _build_brain_guidance_response(request_target: str) -> _console.ConsoleRespo
     try:
         snapshot = store.snapshot(brain_id)
         fingerprint = _membership_fingerprint(snapshot.memberships)
+        analysis_duration_ms = 0.0
+        cache_status = "MISS"
         with _GUIDANCE_LOCK:
             cached = _GUIDANCE_CACHE.get(brain_id)
             if cached is not None and cached[0] == fingerprint:
-                return _json_response(HTTPStatus.OK, cached[1])
-            view = service.detail(brain_id)
-            recommendation = guide_research_sequence_from_brain(view)
-            payload = {
-                "brain_id": brain_id,
-                "stage": recommendation.stage,
-                "headline": recommendation.headline,
-                "rationale": recommendation.rationale,
-                "next_dimension": recommendation.next_dimension,
-                "membership_fingerprint": fingerprint,
-            }
-            _GUIDANCE_CACHE[brain_id] = (fingerprint, payload)
-        return _json_response(HTTPStatus.OK, payload)
+                cache_status = "HIT"
+                payload = cached[1]
+            else:
+                analysis_started = perf_counter()
+                view = service.detail(brain_id)
+                recommendation = guide_research_sequence_from_brain(view)
+                analysis_duration_ms = (perf_counter() - analysis_started) * 1000.0
+                payload = {
+                    "brain_id": brain_id,
+                    "stage": recommendation.stage,
+                    "headline": recommendation.headline,
+                    "rationale": recommendation.rationale,
+                    "next_dimension": recommendation.next_dimension,
+                    "membership_fingerprint": fingerprint,
+                }
+                _GUIDANCE_CACHE[brain_id] = (fingerprint, payload)
+        request_duration_ms = (perf_counter() - request_started) * 1000.0
+        response_payload = _with_guidance_telemetry(
+            payload,
+            cache_status=cache_status,
+            analysis_duration_ms=analysis_duration_ms,
+            request_duration_ms=request_duration_ms,
+        )
+        print(
+            "Brain guidance: "
+            f"brain={brain_id} cache={cache_status} "
+            f"analysis_ms={analysis_duration_ms:.1f} request_ms={request_duration_ms:.1f}"
+        )
+        return _json_response(HTTPStatus.OK, response_payload)
     except (OSError, ValueError, KeyError, RuntimeError) as exc:
+        request_duration_ms = (perf_counter() - request_started) * 1000.0
+        print(
+            "Brain guidance failed: "
+            f"brain={brain_id} error={type(exc).__name__} request_ms={request_duration_ms:.1f}"
+        )
         return _json_response(
             HTTPStatus.BAD_REQUEST,
-            {"error": f"{type(exc).__name__}: {exc}"},
+            {
+                "error": f"{type(exc).__name__}: {exc}",
+                "request_duration_ms": f"{request_duration_ms:.1f}",
+            },
         )
+
+
+def _with_guidance_telemetry(
+    payload: dict[str, str],
+    *,
+    cache_status: str,
+    analysis_duration_ms: float,
+    request_duration_ms: float,
+) -> dict[str, str]:
+    """Attach request-local observability without contaminating cached guidance content."""
+
+    return {
+        **payload,
+        "cache_status": cache_status,
+        "analysis_duration_ms": f"{analysis_duration_ms:.1f}",
+        "request_duration_ms": f"{request_duration_ms:.1f}",
+    }
 
 
 def _membership_fingerprint(memberships: tuple[BrainExperimentMembership, ...]) -> str:
@@ -194,6 +239,9 @@ def _brain_guidance_js() -> str:
       next.textContent = payload.next_dimension;
       host.dataset.researchStage = payload.stage;
       host.dataset.membershipFingerprint = payload.membership_fingerprint;
+      host.dataset.guidanceCacheStatus = payload.cache_status;
+      host.dataset.guidanceAnalysisDurationMs = payload.analysis_duration_ms;
+      host.dataset.guidanceRequestDurationMs = payload.request_duration_ms;
     })
     .catch((error) => {
       headline.textContent = "Brain guidance is unavailable for this request.";
