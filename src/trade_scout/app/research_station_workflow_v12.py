@@ -17,6 +17,7 @@ from trade_scout.app.research_brain_service import ResearchBrainWorkbenchService
 from trade_scout.app.research_sequence_guidance import guide_research_sequence_from_brain
 from trade_scout.app.strategic_followup import build_exit_followup
 from trade_scout.app.strategic_next_step_surface import render_strategic_next_step_html
+from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
 from trade_scout.app.strategy_builder_service import StrategyBuilderReport
 from trade_scout.app.strategy_next_step import analyze_strategic_next_steps
 from trade_scout.experiments.research_brains import BrainExperimentMembership, FileResearchBrainStore
@@ -69,7 +70,7 @@ def _build_research_workbench_response_v12(
     request_target: str,
     config: _console.LocalConsoleConfig,
     *,
-    experiment_recorder: object | None = None,
+    experiment_recorder: StrategyBuilderExperimentRecorder | None = None,
 ) -> _console.ConsoleResponse:
     """Serve the lazy Brain-guidance endpoint; delegate every other route unchanged."""
 
