@@ -7,9 +7,11 @@ small query surface for experiment discovery, lineage, and status inspection.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from threading import RLock
+from typing import Iterator, Protocol
 
 import duckdb
 
@@ -20,6 +22,9 @@ from trade_scout.experiments.contracts import (
     ManifestStore,
     ResearchMode,
 )
+
+_REGISTRY_LOCKS: dict[str, RLock] = {}
+_REGISTRY_LOCKS_GUARD = RLock()
 
 
 class ExperimentRegistry(Protocol):
@@ -90,6 +95,7 @@ class DuckDBExperimentRegistry:
     def __init__(self, path: Path) -> None:
         self._path = path
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = _registry_lock(path)
         self._ensure_schema()
 
     def register(self, manifest: ExperimentManifest) -> None:
@@ -113,7 +119,7 @@ class DuckDBExperimentRegistry:
             manifest.completed_at,
             manifest.manifest_checksum,
         )
-        with duckdb.connect(str(self._path)) as connection:
+        with self._connection() as connection:
             connection.execute(
                 """
                 INSERT INTO experiments VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -139,7 +145,7 @@ class DuckDBExperimentRegistry:
     def get(self, experiment_id: str) -> ExperimentIndexRecord:
         """Return one indexed experiment or raise KeyError if it is unknown."""
 
-        with duckdb.connect(str(self._path)) as connection:
+        with self._connection() as connection:
             row = connection.execute(
                 "SELECT * FROM experiments WHERE experiment_id = ?", [experiment_id]
             ).fetchone()
@@ -174,7 +180,7 @@ class DuckDBExperimentRegistry:
 
         where = " WHERE " + " AND ".join(clauses) if clauses else ""
         sql = f"SELECT * FROM experiments{where} ORDER BY created_at, experiment_id"
-        with duckdb.connect(str(self._path)) as connection:
+        with self._connection() as connection:
             rows = connection.execute(sql, parameters).fetchall()
         return tuple(_record_from_row(row) for row in rows)
 
@@ -197,7 +203,7 @@ class DuckDBExperimentRegistry:
         return tuple(records)
 
     def _ensure_schema(self) -> None:
-        with duckdb.connect(str(self._path)) as connection:
+        with self._connection() as connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS experiments (
@@ -219,6 +225,23 @@ class DuckDBExperimentRegistry:
                 )
                 """
             )
+
+    @contextmanager
+    def _connection(self) -> Iterator[duckdb.DuckDBPyConnection]:
+        """Serialize connections to one registry file across the threaded local server."""
+
+        with self._lock:
+            connection = duckdb.connect(str(self._path))
+            try:
+                yield connection
+            finally:
+                connection.close()
+
+
+def _registry_lock(path: Path) -> RLock:
+    key = str(path.resolve())
+    with _REGISTRY_LOCKS_GUARD:
+        return _REGISTRY_LOCKS.setdefault(key, RLock())
 
 
 def _record_from_row(row: tuple[object, ...]) -> ExperimentIndexRecord:
