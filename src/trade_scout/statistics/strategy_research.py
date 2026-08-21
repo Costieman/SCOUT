@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date
 from statistics import median
 
+from trade_scout.common.stage_cache import BoundedStageCache, StageCacheStats, StageFingerprint
 from trade_scout.data.contracts import (
     DailyBar,
     InstrumentId,
@@ -37,6 +38,10 @@ from trade_scout.outcomes.path import OutcomePath, OutcomePathStatus, measure_ou
 
 _ALLOWED_FEATURES = frozenset(
     definition.feature_name for definition in MARKET_ANALYSIS_FEATURE_SET.definitions
+)
+_SIGNAL_SELECTION_STAGE_VERSION = "feature-strategy-signal-selection-v1"
+_SIGNAL_SELECTION_CACHE: BoundedStageCache["StrategyResearchReport"] = BoundedStageCache(
+    max_entries=8
 )
 
 
@@ -139,8 +144,9 @@ def run_feature_strategy_research(
     Extra feature names may not shadow the registered fixed feature pack.
 
     ``measure_outcomes=False`` is intended for callers such as Strategy Builder that only need the
-    frozen signal population before passing those signals to a separate shared exit engine. The
-    default remains the complete StrategyResearchReport behavior used by normal research callers.
+    frozen signal population before passing those signals to a separate shared exit engine. These
+    signal-only reports are dependency-cached so downstream stop/target changes do not repeat entry
+    selection. Full outcome reports remain uncached because their downstream path semantics differ.
     """
 
     materialized = tuple(bars)
@@ -170,6 +176,21 @@ def run_feature_strategy_research(
     extra_versions = sorted({item.feature_set_version for item in additional})
     feature_set_version = "+".join((MARKET_ANALYSIS_FEATURE_SET_VERSION, *extra_versions))
     allowed_features = _ALLOWED_FEATURES | frozenset(extra_names)
+
+    selection_fingerprint: StageFingerprint | None = None
+    if not measure_outcomes:
+        selection_fingerprint = _signal_selection_fingerprint(
+            materialized,
+            strategy=strategy,
+            horizons=horizons,
+            signal_start=signal_start,
+            signal_end=signal_end,
+            additional=additional,
+            feature_set_version=feature_set_version,
+        )
+        cached = _SIGNAL_SELECTION_CACHE.get(selection_fingerprint)
+        if cached is not None:
+            return cached
 
     expression = compile_feature_expression(strategy.expression, allowed_names=allowed_features)
     fixed_feature_set = _required_fixed_feature_set(strategy)
@@ -298,7 +319,7 @@ def run_feature_strategy_research(
             "signal selection only; a shared downstream exit engine owns realized outcomes."
         )
 
-    return StrategyResearchReport(
+    report = StrategyResearchReport(
         strategy=strategy,
         dataset_version=dataset_version,
         feature_set_version=feature_set_version,
@@ -312,6 +333,21 @@ def run_feature_strategy_research(
         summaries=summaries,
         warnings=tuple(warnings),
     )
+    if selection_fingerprint is not None:
+        _SIGNAL_SELECTION_CACHE.put(selection_fingerprint, report)
+    return report
+
+
+def signal_selection_cache_stats() -> StageCacheStats:
+    """Expose bounded signal-selection cache telemetry for profiling and regression tests."""
+
+    return _SIGNAL_SELECTION_CACHE.stats()
+
+
+def reset_signal_selection_cache() -> None:
+    """Clear disposable signal-selection results without changing research artifacts."""
+
+    _SIGNAL_SELECTION_CACHE.clear()
 
 
 def available_strategy_features() -> tuple[str, ...]:
@@ -325,6 +361,52 @@ def required_strategy_warmup_observations(strategy: StrategyDefinition) -> int:
 
     feature_set = _required_fixed_feature_set(strategy)
     return max(definition.minimum_observations for definition in feature_set.definitions)
+
+
+def _signal_selection_fingerprint(
+    bars: tuple[DailyBar, ...],
+    *,
+    strategy: StrategyDefinition,
+    horizons: tuple[int, ...],
+    signal_start: date | None,
+    signal_end: date | None,
+    additional: tuple[FeatureValue, ...],
+    feature_set_version: str,
+) -> StageFingerprint:
+    scope: dict[str, list[date]] = {}
+    for bar in bars:
+        scope.setdefault(str(bar.instrument_id), []).append(bar.trade_date)
+    canonical_scope = tuple(
+        (instrument_id, min(dates).isoformat(), max(dates).isoformat(), len(dates))
+        for instrument_id, dates in sorted(scope.items())
+    )
+    extra_signature = tuple(
+        sorted(
+            {
+                (
+                    item.feature_name,
+                    item.feature_set_version,
+                    str(item.instrument_id),
+                    item.trade_date.isoformat(),
+                )
+                for item in additional
+            }
+        )
+    )
+    return StageFingerprint.build(
+        stage="feature_strategy_signal_selection",
+        version=_SIGNAL_SELECTION_STAGE_VERSION,
+        dependencies={
+            "dataset_version": str(bars[0].dataset_version),
+            "canonical_scope": canonical_scope,
+            "feature_set_version": feature_set_version,
+            "strategy": asdict(strategy),
+            "horizons": horizons,
+            "signal_start": signal_start.isoformat() if signal_start is not None else None,
+            "signal_end": signal_end.isoformat() if signal_end is not None else None,
+            "extra_feature_signature": extra_signature,
+        },
+    )
 
 
 def _required_fixed_feature_set(strategy: StrategyDefinition) -> FeatureSetDefinition:
@@ -424,5 +506,7 @@ __all__ = [
     "StrategySignal",
     "available_strategy_features",
     "required_strategy_warmup_observations",
+    "reset_signal_selection_cache",
     "run_feature_strategy_research",
+    "signal_selection_cache_stats",
 ]
