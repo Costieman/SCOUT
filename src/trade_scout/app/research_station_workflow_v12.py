@@ -13,8 +13,8 @@ from urllib.parse import parse_qs, urlsplit
 from trade_scout.app import research_station_workflow_v8 as _v8
 from trade_scout.app import research_station_workflow_v11 as _v11
 from trade_scout.app import research_workbench_console as _console
+from trade_scout.app.research_brain_intelligence import synthesize_research_brain
 from trade_scout.app.research_brain_service import ResearchBrainWorkbenchService
-from trade_scout.app.research_sequence_guidance import guide_research_sequence_from_brain
 from trade_scout.app.strategic_followup import build_exit_followup
 from trade_scout.app.strategic_next_step_surface import render_strategic_next_step_html
 from trade_scout.app.strategy_builder_experiments import StrategyBuilderExperimentRecorder
@@ -24,7 +24,7 @@ from trade_scout.experiments.research_brains import BrainExperimentMembership, F
 
 _CONFIGURED = False
 _GUIDANCE_PATH = "/research/brain-guidance"
-_GUIDANCE_CACHE: dict[str, tuple[str, dict[str, str]]] = {}
+_GUIDANCE_CACHE: dict[str, tuple[str, dict[str, object]]] = {}
 _GUIDANCE_LOCK = Lock()
 _BRAIN_SERVICE: ResearchBrainWorkbenchService | None = None
 _BRAIN_STORE: FileResearchBrainStore | None = None
@@ -103,15 +103,25 @@ def _build_brain_guidance_response(request_target: str) -> _console.ConsoleRespo
             cached = _GUIDANCE_CACHE.get(brain_id)
             if cached is not None and cached[0] == fingerprint:
                 return _json_response(HTTPStatus.OK, cached[1])
-            view = service.detail(brain_id)
-            recommendation = guide_research_sequence_from_brain(view)
-            payload = {
+            intelligence = synthesize_research_brain(service.detail(brain_id))
+            recommendation = intelligence.guidance
+            payload: dict[str, object] = {
                 "brain_id": brain_id,
                 "stage": recommendation.stage,
                 "headline": recommendation.headline,
                 "rationale": recommendation.rationale,
                 "next_dimension": recommendation.next_dimension,
                 "membership_fingerprint": fingerprint,
+                "evidence_revision": intelligence.evidence_revision,
+                "experiment_count": intelligence.experiment_count,
+                "supported_relationships": list(intelligence.supported_relationships),
+                "unresolved_questions": list(intelligence.unresolved_questions),
+                "contradictions": list(intelligence.contradictions),
+                "rejected_or_failed_threads": list(intelligence.rejected_or_failed_threads),
+                "readiness": {
+                    "label": intelligence.review.readiness_label,
+                    "explanation": intelligence.review.readiness_explanation,
+                },
             }
             _GUIDANCE_CACHE[brain_id] = (fingerprint, payload)
         return _json_response(HTTPStatus.OK, payload)
@@ -140,7 +150,7 @@ def _membership_fingerprint(memberships: tuple[BrainExperimentMembership, ...]) 
     return sha256(encoded).hexdigest()
 
 
-def _json_response(status: HTTPStatus, payload: dict[str, str]) -> _console.ConsoleResponse:
+def _json_response(status: HTTPStatus, payload: dict[str, object]) -> _console.ConsoleResponse:
     body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return _console.ConsoleResponse(
         status_code=status,
@@ -194,6 +204,8 @@ def _brain_guidance_js() -> str:
       next.textContent = payload.next_dimension;
       host.dataset.researchStage = payload.stage;
       host.dataset.membershipFingerprint = payload.membership_fingerprint;
+      host.dataset.evidenceRevision = payload.evidence_revision;
+      host.dataset.brainExperimentCount = String(payload.experiment_count);
     })
     .catch((error) => {
       headline.textContent = "Brain guidance is unavailable for this request.";
