@@ -150,6 +150,41 @@ def test_library_indexes_existing_plain_manifests_and_keeps_failures(tmp_path: P
     assert failed.strategy_family == "consolidation_breakout"
 
 
+def test_registry_sync_skips_unchanged_manifests_and_reindexes_only_changed_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed_plain_manifest_store(tmp_path)
+    service = ExperimentLibraryService(tmp_path)
+    original_register = service._registry.register
+    registered: list[str] = []
+
+    def counting_register(manifest) -> None:
+        registered.append(manifest.experiment_id)
+        original_register(manifest)
+
+    monkeypatch.setattr(service._registry, "register", counting_register)
+
+    first_count, first_warnings = service._synchronize_registry()
+    assert first_count == 3
+    assert first_warnings == ()
+    assert sorted(registered) == ["exp_child", "exp_failed", "exp_parent"]
+
+    second_count, second_warnings = service._synchronize_registry()
+    assert second_count == 3
+    assert second_warnings == ()
+    assert len(registered) == 3
+
+    manifest_path = tmp_path / "exp_parent" / "manifest.json"
+    manifest_path.write_text(manifest_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+
+    third_count, third_warnings = service._synchronize_registry()
+    assert third_count == 3
+    assert third_warnings == ()
+    assert registered.count("exp_parent") == 2
+    assert registered.count("exp_child") == 1
+    assert registered.count("exp_failed") == 1
+
+
 def test_library_filters_text_family_status_dataset_and_code(tmp_path: Path) -> None:
     _seed_plain_manifest_store(tmp_path)
     service = ExperimentLibraryService(tmp_path)
