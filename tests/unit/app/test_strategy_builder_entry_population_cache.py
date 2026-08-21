@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import dataclass
 from datetime import date
 
 from trade_scout.app.strategy_builder_entry_population_cache import (
@@ -8,21 +8,27 @@ from trade_scout.app.strategy_builder_entry_population_cache import (
     get_or_compute_frozen_entry_population,
     reset_frozen_entry_population_cache,
 )
-from trade_scout.data.contracts import DatasetVersion, InstrumentId
-from trade_scout.events.contracts import EventRecord
+from trade_scout.data.contracts import InstrumentId
 
 
-def _event(event_id: str = "evt-1") -> EventRecord:
-    return EventRecord(
+@dataclass(frozen=True, slots=True)
+class _Event:
+    event_id: str
+    instrument_id: InstrumentId
+    signal_date: date
+    signal_index: int
+    dataset_version: str
+    event_definition_version: str
+
+
+def _event(event_id: str = "evt-1") -> _Event:
+    return _Event(
         event_id=event_id,
         instrument_id=InstrumentId("cache-test"),
-        event_type="feature_expression_signal",
         signal_date=date(2026, 1, 5),
-        event_date=date(2026, 1, 5),
+        signal_index=100,
+        dataset_version="daily-v1",
         event_definition_version="entry-v1",
-        dataset_version=DatasetVersion("daily-v1"),
-        source_pattern_id=None,
-        metadata={},
     )
 
 
@@ -61,8 +67,6 @@ def test_reuses_exact_frozen_population() -> None:
 
 def test_downstream_exit_settings_are_not_part_of_entry_fingerprint() -> None:
     base = _fingerprint()
-    # Stop, target, slippage and commission are intentionally not accepted by the fingerprint API.
-    # Therefore changing those downstream settings cannot invalidate frozen entry membership.
     same_entry = _fingerprint()
     assert base == same_entry
 
