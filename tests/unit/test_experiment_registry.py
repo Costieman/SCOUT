@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -115,3 +116,23 @@ def test_registry_unknown_experiment_fails_explicitly(tmp_path: Path) -> None:
     registry = DuckDBExperimentRegistry(tmp_path / "registry.duckdb")
     with pytest.raises(KeyError):
         registry.get("missing")
+
+
+def test_registry_serializes_threaded_connections_for_one_file(tmp_path: Path) -> None:
+    path = tmp_path / "registry.duckdb"
+    writer = DuckDBExperimentRegistry(path)
+    reader = DuckDBExperimentRegistry(path)
+
+    def write(index: int) -> None:
+        writer.register(_manifest(f"exp_{index}"))
+
+    def read() -> tuple[str, ...]:
+        return tuple(item.experiment_id for item in reader.query())
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(write, index) for index in range(20)]
+        futures.extend(executor.submit(read) for _ in range(20))
+        for future in futures:
+            future.result()
+
+    assert len(reader.query()) == 20
