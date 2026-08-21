@@ -18,7 +18,11 @@ from trade_scout.app.strategy_builder_experiments import (
     StrategyBuilderExperimentRecorder,
     attach_experiment_record_html,
 )
-from trade_scout.app.strategy_builder_service import StrategyBuilderError, StrategyBuilderRequest
+from trade_scout.app.strategy_builder_service import (
+    StrategyBuilderError,
+    StrategyBuilderPerformance,
+    StrategyBuilderRequest,
+)
 from trade_scout.app.strategy_builder_surface import render_strategy_builder_html
 from trade_scout.patterns.consolidation_breakout import TrendFilter
 from trade_scout.risk.exit_policies import SameBarExitPolicy
@@ -123,6 +127,8 @@ def build_recorded_strategy_page(
             commission_bps_per_side=float(_one(parameters, "commission", default="0")),
         )
         recorded = recorder.run_strategy(source, request)
+        for line in _strategy_performance_lines(recorded.report.performance):
+            print(line)
         html = render_strategy_builder_html(
             universes=universes,
             entries=entries,
@@ -140,6 +146,23 @@ def build_recorded_strategy_page(
             error=str(exc),
         )
         return HTTPStatus.BAD_REQUEST, html
+
+
+def _strategy_performance_lines(performance: StrategyBuilderPerformance) -> tuple[str, ...]:
+    """Render one compact terminal trace from the already-recorded phase profiler."""
+
+    phases = tuple(
+        f"Strategy Builder timing | {phase}: {seconds:.3f}s"
+        for phase, seconds in performance.phase_seconds
+    )
+    return (
+        "Strategy Builder timing | "
+        f"bars dataset={performance.dataset_daily_bar_count} "
+        f"canonical={performance.canonical_daily_bar_count} "
+        f"working={performance.working_daily_bar_count}",
+        *phases,
+        f"Strategy Builder timing | TOTAL: {performance.total_seconds:.3f}s",
+    )
 
 
 def _optional_volume_ratio(value: str) -> float | None:
