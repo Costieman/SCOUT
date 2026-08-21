@@ -49,33 +49,36 @@ def _config(*, duration: int = 20) -> ConsolidationBreakoutConfig:
 
 def test_detect_consolidation_events_reuses_identical_replay() -> None:
     reset_consolidation_event_cache()
+    before = consolidation_event_cache_stats()
 
     first = detect_consolidation_events(_bars(), _config())
     second = detect_consolidation_events(_bars(), _config())
 
     assert first == second
-    stats = consolidation_event_cache_stats()
-    assert stats.misses == 1
-    assert stats.hits == 1
+    after = consolidation_event_cache_stats()
+    assert after.misses - before.misses == 1
+    assert after.hits - before.hits == 1
 
 
 def test_config_change_invalidates_event_cache() -> None:
     reset_consolidation_event_cache()
+    before = consolidation_event_cache_stats()
 
     detect_consolidation_events(_bars(), _config(duration=20))
     detect_consolidation_events(_bars(), _config(duration=25))
 
-    stats = consolidation_event_cache_stats()
-    assert stats.misses == 2
-    assert stats.hits == 0
+    after = consolidation_event_cache_stats()
+    assert after.misses - before.misses == 2
+    assert after.hits - before.hits == 0
 
 
 def test_dataset_change_invalidates_event_cache() -> None:
     reset_consolidation_event_cache()
+    before = consolidation_event_cache_stats()
 
     detect_consolidation_events(_bars(dataset="daily-v1"), _config())
     detect_consolidation_events(_bars(dataset="daily-v2"), _config())
 
-    stats = consolidation_event_cache_stats()
-    assert stats.misses == 2
-    assert stats.hits == 0
+    after = consolidation_event_cache_stats()
+    assert after.misses - before.misses == 2
+    assert after.hits - before.hits == 0
