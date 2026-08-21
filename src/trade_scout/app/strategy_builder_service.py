@@ -21,6 +21,7 @@ from trade_scout.app.entry_strategy_registry import (
 from trade_scout.app.strategy_presets import StrategyPreset, strategy_preset
 from trade_scout.app.universe_research_service import UniverseOption
 from trade_scout.app.visual_rule_builder import VisualCondition, VisualRuleSet
+from trade_scout.common.stage_cache import BoundedStageCache, StageFingerprint
 from trade_scout.data.contracts import (
     DailyBar,
     PriceRepresentation,
@@ -29,8 +30,10 @@ from trade_scout.data.contracts import (
 )
 from trade_scout.events import detect_consolidation_events
 from trade_scout.events.contracts import EventRecord
+from trade_scout.features.contracts import FeatureValue
 from trade_scout.features.parameterized_expression import extract_parameterized_specs
 from trade_scout.features.parameterized_indicators import (
+    PARAMETERIZED_INDICATOR_FEATURE_SET_VERSION,
     ParameterizedIndicatorSpec,
     compute_parameterized_indicator_frame,
 )
@@ -63,6 +66,9 @@ from trade_scout.statistics.strategy_research import (
     required_strategy_warmup_observations,
     run_feature_strategy_research,
 )
+
+_INDICATOR_CACHE: BoundedStageCache[tuple[FeatureValue, ...]] = BoundedStageCache(max_entries=4)
+_INDICATOR_STAGE_VERSION = "strategy-builder-parameterized-indicators-v1"
 
 
 class StrategyBuilderError(RuntimeError):
@@ -293,10 +299,16 @@ class StrategyBuilderService:
             started = phase("load canonical daily bars", started)
             started = phase("bound working history", started)
 
-            extra_features = compute_parameterized_indicator_frame(
+            extra_features, cache_hit = _materialize_requested_indicators(
                 working_daily_bars,
                 parameterized_specs,
+                universe_id=request.universe_id,
             )
+            if self.progress is not None:
+                self.progress(
+                    "Strategy Builder | parameterized indicator cache: "
+                    + ("HIT" if cache_hit else "MISS")
+                )
             started = phase("materialize requested indicators", started)
 
             feature_report = run_feature_strategy_research(
@@ -350,10 +362,16 @@ class StrategyBuilderService:
                 )
                 started = phase("bound working history", started)
 
-                extra_features = compute_parameterized_indicator_frame(
+                extra_features, cache_hit = _materialize_requested_indicators(
                     working_daily_bars,
                     parameterized_specs,
+                    universe_id=request.universe_id,
                 )
+                if self.progress is not None:
+                    self.progress(
+                        "Strategy Builder | parameterized indicator cache: "
+                        + ("HIT" if cache_hit else "MISS")
+                    )
                 started = phase("materialize requested indicators", started)
 
                 feature_report = run_feature_strategy_research(
@@ -508,6 +526,62 @@ def _feature_strategy_definition(
             else "Operator-defined point-in-time Strategy Builder expression."
         ),
     )
+
+
+def _materialize_requested_indicators(
+    bars: tuple[DailyBar, ...],
+    specs: tuple[ParameterizedIndicatorSpec, ...],
+    *,
+    universe_id: str,
+) -> tuple[tuple[FeatureValue, ...], bool]:
+    """Reuse deterministic indicator outputs across runs with unchanged upstream inputs."""
+
+    if not specs:
+        return (), True
+    if not bars:
+        raise ValueError("parameterized indicator cache requires canonical daily bars")
+    versions = {str(item.dataset_version) for item in bars}
+    if len(versions) != 1:
+        raise ValueError("parameterized indicator cache cannot mix canonical dataset versions")
+
+    scope: dict[str, list[date]] = {}
+    for bar in bars:
+        scope.setdefault(str(bar.instrument_id), []).append(bar.trade_date)
+    canonical_scope = tuple(
+        (
+            instrument_id,
+            min(dates).isoformat(),
+            max(dates).isoformat(),
+            len(dates),
+        )
+        for instrument_id, dates in sorted(scope.items())
+    )
+    resolved_specs = tuple(
+        sorted(
+            (
+                spec.feature_name,
+                tuple(sorted(dict(spec.resolved_parameters).items())),
+            )
+            for spec in specs
+        )
+    )
+    fingerprint = StageFingerprint.build(
+        stage="parameterized_indicators",
+        version=_INDICATOR_STAGE_VERSION,
+        dependencies={
+            "dataset_version": next(iter(versions)),
+            "universe_id": universe_id,
+            "feature_set_version": PARAMETERIZED_INDICATOR_FEATURE_SET_VERSION,
+            "canonical_scope": canonical_scope,
+            "resolved_specs": resolved_specs,
+        },
+    )
+    cached = _INDICATOR_CACHE.get(fingerprint)
+    if cached is not None:
+        return cached, True
+    computed = compute_parameterized_indicator_frame(bars, specs)
+    _INDICATOR_CACHE.put(fingerprint, computed)
+    return computed, False
 
 
 def _research_series_from_daily_bars(
