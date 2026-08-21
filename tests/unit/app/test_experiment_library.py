@@ -185,6 +185,34 @@ def test_registry_sync_skips_unchanged_manifests_and_reindexes_only_changed_one(
     assert registered.count("exp_failed") == 1
 
 
+def test_registry_sync_retries_transient_oserror_without_manifest_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed_plain_manifest_store(tmp_path)
+    service = ExperimentLibraryService(tmp_path)
+    original_read_manifest = service._store.read_manifest
+    failed_once = False
+
+    def flaky_read_manifest(experiment_id: str):
+        nonlocal failed_once
+        if experiment_id == "exp_parent" and not failed_once:
+            failed_once = True
+            raise OSError("synthetic temporary file access failure")
+        return original_read_manifest(experiment_id)
+
+    monkeypatch.setattr(service._store, "read_manifest", flaky_read_manifest)
+
+    first_count, first_warnings = service._synchronize_registry()
+    assert first_count == 2
+    assert len(first_warnings) == 1
+    assert "exp_parent" in first_warnings[0]
+
+    second_count, second_warnings = service._synchronize_registry()
+    assert second_count == 3
+    assert second_warnings == ()
+    assert failed_once is True
+
+
 def test_library_filters_text_family_status_dataset_and_code(tmp_path: Path) -> None:
     _seed_plain_manifest_store(tmp_path)
     service = ExperimentLibraryService(tmp_path)

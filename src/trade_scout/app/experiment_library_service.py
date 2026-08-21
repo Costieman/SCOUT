@@ -223,7 +223,14 @@ class ExperimentLibraryService:
                 try:
                     manifest = self._store.read_manifest(experiment_id)
                     self._registry.register(manifest)
-                except (OSError, ValueError, KeyError) as exc:
+                except OSError as exc:
+                    self._indexed_manifest_ids.discard(experiment_id)
+                    self._synchronization_warnings[experiment_id] = (
+                        f"Could not index {experiment_id}: {type(exc).__name__}: {exc}"
+                    )
+                    self._manifest_signatures.pop(experiment_id, None)
+                    continue
+                except (ValueError, KeyError) as exc:
                     self._indexed_manifest_ids.discard(experiment_id)
                     self._synchronization_warnings[experiment_id] = (
                         f"Could not index {experiment_id}: {type(exc).__name__}: {exc}"
