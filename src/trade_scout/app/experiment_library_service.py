@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Lock
 
 from trade_scout.experiments.contracts import (
     ExperimentManifest,
@@ -101,6 +102,10 @@ class ExperimentLibraryService:
         self._root = experiment_root
         self._store = FileManifestStore(experiment_root)
         self._registry = DuckDBExperimentRegistry(experiment_root / "registry.duckdb")
+        self._synchronization_lock = Lock()
+        self._manifest_signatures: dict[str, tuple[int, int, int]] = {}
+        self._indexed_manifest_ids: set[str] = set()
+        self._synchronization_warnings: dict[str, str] = {}
 
     @property
     def registry_path(self) -> Path:
@@ -195,19 +200,52 @@ class ExperimentLibraryService:
         return tuple(sorted(families))
 
     def _synchronize_registry(self) -> tuple[int, tuple[str, ...]]:
+        """Index only manifests whose on-disk identity changed since the previous sync."""
+
         self._root.mkdir(parents=True, exist_ok=True)
-        count = 0
-        warnings: list[str] = []
-        for path in sorted(self._root.glob("*/manifest.json")):
-            experiment_id = path.parent.name
-            try:
-                manifest = self._store.read_manifest(experiment_id)
-                self._registry.register(manifest)
-            except (OSError, ValueError, KeyError) as exc:
-                warnings.append(f"Could not index {experiment_id}: {type(exc).__name__}: {exc}")
-                continue
-            count += 1
-        return count, tuple(warnings)
+        with self._synchronization_lock:
+            current_ids: set[str] = set()
+            for path in sorted(self._root.glob("*/manifest.json")):
+                experiment_id = path.parent.name
+                current_ids.add(experiment_id)
+                try:
+                    stat = path.stat()
+                except OSError as exc:
+                    self._indexed_manifest_ids.discard(experiment_id)
+                    self._synchronization_warnings[experiment_id] = (
+                        f"Could not index {experiment_id}: {type(exc).__name__}: {exc}"
+                    )
+                    self._manifest_signatures.pop(experiment_id, None)
+                    continue
+                signature = (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size)
+                if self._manifest_signatures.get(experiment_id) == signature:
+                    continue
+                try:
+                    manifest = self._store.read_manifest(experiment_id)
+                    self._registry.register(manifest)
+                except (OSError, ValueError, KeyError) as exc:
+                    self._indexed_manifest_ids.discard(experiment_id)
+                    self._synchronization_warnings[experiment_id] = (
+                        f"Could not index {experiment_id}: {type(exc).__name__}: {exc}"
+                    )
+                else:
+                    self._indexed_manifest_ids.add(experiment_id)
+                    self._synchronization_warnings.pop(experiment_id, None)
+                self._manifest_signatures[experiment_id] = signature
+
+            removed = set(self._manifest_signatures) - current_ids
+            for experiment_id in removed:
+                self._manifest_signatures.pop(experiment_id, None)
+                self._indexed_manifest_ids.discard(experiment_id)
+                self._synchronization_warnings.pop(experiment_id, None)
+
+            warnings = tuple(
+                self._synchronization_warnings[experiment_id]
+                for experiment_id in sorted(self._synchronization_warnings)
+                if experiment_id in current_ids
+            )
+            indexed_count = len(self._indexed_manifest_ids & current_ids)
+            return indexed_count, warnings
 
     def _item(self, record: ExperimentIndexRecord) -> ExperimentLibraryItem:
         try:
