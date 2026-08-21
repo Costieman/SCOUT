@@ -40,6 +40,34 @@ def test_membership_fingerprint_changes_when_brain_membership_changes() -> None:
     )
 
 
+def test_guidance_telemetry_does_not_mutate_cached_payload() -> None:
+    cached = {
+        "brain_id": "brain-test",
+        "stage": "exit_sweep",
+        "membership_fingerprint": "abc",
+    }
+
+    miss = workflow._with_guidance_telemetry(
+        cached,
+        cache_status="MISS",
+        analysis_duration_ms=123.45,
+        request_duration_ms=130.0,
+    )
+    hit = workflow._with_guidance_telemetry(
+        cached,
+        cache_status="HIT",
+        analysis_duration_ms=0.0,
+        request_duration_ms=2.5,
+    )
+
+    assert "cache_status" not in cached
+    assert miss["cache_status"] == "MISS"
+    assert miss["analysis_duration_ms"] == "123.5"
+    assert hit["cache_status"] == "HIT"
+    assert hit["analysis_duration_ms"] == "0.0"
+    assert hit["request_duration_ms"] == "2.5"
+
+
 def test_v12_uses_on_demand_guidance_instead_of_startup_indexing() -> None:
     source = workflow.__file__
     assert source is not None
@@ -48,5 +76,7 @@ def test_v12_uses_on_demand_guidance_instead_of_startup_indexing() -> None:
     assert "trade-scout:on-demand-brain-guidance-v12" in text
     assert "/research/brain-guidance" in text
     assert "fetch(`/research/brain-guidance?brain=" in text
+    assert "Brain guidance: " in text
+    assert "guidanceCacheStatus" in text
     assert "Thread(" not in text
     assert "list_brains()" not in text
