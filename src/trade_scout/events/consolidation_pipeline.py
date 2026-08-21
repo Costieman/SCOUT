@@ -7,9 +7,10 @@ incremental scanning use the same update path.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date
 
+from trade_scout.common.stage_cache import BoundedStageCache, StageCacheStats, StageFingerprint
 from trade_scout.data.contracts import CorporateActionRecord, ResearchBar
 from trade_scout.events.consolidation_breakout import (
     ConsolidationBreakoutEvent,
@@ -22,6 +23,11 @@ from trade_scout.patterns import (
     PatternState,
 )
 from trade_scout.patterns.consolidation_breakout import ConsolidationBreakoutConfig
+
+_CONSOLIDATION_EVENT_STAGE_VERSION = "consolidation-event-population-v1"
+_CONSOLIDATION_EVENT_CACHE: BoundedStageCache[tuple[ConsolidationBreakoutEvent, ...]] = (
+    BoundedStageCache(max_entries=16)
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,15 +174,85 @@ def detect_consolidation_events(
     lifecycle_config: ConsolidationLifecycleConfig | None = None,
     corporate_actions: tuple[CorporateActionRecord, ...] = (),
 ) -> tuple[ConsolidationBreakoutEvent, ...]:
-    """Generate breakout events through the shared persistent lifecycle pipeline."""
+    """Generate breakout events, reusing an identical deterministic event population when safe."""
 
-    return replay_consolidation_pipeline(
+    if corporate_actions:
+        return replay_consolidation_pipeline(
+            bars,
+            pattern_config,
+            event_config=event_config,
+            lifecycle_config=lifecycle_config,
+            corporate_actions=corporate_actions,
+        ).events
+
+    fingerprint = _consolidation_event_fingerprint(
         bars,
         pattern_config,
         event_config=event_config,
         lifecycle_config=lifecycle_config,
-        corporate_actions=corporate_actions,
+    )
+    cached = _CONSOLIDATION_EVENT_CACHE.get(fingerprint)
+    if cached is not None:
+        return cached
+    events = replay_consolidation_pipeline(
+        bars,
+        pattern_config,
+        event_config=event_config,
+        lifecycle_config=lifecycle_config,
     ).events
+    _CONSOLIDATION_EVENT_CACHE.put(fingerprint, events)
+    return events
+
+
+def consolidation_event_cache_stats() -> StageCacheStats:
+    """Expose disposable event-cache telemetry for profiling and regression tests."""
+
+    return _CONSOLIDATION_EVENT_CACHE.stats()
+
+
+def reset_consolidation_event_cache() -> None:
+    """Clear cached event populations without altering authoritative research artifacts."""
+
+    _CONSOLIDATION_EVENT_CACHE.clear()
+
+
+def _consolidation_event_fingerprint(
+    bars: tuple[ResearchBar, ...],
+    pattern_config: ConsolidationBreakoutConfig,
+    *,
+    event_config: ConsolidationEventConfig | None,
+    lifecycle_config: ConsolidationLifecycleConfig | None,
+) -> StageFingerprint:
+    if not bars:
+        raise ValueError("at least one research bar is required")
+    versions = {str(item.dataset_version) for item in bars}
+    instruments = {str(item.instrument_id) for item in bars}
+    representations = {str(item.price_representation) for item in bars}
+    if len(versions) != 1:
+        raise ValueError("consolidation event cache cannot mix dataset versions")
+    if len(instruments) != 1:
+        raise ValueError("consolidation event cache requires one instrument series")
+    if len(representations) != 1:
+        raise ValueError("consolidation event cache cannot mix price representations")
+    resolved_event = event_config or ConsolidationEventConfig.from_legacy_config(pattern_config)
+    resolved_lifecycle = lifecycle_config or ConsolidationLifecycleConfig(
+        reset_sessions=resolved_event.cooldown_sessions
+    )
+    return StageFingerprint.build(
+        stage="consolidation_events",
+        version=_CONSOLIDATION_EVENT_STAGE_VERSION,
+        dependencies={
+            "dataset_version": next(iter(versions)),
+            "instrument_id": next(iter(instruments)),
+            "price_representation": next(iter(representations)),
+            "first_trade_date": bars[0].trade_date.isoformat(),
+            "last_trade_date": bars[-1].trade_date.isoformat(),
+            "bar_count": len(bars),
+            "pattern_config": asdict(pattern_config),
+            "event_config": asdict(resolved_event),
+            "lifecycle_config": asdict(resolved_lifecycle),
+        },
+    )
 
 
 def _volume_confirmed(
