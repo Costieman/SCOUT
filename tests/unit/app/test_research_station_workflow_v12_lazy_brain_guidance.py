@@ -68,6 +68,15 @@ def test_guidance_telemetry_does_not_mutate_cached_payload() -> None:
     assert hit["request_duration_ms"] == "2.5"
 
 
+def test_guidance_locks_are_stable_per_brain_but_independent_between_brains() -> None:
+    first_a = workflow._guidance_lock("brain-a")
+    second_a = workflow._guidance_lock("brain-a")
+    brain_b = workflow._guidance_lock("brain-b")
+
+    assert first_a is second_a
+    assert first_a is not brain_b
+
+
 def test_v12_uses_on_demand_guidance_instead_of_startup_indexing() -> None:
     source = workflow.__file__
     assert source is not None
@@ -78,5 +87,6 @@ def test_v12_uses_on_demand_guidance_instead_of_startup_indexing() -> None:
     assert "fetch(`/research/brain-guidance?brain=" in text
     assert "Brain guidance: " in text
     assert "guidanceCacheStatus" in text
+    assert "_GUIDANCE_LOCKS" in text
     assert "Thread(" not in text
     assert "list_brains()" not in text
