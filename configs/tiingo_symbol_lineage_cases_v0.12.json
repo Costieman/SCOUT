@@ -1,0 +1,5 @@
+{
+  "schema_version": "tiingo-lineage-audit-case-composition-v0.1",
+  "base": "tiingo_symbol_lineage_cases_v0.11.json",
+  "additions": "tiingo_symbol_lineage_additions_v0.12.json"
+}

@@ -31,22 +31,55 @@ _EXPECTED_CLASSIFICATIONS = {
     "AAPL": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "ABBV": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ABNB": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ABT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ACN": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "ADBE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ADM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ADSK": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AEE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AIZ": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AKAM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "ALL": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ALLE": "WHEN_ISSUED_START_MATCH",
+    "AMAT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AMCR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AMD": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "AMGN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AMP": "WHEN_ISSUED_START_MATCH",
     "AMZN": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "ANET": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "APD": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "APH": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "APO": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "APP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "APTV": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "AVGO": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AVY": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AWK": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "AXON": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "AXP": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "AZO": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BA": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BAX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BDX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BG": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "BKR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BLK": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "BMY": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BR": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BRK.B": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "BX": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "CAH": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CAT": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
+    "CBOE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "CBRE": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "CHD": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CRM": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "CSCO": "CURRENT_SYMBOL_OR_LATER_HISTORY_OBSERVED",
     "CVX": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
+    "DE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "DOV": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
+    "GD": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "GE": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "GOOGL": "PRE_CURRENT_SYMBOL_HISTORY_OBSERVED",
     "GS": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
@@ -70,38 +103,20 @@ _EXPECTED_CLASSIFICATIONS = {
     "V": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
     "WMT": "CURRENT_SYMBOL_EFFECTIVE_DATE_MATCH",
 }
+
 _NEW_REVIEWED_SYMBOLS = frozenset(
-    {
-        "CSCO",
-        "CVX",
-        "GE",
-        "GOOGL",
-        "GS",
-        "HD",
-        "JNJ",
-        "LLY",
-        "MA",
-        "MCD",
-        "META",
-        "MSFT",
-        "NEE",
-        "NFLX",
-        "NVDA",
-        "ORCL",
-        "PG",
-        "RTX",
-        "SCHW",
-        "TMUS",
-        "TSLA",
-        "UNH",
-        "V",
-        "WMT",
-    }
+    {"ADSK", "APH", "AVY", "AZO", "BA", "BDX", "CHD", "DE", "DOV", "GD"}
 )
+
 _DEFERRED_REASONS = {
     "ALGN": (
         "Tiingo begins 2001-01-30 after the sourced public-trading start 2001-01-26; "
         "canonical promotion remains blocked until the missing sessions are independently resolved."
+    ),
+    "ARES": (
+        "Accepted primary-source filings conflict on whether ARES public trading began "
+        "2014-05-01 or 2014-05-02; Tiingo begins 2014-05-02, so promotion remains blocked "
+        "until the boundary discrepancy is independently reconciled."
     ),
     "BAC": (
         "The Tiingo BAC series begins before the 1998 NationsBank/BankAmerica merger, while "
@@ -111,6 +126,16 @@ _DEFERRED_REASONS = {
     "BKNG": (
         "Tiingo begins 1999-03-31 after the sourced Priceline public-trading start 1999-03-29; "
         "canonical promotion remains blocked until the missing initial sessions are resolved."
+    ),
+    "BLDR": (
+        "Tiingo begins 2005-06-28 after the sourced Nasdaq BLDR public-trading start "
+        "2005-06-22; canonical promotion remains blocked until the missing initial sessions "
+        "are independently resolved."
+    ),
+    "CARR": (
+        "Tiingo begins a CARR-labelled series on 2020-03-19, but Carrier's SEC filing states "
+        "that when-issued trading used CARR WI and regular-way CARR trading began 2020-04-03; "
+        "provider alias ownership of the pre-regular-way observations must be resolved first."
     ),
     "COST": (
         "Tiingo COST begins in 1996 while Price/Costco traded under PCCW before the 1997 "
@@ -152,8 +177,8 @@ def main() -> int:
 
     repository_root = Path(__file__).resolve().parents[1]
     root = args.root.expanduser().resolve()
-    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.6.json"
-    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.7.json"
+    cases_path = repository_root / "configs" / "tiingo_symbol_lineage_cases_v0.13.json"
+    seeds_path = repository_root / "configs" / "tiingo_reviewed_identity_seeds_v0.13.json"
 
     try:
         validate_workspace_location(root, repository_root=repository_root)

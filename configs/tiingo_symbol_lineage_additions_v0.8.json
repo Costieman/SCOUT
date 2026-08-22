@@ -1,0 +1,149 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "ACN",
+      "current_symbol_effective_date": "2009-09-01",
+      "regular_way_start": "2001-07-19",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2001-07-19",
+          "from_symbol": null,
+          "to_symbol": "ACN",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "Accenture Ltd Form 10-K: NYSE trading under ACN commenced July 19, 2001",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1134538/000095013001505710/d10k.htm"
+        },
+        {
+          "effective_date": "2009-09-01",
+          "from_symbol": "ACN",
+          "to_symbol": "ACN",
+          "event_type": "SUCCESSOR_REDOMICILIATION_ONE_FOR_ONE",
+          "source_title": "Accenture plc Form 8-K: Irish successor began NYSE trading under ACN September 1, 2009 after one-for-one exchange",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1467373/000119312509185098/d8k12b.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BG",
+      "current_symbol_effective_date": "2023-11-01",
+      "regular_way_start": "2001-08-02",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2001-08-02",
+          "from_symbol": null,
+          "to_symbol": "BG",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "Bunge SEC prospectus: no public trading before August 2, 2001 IPO; NYSE symbol BG",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1144519/000091205702009701/a2073227z424b4.htm"
+        },
+        {
+          "effective_date": "2023-11-01",
+          "from_symbol": "BG",
+          "to_symbol": "BG",
+          "event_type": "SUCCESSOR_REDOMICILIATION_ONE_FOR_ONE",
+          "source_title": "Bunge Global SA SEC registration: Switzerland redomestication completed November 1, 2023; BG continued on NYSE",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1996862/000110465925066991/tm2518610-1_s3asr.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BKR",
+      "current_symbol_effective_date": "2017-07-05",
+      "regular_way_start": "2017-07-05",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2017-07-05",
+          "from_symbol": null,
+          "to_symbol": "BKR",
+          "event_type": "POST_COMBINATION_PUBLIC_TRADING_START",
+          "source_title": "Baker Hughes Form 10-K: company formed by BHI/GE Oil & Gas combination; BKR history begins July 5, 2017",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1701605/000170160520000019/fiscalyear2019form10-k.htm"
+        },
+        {
+          "effective_date": "2021-12-07",
+          "from_symbol": "BKR",
+          "to_symbol": "BKR",
+          "event_type": "EXCHANGE_TRANSFER_TO_NASDAQ",
+          "source_title": "Baker Hughes 2021 Form 10-K: listing transferred from NYSE to Nasdaq December 7, 2021",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1701605/000170160522000050/bkr-20211231.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BLK",
+      "current_symbol_effective_date": "2024-10-02",
+      "regular_way_start": "1999-10-01",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "1999-10-01",
+          "from_symbol": null,
+          "to_symbol": "BLK",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "BlackRock company history: NYSE IPO October 1, 1999",
+          "source_url": "https://www.blackrock.com/corporate/about-us/blackrock-in-ireland"
+        },
+        {
+          "effective_date": "2024-10-02",
+          "from_symbol": "BLK",
+          "to_symbol": "BLK",
+          "event_type": "SUCCESSOR_PARENT_MERGER_ONE_FOR_ONE",
+          "source_title": "BlackRock Form 8-K: new parent succeeded old BlackRock one-for-one with uninterrupted NYSE BLK trading",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1364742/000119312524229654/d856279d8k.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "BR",
+      "current_symbol_effective_date": "2007-04-02",
+      "regular_way_start": "2007-04-02",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2007-04-02",
+          "from_symbol": null,
+          "to_symbol": "BR",
+          "event_type": "SPINOFF_REGULAR_WAY_TRADING_START",
+          "source_title": "Broadridge SEC release: first trading day as independent public company on NYSE under BR April 2, 2007",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1383312/000119312507072385/dex991.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "CBRE",
+      "current_symbol_effective_date": "2018-03-19",
+      "regular_way_start": "2004-06-10",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2004-06-10",
+          "from_symbol": null,
+          "to_symbol": "CBG",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "CBRE Group Form 10-K: Class A common stock traded on NYSE as CBG from June 10, 2004",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1138118/000156459019005666/cbg-10k_20181231.htm"
+        },
+        {
+          "effective_date": "2011-10-03",
+          "from_symbol": "CBG",
+          "to_symbol": "CBG",
+          "event_type": "CORPORATE_NAME_CHANGE_SAME_SURVIVOR",
+          "source_title": "CBRE certificate of ownership and merger: CB Richard Ellis Group survived and changed name to CBRE Group",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1138118/000119312511262666/d237319dex31.htm"
+        },
+        {
+          "effective_date": "2018-03-19",
+          "from_symbol": "CBG",
+          "to_symbol": "CBRE",
+          "event_type": "TICKER_CHANGE",
+          "source_title": "CBRE Group 2018 Form 10-K: CBG through March 18, 2018; CBRE from March 19, 2018",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1138118/000156459019005666/cbg-10k_20181231.htm"
+        }
+      ]
+    }
+  ]
+}

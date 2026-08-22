@@ -1,0 +1,75 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "ADSK",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "ADSK", "to_symbol": "ADSK", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Autodesk 1996 Form 10-Q: same registrant during campaign year", "source_url": "https://www.sec.gov/Archives/edgar/data/769397/000092962496000309/0000929624-96-000309-index.html"}]
+    },
+    {
+      "source_symbol": "APH",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "APH", "to_symbol": "APH", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Amphenol 1996 Form 10-Q: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/820313/000082031396000006/0000820313-96-000006-index.html"}]
+    },
+    {
+      "source_symbol": "AVY",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "AVY", "to_symbol": "AVY", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Avery Dennison 1996 Form 8-K: same registrant and NYSE/PSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/8818/000089843096005774/0000898430-96-005774-index.html"}]
+    },
+    {
+      "source_symbol": "AZO",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "AZO", "to_symbol": "AZO", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "AutoZone 1996 Form 10-K: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/866787/000095014496008757/0000950144-96-008757-index.html"}]
+    },
+    {
+      "source_symbol": "BA",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "BA", "to_symbol": "BA", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Boeing 1996 Form 10-K: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/12927/0000012927-96-000003-index.html"}]
+    },
+    {
+      "source_symbol": "BDX",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "BDX", "to_symbol": "BDX", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Becton Dickinson 1996 Form 10-Q: same registrant during campaign year", "source_url": "https://www.sec.gov/Archives/edgar/data/10795/0000950130-96-003107-index.htm"}]
+    },
+    {
+      "source_symbol": "CHD",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "CHD", "to_symbol": "CHD", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Church & Dwight 1996 Form 10-Q: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/313927/0000313927-96-000011-index.htm"}]
+    },
+    {
+      "source_symbol": "DE",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "DE", "to_symbol": "DE", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Deere 1996 Form 10-Q: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/315189/0000315189-96-000009-index.htm"}]
+    },
+    {
+      "source_symbol": "DOV",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "DOV", "to_symbol": "DOV", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "Dover 1996 annual report: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/29905/0000950123-96-001179-index.htm"}]
+    },
+    {
+      "source_symbol": "GD",
+      "current_symbol_effective_date": "1996-01-02",
+      "regular_way_start": null,
+      "when_issued_start": null,
+      "lineage_events": [{"effective_date": "1996-01-02", "from_symbol": "GD", "to_symbol": "GD", "event_type": "CAMPAIGN_START_SAME_REGISTRANT_SYMBOL", "source_title": "General Dynamics 1996 Form 10-Q: same registrant and NYSE-listed issuer", "source_url": "https://www.sec.gov/Archives/edgar/data/40533/0000040533-96-000002-index.html"}]
+    }
+  ]
+}

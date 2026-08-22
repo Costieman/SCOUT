@@ -1,0 +1,53 @@
+{
+  "schema_version": "tiingo-lineage-audit-cases-v0.1",
+  "cases": [
+    {
+      "source_symbol": "AMCR",
+      "current_symbol_effective_date": "2019-06-11",
+      "regular_way_start": "2019-06-11",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2019-06-11",
+          "from_symbol": null,
+          "to_symbol": "AMCR",
+          "event_type": "BUSINESS_COMBINATION_PUBLIC_TRADING_START",
+          "source_title": "Amcor SEC communication: Amcor plc shares commence NYSE trading June 11, 2019 under AMCR",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/11199/000110465919032906/a18-18334_77425.htm"
+        }
+      ]
+    },
+    {
+      "source_symbol": "APO",
+      "current_symbol_effective_date": "2022-01-01",
+      "regular_way_start": "2011-03-30",
+      "when_issued_start": null,
+      "lineage_events": [
+        {
+          "effective_date": "2011-03-30",
+          "from_symbol": null,
+          "to_symbol": "APO",
+          "event_type": "IPO_PUBLIC_TRADING_START",
+          "source_title": "Apollo Global Management Form 10-K: Class A shares began NYSE trading March 30, 2011 under APO",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1411494/000141149419000016/apo-1231201810k.htm"
+        },
+        {
+          "effective_date": "2019-09-05",
+          "from_symbol": "APO",
+          "to_symbol": "APO",
+          "event_type": "ENTITY_CONVERSION_ONE_FOR_ONE",
+          "source_title": "Apollo Form 8-K: LLC converted to corporation; Class A stock continued on NYSE under APO",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1411494/000119312519238190/d777305d8k.htm"
+        },
+        {
+          "effective_date": "2022-01-01",
+          "from_symbol": "APO",
+          "to_symbol": "APO",
+          "event_type": "SUCCESSOR_PARENT_MERGER_ONE_FOR_ONE",
+          "source_title": "Apollo successor registration: old AGM shares converted one-for-one into new Apollo Global Management shares",
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1032681/000119312522006780/d637908dsc13d.htm"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "schema_version": "reviewed-identity-seeds-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-additions-v0.8",
+  "primary_provider_id": "trade_scout_review",
+  "identity_definition_version": "reviewed-permanent-identity-v0.1",
+  "symbol_history_definition_version": "explicit-dated-symbol-history-v0.1",
+  "seeds": [
+    {
+      "review_id": "rir-000044",
+      "primary_symbol": "ACN",
+      "name": "Accenture plc",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2001-07-19",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000044", "tiingo": "tiingo-series:rir-000044"},
+      "provider_query_symbols": {"tiingo": "ACN"},
+      "symbol_history": [
+        {
+          "symbol": "ACN",
+          "exchange": "XNYS",
+          "effective_from": "2001-07-19",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/1134538/000095013001505710/d10k.htm",
+            "https://www.sec.gov/Archives/edgar/data/1467373/000119312509185098/d8k12b.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1134538/000095013001505710/d10k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1467373/000119312509185098/d8k12b.htm"
+      ]
+    },
+    {
+      "review_id": "rir-000045",
+      "primary_symbol": "BG",
+      "name": "Bunge Global SA",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2001-08-02",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000045", "tiingo": "tiingo-series:rir-000045"},
+      "provider_query_symbols": {"tiingo": "BG"},
+      "symbol_history": [
+        {
+          "symbol": "BG",
+          "exchange": "XNYS",
+          "effective_from": "2001-08-02",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/1144519/000091205702009701/a2073227z424b4.htm",
+            "https://www.sec.gov/Archives/edgar/data/1996862/000110465925066991/tm2518610-1_s3asr.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1144519/000091205702009701/a2073227z424b4.htm",
+        "https://www.sec.gov/Archives/edgar/data/1996862/000110465925066991/tm2518610-1_s3asr.htm"
+      ]
+    },
+    {
+      "review_id": "rir-000046",
+      "primary_symbol": "BKR",
+      "name": "Baker Hughes Company",
+      "exchange": "XNAS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2017-07-05",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000046", "tiingo": "tiingo-series:rir-000046"},
+      "provider_query_symbols": {"tiingo": "BKR"},
+      "symbol_history": [
+        {
+          "symbol": "BKR",
+          "exchange": "XNYS",
+          "effective_from": "2017-07-05",
+          "effective_to": "2021-12-06",
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1701605/000170160520000019/fiscalyear2019form10-k.htm"]
+        },
+        {
+          "symbol": "BKR",
+          "exchange": "XNAS",
+          "effective_from": "2021-12-07",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1701605/000170160522000050/bkr-20211231.htm"]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1701605/000170160520000019/fiscalyear2019form10-k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1701605/000170160522000050/bkr-20211231.htm"
+      ]
+    },
+    {
+      "review_id": "rir-000047",
+      "primary_symbol": "BLK",
+      "name": "BlackRock, Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "1999-10-01",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000047", "tiingo": "tiingo-series:rir-000047"},
+      "provider_query_symbols": {"tiingo": "BLK"},
+      "symbol_history": [
+        {
+          "symbol": "BLK",
+          "exchange": "XNYS",
+          "effective_from": "1999-10-01",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.blackrock.com/corporate/about-us/blackrock-in-ireland",
+            "https://www.sec.gov/Archives/edgar/data/1364742/000119312524229654/d856279d8k.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.blackrock.com/corporate/about-us/blackrock-in-ireland",
+        "https://www.sec.gov/Archives/edgar/data/1364742/000119312524229654/d856279d8k.htm"
+      ]
+    },
+    {
+      "review_id": "rir-000048",
+      "primary_symbol": "BR",
+      "name": "Broadridge Financial Solutions, Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2007-04-02",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000048", "tiingo": "tiingo-series:rir-000048"},
+      "provider_query_symbols": {"tiingo": "BR"},
+      "symbol_history": [
+        {
+          "symbol": "BR",
+          "exchange": "XNYS",
+          "effective_from": "2007-04-02",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1383312/000119312507072385/dex991.htm"]
+        }
+      ],
+      "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1383312/000119312507072385/dex991.htm"]
+    },
+    {
+      "review_id": "rir-000049",
+      "primary_symbol": "CBRE",
+      "name": "CBRE Group, Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2004-06-10",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000049", "tiingo": "tiingo-series:rir-000049"},
+      "provider_query_symbols": {"tiingo": "CBRE"},
+      "symbol_history": [
+        {
+          "symbol": "CBG",
+          "exchange": "XNYS",
+          "effective_from": "2004-06-10",
+          "effective_to": "2018-03-18",
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1138118/000156459019005666/cbg-10k_20181231.htm"]
+        },
+        {
+          "symbol": "CBRE",
+          "exchange": "XNYS",
+          "effective_from": "2018-03-19",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/1138118/000156459019005666/cbg-10k_20181231.htm"]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1138118/000119312511262666/d237319dex31.htm",
+        "https://www.sec.gov/Archives/edgar/data/1138118/000156459019005666/cbg-10k_20181231.htm"
+      ]
+    }
+  ]
+}

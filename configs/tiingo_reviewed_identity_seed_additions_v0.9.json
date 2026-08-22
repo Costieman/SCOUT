@@ -1,0 +1,64 @@
+{
+  "schema_version": "reviewed-identity-seeds-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-additions-v0.9",
+  "primary_provider_id": "trade_scout_review",
+  "identity_definition_version": "reviewed-permanent-identity-v0.1",
+  "symbol_history_definition_version": "explicit-dated-symbol-history-v0.1",
+  "seeds": [
+    {
+      "review_id": "rir-000050",
+      "primary_symbol": "AMCR",
+      "name": "Amcor plc",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2019-06-11",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000050", "tiingo": "tiingo-series:rir-000050"},
+      "provider_query_symbols": {"tiingo": "AMCR"},
+      "symbol_history": [
+        {
+          "symbol": "AMCR",
+          "exchange": "XNYS",
+          "effective_from": "2019-06-11",
+          "effective_to": null,
+          "evidence_refs": ["https://www.sec.gov/Archives/edgar/data/11199/000110465919032906/a18-18334_77425.htm"]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/11199/000110465919032906/a18-18334_77425.htm",
+        "https://www.sec.gov/Archives/edgar/data/1748790/000110465919035373/a18-18334_988k.htm"
+      ]
+    },
+    {
+      "review_id": "rir-000051",
+      "primary_symbol": "APO",
+      "name": "Apollo Global Management, Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2011-03-30",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000051", "tiingo": "tiingo-series:rir-000051"},
+      "provider_query_symbols": {"tiingo": "APO"},
+      "symbol_history": [
+        {
+          "symbol": "APO",
+          "exchange": "XNYS",
+          "effective_from": "2011-03-30",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/1411494/000141149419000016/apo-1231201810k.htm",
+            "https://www.sec.gov/Archives/edgar/data/1411494/000119312519238190/d777305d8k.htm",
+            "https://www.sec.gov/Archives/edgar/data/1032681/000119312522006780/d637908dsc13d.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1411494/000141149419000016/apo-1231201810k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1411494/000119312519238190/d777305d8k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1032681/000119312522006780/d637908dsc13d.htm"
+      ]
+    }
+  ]
+}

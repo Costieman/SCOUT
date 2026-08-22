@@ -1,0 +1,74 @@
+{
+  "schema_version": "reviewed-identity-seeds-v0.1",
+  "snapshot_version": "tiingo-reviewed-identity-additions-v0.10",
+  "primary_provider_id": "trade_scout_review",
+  "identity_definition_version": "reviewed-permanent-identity-v0.1",
+  "symbol_history_definition_version": "explicit-dated-symbol-history-v0.1",
+  "seeds": [
+    {
+      "review_id": "rir-000052",
+      "primary_symbol": "BX",
+      "name": "Blackstone Inc.",
+      "exchange": "XNYS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2007-06-22",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000052", "tiingo": "tiingo-series:rir-000052"},
+      "provider_query_symbols": {"tiingo": "BX"},
+      "symbol_history": [
+        {
+          "symbol": "BX",
+          "exchange": "XNYS",
+          "effective_from": "2007-06-22",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/1393818/000119312508053079/d10k.htm",
+            "https://www.sec.gov/Archives/edgar/data/1393818/000119312519186655/d27713d8k.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1393818/000119312508053079/d10k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1393818/000119312519186655/d27713d8k.htm"
+      ]
+    },
+    {
+      "review_id": "rir-000053",
+      "primary_symbol": "CBOE",
+      "name": "Cboe Global Markets, Inc.",
+      "exchange": "BATS",
+      "security_type": "common_stock",
+      "currency": "USD",
+      "first_trade_date": "2010-06-15",
+      "delisting_date": null,
+      "provider_links": {"trade_scout_review": "rir-000053", "tiingo": "tiingo-series:rir-000053"},
+      "provider_query_symbols": {"tiingo": "CBOE"},
+      "symbol_history": [
+        {
+          "symbol": "CBOE",
+          "exchange": "XNAS",
+          "effective_from": "2010-06-15",
+          "effective_to": "2018-09-16",
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/1374310/000144530512000485/cboe-12312011x10k.htm"
+          ]
+        },
+        {
+          "symbol": "CBOE",
+          "exchange": "BATS",
+          "effective_from": "2018-09-17",
+          "effective_to": null,
+          "evidence_refs": [
+            "https://www.sec.gov/Archives/edgar/data/1374310/000155837019000884/cboe-20181231x10k.htm"
+          ]
+        }
+      ],
+      "evidence_refs": [
+        "https://www.sec.gov/Archives/edgar/data/1374310/000144530512000485/cboe-12312011x10k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1374310/000155837018000953/cboe-20171231x10k.htm",
+        "https://www.sec.gov/Archives/edgar/data/1374310/000155837019000884/cboe-20181231x10k.htm"
+      ]
+    }
+  ]
+}
